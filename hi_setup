@@ -1,0 +1,79 @@
+#! /usr/bin/env python3
+"""HOMEINFO Digital Signage Linux setup
+
+Usage:
+    hi_setup (<ids> | --cid=<cid> --tid=<tid>) --software=<software_type> \
+--hardware=<hw_type>
+
+Options:
+    -h --help           Show this page.
+    -v --version        Show version.
+    --user=<user_name>  Specifies the setup user's name.
+    --passwd=<passwd>   Specifies the setup user's password.
+"""
+
+from docopt import docopt
+from sys import stderr
+from getpass import getpass
+
+options = docopt()
+valid_ids_formats = ['<tid>.<cid>', '<cid>/<tid>']
+valid_software = ['ddb']
+valid_hardware = ['amd', 'intel']
+
+format_info = '\n'.join(['', '    Valid identifier formats are:']
+                        + [''.join(['    * ', f]) for f in valid_ids_formats])
+software_info = '\n'.join(['', '    Valid software selections are:']
+                          + [''.join(['    * ', s]) for s in valid_software])
+hardware_info = '\n'.join(['', '    Valid hardware selections are:']
+                          + [''.join(['    * ', h]) for h in valid_hardware])
+
+
+def fail(*msgs, exit_code=3):
+    """Print message to stderr and exit"""
+    print(*msgs, file=stderr)
+    exit(exit_code)
+
+if __name__ == '__main__':
+    user_name = options['--user']
+    passwd = options['--passwd']
+    if not user_name:
+        user_name = input('User name: ')
+    if not operator:
+        passwd = getpass('Password: ')
+    try:
+        chk_cred(operator, passwd):
+    except WrongUserName:
+        fail('Invalid user name:', user_name)
+    ids = options['<ids>']
+    cid = options['--cid']
+    tid = options['--tid']
+    software = options['--software']
+    hardware = options['--hardware']
+
+    if ids:
+        if '.' in ids:
+            try:
+                tid, cid = ids.split('.')
+            except ValueError:
+                fail('Invalid identifier format:', ids, format_info)
+        elif '/' in ids:
+            try:
+                cid, tid = ids.split('/')
+            except ValueError:
+                fail('Invalid identifier format:', ids, format_info)
+        else:
+            fail('Invalid identifier format:', ids, format_info)
+    try:
+        cid = int(cid)
+    except (TypeError, ValueError):
+        fail('Customer ID must be an integer')
+    try:
+        tid = int(tid)
+    except (TypeError, ValueError):
+        fail('Terminal ID must be an integer')
+    if software not in valid_software:
+        fail('Invalid software selection:', software, software_info)
+    if hardware not in valid_hardware:
+        fail('Invalid software selection:', software, hardware_info)
+    setup()
