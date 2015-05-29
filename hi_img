@@ -23,6 +23,7 @@ import tarfile
 from tempfile import NamedTemporaryFile
 
 options = docopt(__doc__)
+
 valid_ids_formats = ['<tid>.<cid>', '<cid>/<tid>']
 image_dir = '/usr/local/share/homeinfo/images'
 valid_hardware = ['amd', 'intel']
@@ -73,13 +74,13 @@ class BlockDevice():
 
     @property
     def mbr(self):
-        """Gets the master boot record of the device"""
+        """Gets master boot record of the device"""
         with open(self.device, 'rb') as dev:
             return dev.read(512)
 
     @mbr.setter
     def mbr(self, data):
-        """Writes the data to the disk"""
+        """Writes master boot record to the disk"""
         if len(data) != 512:
             raise ValueError('MBR must be exactly 512 bytes in size')
         else:
@@ -95,14 +96,22 @@ class BlockDevice():
 class PartitionImage():
     """Represents a partition image"""
 
-    @classmethod
-    def create(cls, device, file, label=None):
+    def __init__(self, file):
+        """Loads a partition image from a backup file"""
+        self._file = file
+
+    @property
+    def file(self):
+        """Returns the backup file"""
+        return self._file
+
+    def create(self, device, label=None):
         """Creates a partition image"""
-        with tarfile.open(name=file, mode='w') as archive:
+        with tarfile.open(name=self.file, mode='w') as archive:
             with NamedTemporaryFile('wb') as mbr:
                 mbr.write(device.mbr)
             with NamedTemporaryFile('wb') as part0:
-                
+                pass  # TODO: Implement
 
 
 class PartitionBackup():
@@ -118,5 +127,5 @@ class PartitionBackup():
     @mbr.setter
     def mbr(self, data):
         """Writes the master boot record to the device"""
-     
+        pass    # TODO: Implement
      
