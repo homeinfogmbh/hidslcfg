@@ -121,6 +121,7 @@ class PartitionBackup():
     def mbr(self):
         """Gets the master boot record of a device"""
         if self.mode == Mode.CREATE:
+            pass  # TODO: Implement
         elif self.mode == Mode.RESTORE:
             return self.image.mbr
 
