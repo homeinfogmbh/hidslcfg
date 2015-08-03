@@ -27,10 +27,12 @@ image_dir = '/usr/local/share/homeinfo/images'
 valid_hardware = ['amd', 'intel']
 api_url = 'https://tls.homeinfo.de/termgr/setup'
 
-format_info = '\n'.join(['', '    Valid identifier formats are:']
-                        + [''.join(['    * ', f]) for f in valid_ids_formats])
-hardware_info = '\n'.join(['', '    Valid hardware selections are:']
-                          + [''.join(['    * ', h]) for h in valid_hardware])
+format_info = '\n'.join(
+    ['', '    Valid identifier formats are:'] +
+    [''.join(['    * ', f]) for f in valid_ids_formats])
+hardware_info = '\n'.join(
+    ['', '    Valid hardware selections are:'] +
+    [''.join(['    * ', h]) for h in valid_hardware])
 
 
 class InvalidUserName(Exception):
@@ -53,7 +55,7 @@ def fail(err, *msgs, exit_code=3):
 
 def sha256sum(s):
     """Creates a SHA-256 checksum of a string"""
-    return str(sha256(s.encode()).hexdigest())
+    return sha256(s.encode()).hexdigest()
 
 
 def list_images():
@@ -145,9 +147,9 @@ if __name__ == '__main__':
     except (TypeError, ValueError):
         fail('Terminal ID must be an integer')
     if image not in list_images():
-        image_info = '\n'.join(['', '    Valid image selections are:']
-                               + [''.join(['    * ', s]) for
-                                  s in list_images()])
+        image_info = '\n'.join(
+            ['', '    Valid image selections are:'] +
+            [''.join(['    * ', s]) for s in list_images()])
         fail('Invalid image selection:', image, image_info)
     if hardware not in valid_hardware:
         fail('Invalid image selection:', image, hardware_info)
