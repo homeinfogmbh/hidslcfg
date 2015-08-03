@@ -13,26 +13,15 @@ Options:
 
 from docopt import docopt
 from sys import stderr
-from getpass import getpass
-from hashlib import sha256
-from requests import get
 from homeinfo.lib.strf import Terminal
-from os import listdir
-from os.path import isdir, join
+from os import system
 import tarfile
-from tempfile import NamedTemporaryFile
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 options = docopt(__doc__)
 
-valid_ids_formats = ['<tid>.<cid>', '<cid>/<tid>']
 image_dir = '/usr/local/share/homeinfo/images'
-valid_hardware = ['amd', 'intel']
 api_url = 'https://tls.homeinfo.de/termgr/setup'
-
-format_info = '\n'.join(['', '    Valid identifier formats are:']
-                        + [''.join(['    * ', f]) for f in valid_ids_formats])
-hardware_info = '\n'.join(['', '    Valid hardware selections are:']
-                          + [''.join(['    * ', h]) for h in valid_hardware])
 
 
 class InvalidUserName(Exception):
@@ -110,8 +99,12 @@ class PartitionImage():
         with tarfile.open(name=self.file, mode='w') as archive:
             with NamedTemporaryFile('wb') as mbr:
                 mbr.write(device.mbr)
-            with NamedTemporaryFile('wb') as part0:
-                pass  # TODO: Implement
+            archive.add(mbr.name, 'mbr')
+            with TemporaryDirectory() as mount:
+                cmd = ' '.join(['/usr/bin/mount', device.drive(0), mount])
+                system(cmd)
+                device.partition(0)
+                archive.add(mount.name, 'mbr')
 
 
 class PartitionBackup():
