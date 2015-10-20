@@ -1,0 +1,238 @@
+#! /usr/bin/env python3
+"""HOMEINFO Digital Signage Linux terminal configuration
+
+Usage:
+    hi_config <ident> [--user=<user_name>]
+    hi_config [options]
+
+Options:
+    --tid=<terminal_id>  Specifies the physical terminal identifier
+    --cid=<customer_id>  Specifies the customer identifier
+    --user=<user_name>   Specifies the setup user's name.
+    -h --help            Show this page.
+    -v --version         Show version.
+"""
+
+from docopt import docopt
+from sys import stderr
+from getpass import getpass
+from requests import get
+from tempfile import mkdtemp
+from os.path import join
+from posix import chdir
+
+
+class InvalidCredentials(Exception):
+    """Indicates invalid credentials"""
+    pass
+
+
+class Unauthorized(Exception):
+    """Indicates that the user is not allowed
+    to setup the respective terminal
+    """
+    pass
+
+
+class APIError(Exception):
+    """Indicates a user error"""
+
+    def __init__(self, msg):
+        """Sets the text"""
+        super().__init__()
+        self._msg = msg
+
+    def __str__(self):
+        """Returns the message"""
+        return self._msg
+
+
+def fail(err, *msgs, exit_code=3):
+    """Print message to stderr and exit"""
+    print('\033[91m\033[1m', end='', file=stderr)  # Red and bold
+    print(err, end='', file=stderr)
+    print('\033[0m', end=' ', file=stderr)
+    print(*msgs, file=stderr)
+    exit(exit_code)
+
+
+class TerminalAddress():
+    """Terminal address data container"""
+
+    MAIN_SEP = ', '
+    SUB_SEP = ' '
+
+    def __init__(self, s):
+        """Generate terminal address from a string"""
+        street_houseno, zip_city = s.split(self.MAIN_SEP)
+        *street, self.houseno = street_houseno.split(self.SUB_SEP)
+        self.street = self.SUB_SEP.join(street)
+        self.zip, *city = zip_city.split(self.SUB_SEP)
+        self.city = self.SUB_SEP.join(city)
+
+    def __str__(self):
+        """Converts the address into a human readable form"""
+        return ('Street:        {street}\n'
+                'House number:  {houseno}\n'
+                'ZIP code:      {zip}\n'
+                'City:          {city}').format(
+            street=self.street, houseno=self.houseno,
+            zip=self.zip, city=self.city)
+
+
+class APIClient():
+    """Class to retrieve data from the web API"""
+
+    PROTO = 'https'
+    HOST = 'tls.homeinfo.de'
+    PATH = '/termgr/setup'
+
+    def __init__(self, user, passwd, cid, tid):
+        """Initialize with credentials"""
+        self._user = user
+        self._passwd = passwd
+        self._cid = cid
+        self._tid = tid
+
+    def __call__(self):
+        """Get configuration data"""
+        return (self.vpndata, self.repoconf)
+
+    @property
+    def valid(self):
+        """Verifies the set credentials"""
+        status_code, text = self.apicall('verify')
+        if status_code == 200:
+            return True
+        elif status_code == 401:
+            if text == 'Invalid credentials':
+                raise InvalidCredentials()
+            else:
+                raise Unauthorized()
+        else:
+            raise APIError(text)
+
+    @property
+    def location(self):
+        """Gets the terminal location"""
+        reply = self.apicall('location')
+        return TerminalAddress(reply.text)
+
+    @property
+    def vpndata(self):
+        """Gets the terminal's VPN keys and configuration"""
+        reply = self.apicall('vpn')
+        return reply.content
+
+    @property
+    def repoconf(self):
+        """Returns the pacman.conf"""
+        reply = self.apicall('repo')
+        return reply.text
+
+    @property
+    def url(self):
+        """Reutrns the API URL"""
+        return '{proto}://{host}{path}'.format(
+            proto=self.PROTO, host=self.HOST, path=self.PATH)
+
+    def apicall(self, action):
+        """Contact the API with the respective
+        user name, password and action call
+        """
+        params = {
+            'user_name': self._user,
+            'passwd': self._passwd,
+            'action': action,
+            'cid': self._cid,
+            'tid': self._tid
+        }
+        reply = get(self.url, params=params)
+        status_code = reply.status_code
+        if status_code == 200:
+            return reply
+        elif status_code == 401:
+            if reply.text == 'Invalid credentials':
+                raise InvalidCredentials()
+            else:
+                raise Unauthorized()
+        else:
+            raise APIError(reply.text)
+
+
+class TerminalConfigurator():
+    """Terminal configurator"""
+
+    PACMAN_CONF = '/etc/pacman.conf'
+    VPN_ARCHIVE = 'openvpn.tar.gz'
+
+    def __init__(self, vpndata, repoconf):
+        """Sets VPN configuration and repository configuration"""
+        self._vpndata = vpndata
+        self._repoconf = repoconf
+        self._tmpdir = mkdtemp()
+        self._within = False
+
+    def __enter__(self):
+        self._within = True
+        self._vpndata_path = join(self._tmpdir, self.VPN_ARCHIVE)
+        with open(self._vpndata_path, 'wb') as vpndata_file:
+            vpndata_file.write(self._vpndata)
+
+    def __call__(self):
+        """Actually perform configuration as root using sudo"""
+        if self._within:
+            chdir(self._tmpdir)
+            self.sudo('/usr/bin/tar', 'xzf', self.VPN_ARCHIVE,
+                      '-C', '/etc/openvpn')
+            pass  # TODO: implement
+        else:
+            raise Exception('Not within with statement')
+
+    def __exit__(self):
+        self._within = False
+
+
+if __name__ == '__main__':
+    options = docopt(__doc__)
+    ident = options['<ident>']
+    if ident is None:
+        tid = options['--tid']
+        cid = options['--cid']
+    else:
+        try:
+            tid, cid = ident.split('.')
+        except ValueError:
+            fail('Identifier must be like <tid>.<cid>')
+    user = options['--user']
+    if cid is None:
+        cid = input('Customer ID: ')
+    if tid is None:
+        tid = input('Terminal ID: ')
+    if not user:
+        user = input('User name: ')
+    passwd = getpass('Password: ')
+    client = APIClient(user, passwd, cid, tid)
+    try:
+        location = client.location
+        print('Determined terminal location:')
+        print()
+        print(location)
+        print()
+        yn = input('Is this correct? [y/N]: ')
+        if yn.lower() in ['y', 'yes', 'j', 'ja']:
+            print('Retrieving openVPN data')
+            vpndata = client.vpndata
+            print('Retrieving pacman.conf')
+            repoconf = client.repoconf
+            configurator = TerminalConfigurator(vpndata, repoconf)
+        else:
+            fail('Setup aborted by user')
+    except InvalidCredentials:
+        fail('Invalid credentials')
+    except Unauthorized:
+        fail('You are not authorized to set up this terminal')
+    except APIError as api_err:
+        fail(api_err)
+    else:
+        exit(0)
