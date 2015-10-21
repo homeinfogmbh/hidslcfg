@@ -6,16 +6,14 @@ pkgrel=1
 arch=('any')
 license=('GPL3')
 groups=('homeinfo')
-_pkgdir='pkg'
-_srcdir='src'
+pkgdir='pkg'
+srcdir='src'
 
 
 package_hidsl-cfg() {
     pkgdesc="HOMEINFO Digital Sigange Linux configuration scripts"
     depends=('python' 'python-docopt' 'python-requests' 'systemd' 'sudo' 'tar')
     install=${pkgname}.install
-    pkgdir="${_pkgdir}/${pkgname}"
-    srcdir="${_srcdir}/${pkgname}"
 
     # Install binaries
     install -d -m 755 "${pkgdir}/usr/bin"
@@ -34,8 +32,6 @@ package_hidsl-cfg() {
 
 package_hidsl-setup() {
     pkgdesc="HOMEINFO Digital Sigange Linux setup scripts"
-    pkgdir="${_pkgdir}/${pkgname}"
-    srcdir="${_srcdir}/${pkgname}"
 
     # TODO: implement
 }
