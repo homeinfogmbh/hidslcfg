@@ -22,10 +22,10 @@ from getpass import getpass
 from shutil import rmtree
 from tempfile import mkdtemp
 from subprocess import run, CalledProcessError, DEVNULL
+from time import sleep
 
 from docopt import docopt
 from requests import get
-from time import sleep
 
 
 __all__ = ['InvalidCredentials', 'Unauthorized', 'APIError',
