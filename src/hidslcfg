@@ -197,6 +197,9 @@ class Configurator():
     VPN_INST = '/usr/bin/tar xzf {arch} -C /etc/openvpn'
     HOSTNAME_INST = '/usr/bin/install -o root -g root -m 644 -T {src} {dst}'
 
+    SYSTEMD_TARGET = 'digital-signage.target'
+    SYSTEMD_CMD = '/usr/bin/systemctl set-default {target}'
+
     def __init__(self, tid, cid, vpndata, repoconf):
         """Sets VPN configuration and repository configuration"""
         self._tid = tid
@@ -225,7 +228,7 @@ class Configurator():
         result.check_returncode()
 
     def configure_pacman(self):
-        """Actually perform configuration of pacman.conf"""
+        """Install /etc/pacman.conf"""
         if self._tmpdir is not None:
             chdir(self._tmpdir)
             self.sudo(self.PACMAN_INST.format(
@@ -234,7 +237,7 @@ class Configurator():
             raise OutsideOfWithStatement('Not within with statement')
 
     def configure_openvpn(self):
-        """Actually perform configuration of openVPN"""
+        """Install openVPN configuration"""
         if self._tmpdir is not None:
             # Clean up openVPN config
             self.sudo('/usr/bin/rm /etc/openvpn/*')
@@ -245,7 +248,7 @@ class Configurator():
             raise OutsideOfWithStatement('Not within with statement')
 
     def configure_hostname(self):
-        """Actually perform configuration of openVPN"""
+        """Configure /etc/hostname"""
         if self._tmpdir is not None:
             chdir(self._tmpdir)
             hostname = '{tid}.{cid}'.format(tid=self._tid, cid=self._cid)
@@ -255,6 +258,10 @@ class Configurator():
                 src=self.HOSTNAME_FILE_SRC, dst=self.HOSTNAME_FILE_DST))
         else:
             raise OutsideOfWithStatement('Not within with statement')
+
+    def set_systemd_target(self):
+        """Set systemd default target to digital-signage.target"""
+        self.sudo(self.SYSTEMD_CMD.format(target=self.SYSTEMD_TARGET))
 
 
 if __name__ == '__main__':
@@ -328,6 +335,12 @@ if __name__ == '__main__':
                         fail('SUBPROCESS ERROR',
                              'Installation of /etc/hostname failed')
                     else:
-                        print()
-                        print('Setup completed successfully')
-                        exit(0)
+                        try:
+                            configurator.set_systemd_target()
+                        except CalledProcessError:
+                            fail('SUBPROCESS ERROR',
+                                 'Setting of systemd target failed')
+                        else:
+                            print()
+                            print('Setup completed successfully')
+                            exit(0)

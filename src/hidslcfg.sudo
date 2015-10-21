@@ -2,5 +2,6 @@ Cmnd_Alias CLEANUP_OPENVPN = /usr/bin/rm /etc/openvpn/*
 Cmnd_Alias HIDSL_CONFIGURE_OPENVPN = /usr/bin/tar xzf openvpn.tar.gz -C /etc/openvpn
 Cmnd_Alias HIDSL_CONFIGURE_PACMAN = /usr/bin/install -o root -g root -m 644 -T pacman.conf /etc/pacman.conf
 Cmnd_Alias HIDSL_CONFIGURE_HOSTNAME = /usr/bin/install -o root -g root -m 644 -T hostname /etc/hostname
+Cmnd_Alias HIDSL_RESET_TARGET = /usr/bin/systemctl set-default digital-signage.target
 
-hidslcfg ALL = NOPASSWD: CLEANUP_OPENVPN, HIDSL_CONFIGURE_OPENVPN, HIDSL_CONFIGURE_PACMAN, HIDSL_CONFIGURE_HOSTNAME
+hidslcfg ALL = NOPASSWD: CLEANUP_OPENVPN, HIDSL_CONFIGURE_OPENVPN, HIDSL_CONFIGURE_PACMAN, HIDSL_CONFIGURE_HOSTNAME, HIDSL_RESET_TARGET
