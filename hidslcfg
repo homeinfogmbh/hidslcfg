@@ -306,20 +306,27 @@ if __name__ == '__main__':
         fail('Setup aborted by user')
     else:
         with Configurator(tid, cid, vpndata, repoconf) as configurator:
+            print('Installing openVPN configuration')
             try:
                 configurator.configure_openvpn()
             except CalledProcessError:
                 fail('SUBPROCESS ERROR',
                      'Installation of openVPN configuration failed')
             else:
-                print('Successfully installed openVPN configuration')
+                print('Installing /etc/pacman.conf')
                 try:
                     configurator.configure_pacman()
                 except CalledProcessError:
                     fail('SUBPROCESS ERROR',
                          'Installation of /etc/pacman.conf failed')
                 else:
-                    print('Successfully installed pacman.conf')
-                    print()
-                    print('Setup completed successfully')
-                    exit(0)
+                    print('Installing /etc/hostname')
+                    try:
+                        configurator.configure_hostname()
+                    except CalledProcessError:
+                        fail('SUBPROCESS ERROR',
+                             'Installation of /etc/hostname failed')
+                    else:
+                        print()
+                        print('Setup completed successfully')
+                        exit(0)
