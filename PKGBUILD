@@ -16,7 +16,7 @@ package_hidsl-cfg() {
     install=${pkgname}.install
 
     # Install binaries
-    install -d -m 755 "${pkgdir}/usr/bin
+    install -d -m 755 "${pkgdir}/usr/bin"
     install -m 755 "${srcdir}/hidslcfg" "${pkgdir}/usr/bin"
 
     # Install sudoers file
