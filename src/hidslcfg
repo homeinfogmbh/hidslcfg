@@ -384,7 +384,7 @@ class Configurator():
         result = run(
             self.PING_CMD.format(host=self.VPN_SERVER), shell=True,
             stdin=DEVNULL, stdout=self._output, stderr=self._output)
-        return result.returncode == 0
+        result.check_returncode()
 
     def configure_hostname(self):
         """Configure /etc/hostname"""
