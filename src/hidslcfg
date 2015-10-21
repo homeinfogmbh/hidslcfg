@@ -146,9 +146,10 @@ def getdata(tid, cid, user, passwd, verbose):
         return (vpndata, repoconf)
 
 
-def configure(tid, cid, vpndata, repoconf, verbose):
+def configure(tid, cid, vpndata, repoconf, output, verbose):
     """Performs the terminal configuration"""
-    with Configurator(tid, cid, vpndata, repoconf) as configurator:
+    with Configurator(
+            tid, cid, vpndata, repoconf, output=output) as configurator:
         if verbose:
             print('Installing OpenVPN configuration')
         try:
@@ -410,4 +411,4 @@ if __name__ == '__main__':
         tid, cid, user, passwd, verbose = getopts(options)
         output = None if verbose else DEVNULL
         vpndata, repoconf = getdata(tid, cid, user, passwd, verbose)
-        configure(tid, cid, vpndata, repoconf, output=output, verbose)
+        configure(tid, cid, vpndata, repoconf, output, verbose)
