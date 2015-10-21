@@ -196,7 +196,19 @@ def configure(tid, cid, vpndata, repoconf, output, verbose):
                  'Setting of systemd target failed')
         print()
         print('Setup completed successfully')
-        exit(0)
+        try:
+            yn = input('Do you want to reboot now? [y/N]')
+        except KeyboardInterrupt:
+            reboot = False
+        else:
+            reboot = yn.lower() in ['y', 'yes']
+        if reboot:
+            run('/usr/bin/sudo -n /usr/bin/reboot')
+        else:
+            print('Okay, not rebooting',
+                  'You can reboot any time by pressing',
+                  '[CTRL]+[ALT]+[DEL]', sep='\n')
+            exit(0)
 
 
 class TerminalAddress():
