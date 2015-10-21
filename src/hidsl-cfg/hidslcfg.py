@@ -1,20 +1,3 @@
-#! /usr/bin/env python3
-"""HOMEINFO Digital Signage Linux configurator
-
-Maintainer: Richard Neumann <r.neumann@homeinfo.de>
-
-Usage:
-    hidslcfg <ident> [--user=<user_name>]
-    hidslcfg [options]
-
-Options:
-    --tid=<terminal_id>  Specifies the physical terminal identifier
-    --cid=<customer_id>  Specifies the customer identifier
-    --user=<user_name>   Specifies the setup user's name.
-    -h --help            Show this page.
-    -v --version         Show version.
-"""
-
 from sys import stderr
 from os import chdir
 from os.path import join
@@ -23,11 +6,10 @@ from shutil import rmtree
 from tempfile import mkdtemp
 from subprocess import run, CalledProcessError
 
-from docopt import docopt
 from requests import get
 
 
-__all__ = ['InvalidCredentials', 'Unauthorized', 'ErrorMessage', 'APIError',
+__all__ = ['InvalidCredentials', 'Unauthorized', 'APIError',
            'OutsideOfWithStatement', 'fail', 'TerminalAddress', 'APIClient',
            'Configurator']
 
@@ -255,79 +237,3 @@ class Configurator():
                 src=self.HOSTNAME_FILE_SRC, dst=self.HOSTNAME_FILE_DST))
         else:
             raise OutsideOfWithStatement('Not within with statement')
-
-
-if __name__ == '__main__':
-    options = docopt(__doc__)
-    ident = options['<ident>']
-    if ident is None:
-        tid = options['--tid']
-        cid = options['--cid']
-    else:
-        try:
-            tid, cid = ident.split('.')
-        except ValueError:
-            fail('INVALID IDENT',
-                 'Identifier must be like <tid>.<cid>')
-    user = options['--user']
-    try:
-        if cid is None:
-            cid = input('Customer ID: ')
-        if tid is None:
-            tid = input('Terminal ID: ')
-        if not user:
-            user = input('User name: ')
-    except KeyboardInterrupt:
-        fail('Setup aborted by user')
-    passwd = getpass('Password: ')
-    client = APIClient(user, passwd, cid, tid)
-    try:
-        location = client.location
-        print('Determined terminal location:')
-        print()
-        print(location)
-        print()
-        yn = input('Is this correct? [y/N]: ')
-        if yn.lower() in ['y', 'yes']:
-            print('Retrieving openVPN data')
-            vpndata = client.vpndata
-            print('Retrieving pacman.conf')
-            repoconf = client.repoconf
-        else:
-            fail('Setup aborted by user')
-    except InvalidCredentials:
-        fail('INVALID CREDENTIALS',
-             'Your user name and / or password are incorrect')
-    except Unauthorized:
-        fail('UNAUTHORIZED',
-             'You are not authorized to set up this terminal')
-    except APIError as api_err:
-        fail('WEB API ERROR', api_err)
-    except KeyboardInterrupt:
-        fail('Setup aborted by user')
-    else:
-        with Configurator(tid, cid, vpndata, repoconf) as configurator:
-            print('Installing openVPN configuration')
-            try:
-                configurator.configure_openvpn()
-            except CalledProcessError:
-                fail('SUBPROCESS ERROR',
-                     'Installation of openVPN configuration failed')
-            else:
-                print('Installing /etc/pacman.conf')
-                try:
-                    configurator.configure_pacman()
-                except CalledProcessError:
-                    fail('SUBPROCESS ERROR',
-                         'Installation of /etc/pacman.conf failed')
-                else:
-                    print('Installing /etc/hostname')
-                    try:
-                        configurator.configure_hostname()
-                    except CalledProcessError:
-                        fail('SUBPROCESS ERROR',
-                             'Installation of /etc/hostname failed')
-                    else:
-                        print()
-                        print('Setup completed successfully')
-                        exit(0)
