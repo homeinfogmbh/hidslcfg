@@ -15,15 +15,16 @@ Options:
     -v --version         Show version.
 """
 
-from docopt import docopt
 from sys import stderr
-from getpass import getpass
-from requests import get
-from tempfile import mkdtemp
+from os import chdir
 from os.path import join
-from posix import chdir
+from getpass import getpass
 from shutil import rmtree
+from tempfile import mkdtemp
 from subprocess import run, CalledProcessError
+
+from docopt import docopt
+from requests import get
 
 
 __all__ = ['InvalidCredentials', 'Unauthorized', 'ErrorMessage', 'APIError',
