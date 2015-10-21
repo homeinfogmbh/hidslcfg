@@ -26,8 +26,8 @@ package_hidsl-cfg() {
 
     # Install systemd units
     install -d -m 755 "${pkgdir}/usr/lib/systemd/system"
-    install -m 644 "${srcdir}/hidslcfg.service" "${pkgdir}/usr/lib/systemd/system/"
     install -m 644 "${srcdir}/hidslcfg.target" "${pkgdir}/usr/lib/systemd/system/"
+    install -m 644 "${srcdir}/hidslcfg@.service" "${pkgdir}/usr/lib/systemd/system/"
 }
 
 package_hidsl-setup() {
