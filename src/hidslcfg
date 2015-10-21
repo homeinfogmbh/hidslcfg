@@ -10,9 +10,8 @@ Usage:
 Options:
     --tid=<terminal_id>  Specifies the physical terminal identifier
     --cid=<customer_id>  Specifies the customer identifier
-    --user=<user_name>   Specifies the setup user's name.
-    -h --help            Show this page.
-    -v --version         Show version.
+    --user=<user_name>   Specifies the setup user's name
+    -h --help            Show this page
 """
 
 from sys import stderr
@@ -285,6 +284,7 @@ if __name__ == '__main__':
         if not user:
             user = input('User name: ')
     except KeyboardInterrupt:
+        print()
         fail('Setup aborted by user')
     passwd = getpass('Password: ')
     client = APIClient(user, passwd, cid, tid)
@@ -311,6 +311,7 @@ if __name__ == '__main__':
     except APIError as api_err:
         fail('WEB API ERROR', api_err)
     except KeyboardInterrupt:
+        print()
         fail('Setup aborted by user')
     else:
         with Configurator(tid, cid, vpndata, repoconf) as configurator:
@@ -335,6 +336,7 @@ if __name__ == '__main__':
                         fail('SUBPROCESS ERROR',
                              'Installation of /etc/hostname failed')
                     else:
+                        print('Setting systemd target to digital signage')
                         try:
                             configurator.set_systemd_target()
                         except CalledProcessError:
