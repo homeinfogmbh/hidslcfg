@@ -84,6 +84,7 @@ def fail(err, *msgs, exit_code=3):
 def getopts(options):
     """Parse options and get missing ones interactively"""
     ident = options['<ident>']
+    verbose = options['--verbose']
     if ident is None:
         tid = options['--tid']
         cid = options['--cid']
@@ -106,12 +107,11 @@ def getopts(options):
         print()
         fail('Setup aborted by user')
     else:
-        return (tid, cid, user, passwd)
+        return (tid, cid, user, passwd, verbose)
 
 
-def getdata(tid, cid, user, passwd):
+def getdata(tid, cid, user, passwd, verbose):
     """Get data from web API"""
-    global VERBOSE
     client = APIClient(user, passwd, cid, tid)
     try:
         location = client.location
@@ -121,12 +121,12 @@ def getdata(tid, cid, user, passwd):
         print()
         yn = input('Is this correct? [y/N]: ')
         if yn.lower() in ['y', 'yes']:
-            if VERBOSE:
+            if verbose:
                 print('Retrieving OpenVPN data')
             else:
                 print('Please wait...')
             vpndata = client.vpndata
-            if VERBOSE:
+            if verbose:
                 print('Retrieving pacman.conf')
             repoconf = client.repoconf
         else:
@@ -146,35 +146,34 @@ def getdata(tid, cid, user, passwd):
         return (vpndata, repoconf)
 
 
-def configure(tid, cid, vpndata, repoconf):
+def configure(tid, cid, vpndata, repoconf, verbose):
     """Performs the terminal configuration"""
-    global VERBOSE
     with Configurator(tid, cid, vpndata, repoconf) as configurator:
-        if VERBOSE:
+        if verbose:
             print('Installing OpenVPN configuration')
         try:
             configurator.configure_openvpn()
         except CalledProcessError:
             fail('SUBPROCESS ERROR',
                  'Installation of OpenVPN configuration failed')
-        if VERBOSE:
+        if verbose:
             print('Restarting OpenVPN')
         try:
             configurator.restart_vpn()
         except CalledProcessError:
             fail('SUBPROCESS ERROR',
                  'Restart of OpenVPN server failed')
-        if VERBOSE:
+        if verbose:
             print('Waiting for OpenVPN server to start')
         sleep(3)
-        if VERBOSE:
+        if verbose:
             print('Checking OpenVPN connection')
         try:
             configurator.test_vpn()
         except CalledProcessError:
             fail('SUBPROCESS ERROR',
                  'Cannot contact OpenVPN server')
-        if VERBOSE:
+        if verbose:
             print('Installing /etc/pacman.conf')
         try:
             configurator.configure_pacman()
@@ -187,7 +186,7 @@ def configure(tid, cid, vpndata, repoconf):
         except CalledProcessError:
             fail('SUBPROCESS ERROR',
                  'Installation of /etc/hostname failed')
-        if VERBOSE:
+        if verbose:
             print('Setting systemd target to digital signage')
         try:
             configurator.set_systemd_target()
@@ -325,12 +324,13 @@ class Configurator():
     PING_CMD = '/usr/bin/ping -W 1 -c 5 {host}'
     VPN_SERVER = '10.8.0.1'
 
-    def __init__(self, tid, cid, vpndata, repoconf):
+    def __init__(self, tid, cid, vpndata, repoconf, output=DEVNULL):
         """Sets VPN configuration and repository configuration"""
         self._tid = tid
         self._cid = cid
         self._vpndata = vpndata
         self._repoconf = repoconf
+        self._output = output
         self._tmpdir = None
 
     def __enter__(self):
@@ -349,10 +349,9 @@ class Configurator():
 
     def sudo(self, cmd):
         """Run a command as root using sudo"""
-        global REDIR
         result = run(
             '/usr/bin/sudo -n {cmd}'.format(cmd=cmd), shell=True,
-            stdin=DEVNULL, stdout=REDIR, stderr=REDIR)
+            stdin=DEVNULL, stdout=self._output, stderr=self._output)
         result.check_returncode()
 
     def configure_pacman(self):
@@ -381,10 +380,9 @@ class Configurator():
 
     def test_vpn(self):
         """Set systemd default target to digital-signage.target"""
-        global REDIR
         result = run(
             self.PING_CMD.format(host=self.VPN_SERVER), shell=True,
-            stdin=DEVNULL, stdout=REDIR, stderr=REDIR)
+            stdin=DEVNULL, stdout=self._output, stderr=self._output)
         return result.returncode == 0
 
     def configure_hostname(self):
@@ -409,9 +407,7 @@ if __name__ == '__main__':
         fail('Refusing to run as root!')
     else:
         options = docopt(__doc__)
-        global VERBOSE, REDIR
-        VERBOSE = options['--verbose']
-        REDIR = None if VERBOSE else DEVNULL
-        tid, cid, user, passwd = getopts(options)
-        vpndata, repoconf = getdata(tid, cid, user, passwd)
-        configure(tid, cid, vpndata, repoconf)
+        tid, cid, user, passwd, verbose = getopts(options)
+        output = None if verbose else DEVNULL
+        vpndata, repoconf = getdata(tid, cid, user, passwd, verbose)
+        configure(tid, cid, vpndata, repoconf, output=output, verbose)
