@@ -123,6 +123,8 @@ def getdata(tid, cid, user, passwd):
         if yn.lower() in ['y', 'yes']:
             if VERBOSE:
                 print('Retrieving OpenVPN data')
+            else:
+                print('Please wait...')
             vpndata = client.vpndata
             if VERBOSE:
                 print('Retrieving pacman.conf')
@@ -411,7 +413,5 @@ if __name__ == '__main__':
         VERBOSE = options['--verbose']
         REDIR = None if VERBOSE else DEVNULL
         tid, cid, user, passwd = getopts(options)
-        if not VERBOSE:
-            print('Please wait...')
         vpndata, repoconf = getdata(tid, cid, user, passwd)
         configure(tid, cid, vpndata, repoconf)
