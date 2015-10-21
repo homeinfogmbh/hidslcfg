@@ -24,7 +24,6 @@ from os.path import join
 from posix import chdir
 from shutil import rmtree
 from subprocess import run, CalledProcessError
-from itertools import chain
 
 
 __all__ = ['InvalidCredentials', 'Unauthorized', 'ErrorMessage', 'APIError',
@@ -187,9 +186,12 @@ class APIClient():
 class Configurator():
     """Terminal configurator"""
 
-    PACMAN_CONF = 'pacman.conf'
-    PACMAN_CONF_PATH = join('/etc', PACMAN_CONF)
+    PACMAN_CONF_SRC = 'pacman.conf'
+    PACMAN_CONF_DST = '/etc/pacman.conf'
     VPN_ARCHIVE = 'openvpn.tar.gz'
+
+    PACMAN_INST = '/usr/bin/install -o root -g root -m 644 -T {src} {dst}'
+    VPN_INST = '/usr/bin/tar xzf {arch} -C /etc/openvpn'
 
     def __init__(self, vpndata, repoconf):
         """Sets VPN configuration and repository configuration"""
@@ -210,30 +212,27 @@ class Configurator():
         self._tmpdir = None
         rmtree(self._tmpdir)
 
-    def sudo(self, *args):
+    def sudo(self, cmd):
         """Run a command as root using sudo"""
-        result = run(chain(['/usr/bin/sudo', '-n'], args))
+        result = run('/usr/bin/sudo -n {cmd}'.format(cmd=cmd), shell=True)
         result.check_returncode()
-
-    def configure_openvpn(self):
-        """Actually perform configuration of openVPN"""
-        if self._tmpdir is not None:
-            chdir(self._tmpdir)
-            # Unpack openVPN archive
-            self.sudo(
-                '/usr/bin/tar', 'xzf', self.VPN_ARCHIVE,
-                '-C', '/etc/openvpn')
-        else:
-            raise Exception('Not within with statement')
 
     def configure_pacman(self):
         """Actually perform configuration of pacman.conf"""
         if self._within:
             chdir(self._tmpdir)
             # Install pacman.conf
-            self.sudo(
-                '/usr/bin/install', '-o', 'root', '-g', 'root', '-m', '644',
-                '-T', self.PACMAN_CONF, self.PACMAN_CONF_PATH)
+            self.sudo(self.PACMAN_INST.format(
+                src=self.PACMAN_CONF_SRC, dst=self.PACMAN_CONF_DST))
+        else:
+            raise Exception('Not within with statement')
+
+    def configure_openvpn(self):
+        """Actually perform configuration of openVPN"""
+        if self._tmpdir is not None:
+            chdir(self._tmpdir)
+            # Unpack openVPN archive
+            self.sudo(self.VPN_INST.format(arch=self.VPN_ARCHIVE))
         else:
             raise Exception('Not within with statement')
 
