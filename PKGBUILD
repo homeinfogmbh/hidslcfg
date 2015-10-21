@@ -11,11 +11,11 @@ srcdir='src'
 
 
 package_hidsl-cfg() {
-    pkgdesc="HOMEINFO Digital Sigange Linux configuration scripts"
-    depends=('python' 'python-docopt' 'python-requests' 'systemd' 'sudo' 'tar')
-    install=${pkgname}.install
-    pkgdir="${pkgdir}/${pkgname}"
-    srcdir="${srcdir}/${pkgname}"
+    local pkgdesc="HOMEINFO Digital Sigange Linux configuration scripts"
+    local depends=('python' 'python-docopt' 'python-requests' 'systemd' 'sudo' 'tar')
+    local install=${pkgname}.install
+    local pkgdir="${pkgdir}/${pkgname}"
+    local srcdir="${srcdir}/${pkgname}"
 
     # Install binaries
     install -d -m 755 "${pkgdir}/usr/bin"
