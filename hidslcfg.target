@@ -1,0 +1,14 @@
+# HOMEINFO Digital Signage Linux configuration
+#
+# (C) 2015: HOMEINFO - Digitale Informationssysteme GmbH
+#
+# Maintainer: Richard Neumann <r.neumann@homeinfo.de>
+#
+########################################################
+
+[Unit]
+Description=HOMEINFO Digital Signage Linux configuration
+Requires=multi-user.target
+After=multi-user.target
+Conflicts=rescue.service rescue.target getty.target getty@tty1.service
+Wants=hidslcfg.target
