@@ -29,6 +29,10 @@ package_hidsl-cfg() {
     install -d -m 755 "${pkgdir}/usr/lib/systemd/system"
     install -m 644 "${srcdir}/hidslcfg.target" "${pkgdir}/usr/lib/systemd/system/"
     install -m 644 "${srcdir}/hidslcfg@.service" "${pkgdir}/usr/lib/systemd/system/"
+
+    # Install HOME files
+    install -d -m 550 "${pkgdir}/home/hidslcfg"
+    install -m 440 -T "${srcdir}/bash_profile" "${pkgdir}/home/hidslcfg/.bash_profile"
 }
 
 package_hidsl-setup() {

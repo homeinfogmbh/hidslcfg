@@ -1,0 +1,6 @@
+echo "Welcome to the HOMEINFO Digital Signage Linux configuration"
+echo
+echo "Run \033[1mhidslcfg\033[0m to perform the setup"
+echo
+echo "For usage instructions run \033[1mhidslcfg --help\033[0m"
+echo
