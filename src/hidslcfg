@@ -4,13 +4,14 @@
 Maintainer: Richard Neumann <r.neumann@homeinfo.de>
 
 Usage:
-    hidslcfg <ident> [--user=<user_name>]
+    hidslcfg <ident> [--user=<user_name>] [--verbose]
     hidslcfg [options]
 
 Options:
     --tid=<terminal_id>  Specifies the physical terminal identifier
     --cid=<customer_id>  Specifies the customer identifier
     --user=<user_name>   Specifies the setup user's name
+    --verbose            Be gassy
     -h --help            Show this page
 """
 
@@ -110,6 +111,7 @@ def getopts(options):
 
 def getdata(tid, cid, user, passwd):
     """Get data from web API"""
+    global VERBOSE
     client = APIClient(user, passwd, cid, tid)
     try:
         location = client.location
@@ -119,9 +121,11 @@ def getdata(tid, cid, user, passwd):
         print()
         yn = input('Is this correct? [y/N]: ')
         if yn.lower() in ['y', 'yes']:
-            print('Retrieving OpenVPN data')
+            if VERBOSE:
+                print('Retrieving OpenVPN data')
             vpndata = client.vpndata
-            print('Retrieving pacman.conf')
+            if VERBOSE:
+                print('Retrieving pacman.conf')
             repoconf = client.repoconf
         else:
             fail('Setup aborted by user')
@@ -141,28 +145,35 @@ def getdata(tid, cid, user, passwd):
 
 
 def configure(tid, cid, vpndata, repoconf):
+    """Performs the terminal configuration"""
+    global VERBOSE
     with Configurator(tid, cid, vpndata, repoconf) as configurator:
-        print('Installing OpenVPN configuration')
+        if VERBOSE:
+            print('Installing OpenVPN configuration')
         try:
             configurator.configure_openvpn()
         except CalledProcessError:
             fail('SUBPROCESS ERROR',
                  'Installation of OpenVPN configuration failed')
-        print('Restarting OpenVPN')
+        if VERBOSE:
+            print('Restarting OpenVPN')
         try:
             configurator.restart_vpn()
         except CalledProcessError:
             fail('SUBPROCESS ERROR',
                  'Restart of OpenVPN server failed')
-        print('Waiting for OpenVPN server to start')
+        if VERBOSE:
+            print('Waiting for OpenVPN server to start')
         sleep(3)
-        print('Checking OpenVPN connection')
+        if VERBOSE:
+            print('Checking OpenVPN connection')
         try:
             configurator.test_vpn()
         except CalledProcessError:
             fail('SUBPROCESS ERROR',
                  'Cannot contact OpenVPN server')
-        print('Installing /etc/pacman.conf')
+        if VERBOSE:
+            print('Installing /etc/pacman.conf')
         try:
             configurator.configure_pacman()
         except CalledProcessError:
@@ -174,7 +185,8 @@ def configure(tid, cid, vpndata, repoconf):
         except CalledProcessError:
             fail('SUBPROCESS ERROR',
                  'Installation of /etc/hostname failed')
-        print('Setting systemd target to digital signage')
+        if VERBOSE:
+            print('Setting systemd target to digital signage')
         try:
             configurator.set_systemd_target()
         except CalledProcessError:
@@ -335,9 +347,10 @@ class Configurator():
 
     def sudo(self, cmd):
         """Run a command as root using sudo"""
+        global REDIR
         result = run(
             '/usr/bin/sudo -n {cmd}'.format(cmd=cmd), shell=True,
-            stdin=DEVNULL, stdout=DEVNULL, stderr=DEVNULL)
+            stdin=DEVNULL, stdout=REDIR, stderr=REDIR)
         result.check_returncode()
 
     def configure_pacman(self):
@@ -366,9 +379,10 @@ class Configurator():
 
     def test_vpn(self):
         """Set systemd default target to digital-signage.target"""
+        global REDIR
         result = run(
             self.PING_CMD.format(host=self.VPN_SERVER), shell=True,
-            stdin=DEVNULL, stdout=DEVNULL, stderr=DEVNULL)
+            stdin=DEVNULL, stdout=REDIR, stderr=REDIR)
         return result.returncode == 0
 
     def configure_hostname(self):
@@ -393,6 +407,11 @@ if __name__ == '__main__':
         fail('Refusing to run as root!')
     else:
         options = docopt(__doc__)
+        global VERBOSE, REDIR
+        VERBOSE = options['--verbose']
+        REDIR = None if VERBOSE else DEVNULL
         tid, cid, user, passwd = getopts(options)
+        if not VERBOSE:
+            print('Please wait...')
         vpndata, repoconf = getdata(tid, cid, user, passwd)
         configure(tid, cid, vpndata, repoconf)
