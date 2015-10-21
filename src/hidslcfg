@@ -204,7 +204,7 @@ def configure(tid, cid, vpndata, repoconf, output, verbose):
         else:
             reboot = yn.lower() in ['y', 'yes']
         if reboot:
-            run('/usr/bin/sudo -n /usr/bin/reboot')
+            run('/usr/bin/sudo -n /usr/bin/reboot', shell=True)
         else:
             print('Okay, not rebooting',
                   'You can reboot any time by pressing',
