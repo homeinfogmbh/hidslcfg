@@ -15,15 +15,16 @@ Options:
 """
 
 from sys import stderr
-from os import chdir
+from os import chdir, geteuid
 from os.path import join
 from getpass import getpass
 from shutil import rmtree
 from tempfile import mkdtemp
-from subprocess import run, CalledProcessError
+from subprocess import run, CalledProcessError, DEVNULL
 
 from docopt import docopt
 from requests import get
+from time import sleep
 
 
 __all__ = ['InvalidCredentials', 'Unauthorized', 'APIError',
@@ -77,6 +78,111 @@ def fail(err, *msgs, exit_code=3):
     print('\033[0m', end=' ', file=stderr)
     print(*msgs, file=stderr)
     exit(exit_code)
+
+
+def getopts(options):
+    """Parse options and get missing ones interactively"""
+    ident = options['<ident>']
+    if ident is None:
+        tid = options['--tid']
+        cid = options['--cid']
+    else:
+        try:
+            tid, cid = ident.split('.')
+        except ValueError:
+            fail('INVALID IDENT',
+                 'Identifier must be like <tid>.<cid>')
+    user = options['--user']
+    try:
+        if cid is None:
+            cid = input('Customer ID: ')
+        if tid is None:
+            tid = input('Terminal ID: ')
+        if not user:
+            user = input('User name: ')
+        passwd = getpass('Password: ')
+    except KeyboardInterrupt:
+        print()
+        fail('Setup aborted by user')
+    else:
+        return (tid, cid, user, passwd)
+
+
+def getdata(tid, cid, user, passwd):
+    """Get data from web API"""
+    client = APIClient(user, passwd, cid, tid)
+    try:
+        location = client.location
+        print('Determined terminal location:')
+        print()
+        print(location)
+        print()
+        yn = input('Is this correct? [y/N]: ')
+        if yn.lower() in ['y', 'yes']:
+            print('Retrieving OpenVPN data')
+            vpndata = client.vpndata
+            print('Retrieving pacman.conf')
+            repoconf = client.repoconf
+        else:
+            fail('Setup aborted by user')
+    except InvalidCredentials:
+        fail('INVALID CREDENTIALS',
+             'Your user name and / or password are incorrect')
+    except Unauthorized:
+        fail('UNAUTHORIZED',
+             'You are not authorized to set up this terminal')
+    except APIError as api_err:
+        fail('WEB API ERROR', api_err)
+    except KeyboardInterrupt:
+        print()
+        fail('Setup aborted by user')
+    else:
+        return (vpndata, repoconf)
+
+
+def configure(tid, cid, vpndata, repoconf):
+    with Configurator(tid, cid, vpndata, repoconf) as configurator:
+        print('Installing OpenVPN configuration')
+        try:
+            configurator.configure_openvpn()
+        except CalledProcessError:
+            fail('SUBPROCESS ERROR',
+                 'Installation of OpenVPN configuration failed')
+        print('Restarting OpenVPN')
+        try:
+            configurator.restart_vpn()
+        except CalledProcessError:
+            fail('SUBPROCESS ERROR',
+                 'Restart of OpenVPN server failed')
+        print('Waiting for OpenVPN server to start')
+        sleep(3)
+        print('Checking OpenVPN connection')
+        try:
+            configurator.test_vpn()
+        except CalledProcessError:
+            fail('SUBPROCESS ERROR',
+                 'Cannot contact OpenVPN server')
+        print('Installing /etc/pacman.conf')
+        try:
+            configurator.configure_pacman()
+        except CalledProcessError:
+            fail('SUBPROCESS ERROR',
+                 'Installation of /etc/pacman.conf failed')
+            print('Installing /etc/hostname')
+        try:
+            configurator.configure_hostname()
+        except CalledProcessError:
+            fail('SUBPROCESS ERROR',
+                 'Installation of /etc/hostname failed')
+        print('Setting systemd target to digital signage')
+        try:
+            configurator.set_systemd_target()
+        except CalledProcessError:
+            fail('SUBPROCESS ERROR',
+                 'Setting of systemd target failed')
+        print()
+        print('Setup completed successfully')
+        exit(0)
 
 
 class TerminalAddress():
@@ -199,6 +305,12 @@ class Configurator():
     SYSTEMD_TARGET = 'digital-signage.target'
     SYSTEMD_CMD = '/usr/bin/systemctl set-default {target}'
 
+    VPN_CMD = '/usr/bin/systemctl restart openvpn@{instance}.service'
+    VPN_CONFIG = 'terminals'
+
+    PING_CMD = '/usr/bin/ping -W 1 -c 5 {host}'
+    VPN_SERVER = '10.8.0.1'
+
     def __init__(self, tid, cid, vpndata, repoconf):
         """Sets VPN configuration and repository configuration"""
         self._tid = tid
@@ -223,7 +335,9 @@ class Configurator():
 
     def sudo(self, cmd):
         """Run a command as root using sudo"""
-        result = run('/usr/bin/sudo -n {cmd}'.format(cmd=cmd), shell=True)
+        result = run(
+            '/usr/bin/sudo -n {cmd}'.format(cmd=cmd), shell=True,
+            stdin=DEVNULL, stdour=DEVNULL, stderr=DEVNULL)
         result.check_returncode()
 
     def configure_pacman(self):
@@ -236,15 +350,26 @@ class Configurator():
             raise OutsideOfWithStatement('Not within with statement')
 
     def configure_openvpn(self):
-        """Install openVPN configuration"""
+        """Install OpenVPN configuration"""
         if self._tmpdir is not None:
-            # Clean up openVPN config
+            # Clean up OpenVPN config
             self.sudo('/usr/bin/rm /etc/openvpn/*')
-            # Unpack openVPN archive
+            # Unpack OpenVPN archive
             chdir(self._tmpdir)
             self.sudo(self.VPN_INST.format(arch=self.VPN_ARCHIVE))
         else:
             raise OutsideOfWithStatement('Not within with statement')
+
+    def restart_vpn(self):
+        """Set systemd default target to digital-signage.target"""
+        self.sudo(self.VPN_CMD.format(instance=self.VPN_CONFIG))
+
+    def test_vpn(self):
+        """Set systemd default target to digital-signage.target"""
+        result = run(
+            self.PING_CMD.format(host=self.VPN_SERVER), shell=True,
+            stdin=DEVNULL, stdour=DEVNULL, stderr=DEVNULL)
+        return result.returncode == 0
 
     def configure_hostname(self):
         """Configure /etc/hostname"""
@@ -264,85 +389,10 @@ class Configurator():
 
 
 if __name__ == '__main__':
-    options = docopt(__doc__)
-    ident = options['<ident>']
-    if ident is None:
-        tid = options['--tid']
-        cid = options['--cid']
+    if geteuid() == 0:
+        fail('Refusing to run as root!')
     else:
-        try:
-            tid, cid = ident.split('.')
-        except ValueError:
-            fail('INVALID IDENT',
-                 'Identifier must be like <tid>.<cid>')
-    user = options['--user']
-    try:
-        if cid is None:
-            cid = input('Customer ID: ')
-        if tid is None:
-            tid = input('Terminal ID: ')
-        if not user:
-            user = input('User name: ')
-    except KeyboardInterrupt:
-        print()
-        fail('Setup aborted by user')
-    passwd = getpass('Password: ')
-    client = APIClient(user, passwd, cid, tid)
-    try:
-        location = client.location
-        print('Determined terminal location:')
-        print()
-        print(location)
-        print()
-        yn = input('Is this correct? [y/N]: ')
-        if yn.lower() in ['y', 'yes']:
-            print('Retrieving openVPN data')
-            vpndata = client.vpndata
-            print('Retrieving pacman.conf')
-            repoconf = client.repoconf
-        else:
-            fail('Setup aborted by user')
-    except InvalidCredentials:
-        fail('INVALID CREDENTIALS',
-             'Your user name and / or password are incorrect')
-    except Unauthorized:
-        fail('UNAUTHORIZED',
-             'You are not authorized to set up this terminal')
-    except APIError as api_err:
-        fail('WEB API ERROR', api_err)
-    except KeyboardInterrupt:
-        print()
-        fail('Setup aborted by user')
-    else:
-        with Configurator(tid, cid, vpndata, repoconf) as configurator:
-            print('Installing openVPN configuration')
-            try:
-                configurator.configure_openvpn()
-            except CalledProcessError:
-                fail('SUBPROCESS ERROR',
-                     'Installation of openVPN configuration failed')
-            else:
-                print('Installing /etc/pacman.conf')
-                try:
-                    configurator.configure_pacman()
-                except CalledProcessError:
-                    fail('SUBPROCESS ERROR',
-                         'Installation of /etc/pacman.conf failed')
-                else:
-                    print('Installing /etc/hostname')
-                    try:
-                        configurator.configure_hostname()
-                    except CalledProcessError:
-                        fail('SUBPROCESS ERROR',
-                             'Installation of /etc/hostname failed')
-                    else:
-                        print('Setting systemd target to digital signage')
-                        try:
-                            configurator.set_systemd_target()
-                        except CalledProcessError:
-                            fail('SUBPROCESS ERROR',
-                                 'Setting of systemd target failed')
-                        else:
-                            print()
-                            print('Setup completed successfully')
-                            exit(0)
+        options = docopt(__doc__)
+        tid, cid, user, passwd = getopts(options)
+        vpndata, repoconf = getdata(tid, cid, user, passwd)
+        configure(tid, cid, vpndata, repoconf)
