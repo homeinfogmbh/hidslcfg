@@ -337,7 +337,7 @@ class Configurator():
         """Run a command as root using sudo"""
         result = run(
             '/usr/bin/sudo -n {cmd}'.format(cmd=cmd), shell=True,
-            stdin=DEVNULL, stdour=DEVNULL, stderr=DEVNULL)
+            stdin=DEVNULL, stdout=DEVNULL, stderr=DEVNULL)
         result.check_returncode()
 
     def configure_pacman(self):
@@ -368,7 +368,7 @@ class Configurator():
         """Set systemd default target to digital-signage.target"""
         result = run(
             self.PING_CMD.format(host=self.VPN_SERVER), shell=True,
-            stdin=DEVNULL, stdour=DEVNULL, stderr=DEVNULL)
+            stdin=DEVNULL, stdout=DEVNULL, stderr=DEVNULL)
         return result.returncode == 0
 
     def configure_hostname(self):
