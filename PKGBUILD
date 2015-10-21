@@ -19,6 +19,7 @@ package_hidsl-cfg() {
     srcdir="${srcdir}/${pkgname}"
 
     # Install python module
+    cd "${srcdir}"
     python "${srcdir}/setup.py" install --root="${pkgdir}" 
 
     # Install binaries
