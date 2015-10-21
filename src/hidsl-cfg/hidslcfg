@@ -15,8 +15,247 @@ Options:
     -v --version         Show version.
 """
 
+from sys import stderr
+from os import chdir
+from os.path import join
+from getpass import getpass
+from shutil import rmtree
+from tempfile import mkdtemp
+from subprocess import run, CalledProcessError
+
 from docopt import docopt
-from hidslcfg import *
+from requests import get
+
+
+__all__ = ['InvalidCredentials', 'Unauthorized', 'APIError',
+           'OutsideOfWithStatement', 'fail', 'TerminalAddress', 'APIClient',
+           'Configurator']
+
+
+class InvalidCredentials(Exception):
+    """Indicates invalid credentials"""
+    pass
+
+
+class Unauthorized(Exception):
+    """Indicates that the user is not allowed
+    to setup the respective terminal
+    """
+    pass
+
+
+class ErrorMessage(Exception):
+    """Raisable error message"""
+
+    def __init__(self, msg):
+        """Sets the text"""
+        super().__init__()
+        self._msg = msg
+
+    def __str__(self):
+        """Returns the message"""
+        return self._msg
+
+
+class APIError(ErrorMessage):
+    """Indicates a user error"""
+
+    pass
+
+
+class OutsideOfWithStatement(ErrorMessage):
+    """Indicates that an operation that requires being
+    within a with statement was executed outside of it
+    """
+
+    pass
+
+
+def fail(err, *msgs, exit_code=3):
+    """Print message to stderr and exit"""
+    print('\033[91m\033[1m', end='', file=stderr)  # Red and bold
+    print(err, end='', file=stderr)
+    print('\033[0m', end=' ', file=stderr)
+    print(*msgs, file=stderr)
+    exit(exit_code)
+
+
+class TerminalAddress():
+    """Terminal address data container"""
+
+    MAIN_SEP = ', '
+    SUB_SEP = ' '
+
+    def __init__(self, s):
+        """Generate terminal address from a string"""
+        street_houseno, zip_city = s.split(self.MAIN_SEP)
+        *street, self.houseno = street_houseno.split(self.SUB_SEP)
+        self.street = self.SUB_SEP.join(street)
+        self.zip, *city = zip_city.split(self.SUB_SEP)
+        self.city = self.SUB_SEP.join(city)
+
+    def __str__(self):
+        """Converts the address into a human readable form"""
+        return ('Street:        {street}\n'
+                'House number:  {houseno}\n'
+                'ZIP code:      {zip}\n'
+                'City:          {city}').format(
+            street=self.street, houseno=self.houseno,
+            zip=self.zip, city=self.city)
+
+
+class APIClient():
+    """Class to retrieve data from the web API"""
+
+    PROTO = 'https'
+    HOST = 'tls.homeinfo.de'
+    PATH = '/termgr/setup'
+
+    def __init__(self, user, passwd, cid, tid):
+        """Initialize with credentials"""
+        self._user = user
+        self._passwd = passwd
+        self._cid = cid
+        self._tid = tid
+
+    def __call__(self):
+        """Get configuration data"""
+        return (self.vpndata, self.repoconf)
+
+    @property
+    def valid(self):
+        """Verifies the set credentials"""
+        status_code, text = self.apicall('verify')
+        if status_code == 200:
+            return True
+        elif status_code == 401:
+            if text == 'Invalid credentials':
+                raise InvalidCredentials()
+            else:
+                raise Unauthorized()
+        else:
+            raise APIError(text)
+
+    @property
+    def location(self):
+        """Gets the terminal location"""
+        reply = self.apicall('location')
+        return TerminalAddress(reply.text)
+
+    @property
+    def vpndata(self):
+        """Gets the terminal's VPN keys and configuration"""
+        reply = self.apicall('vpn_data')
+        return reply.content
+
+    @property
+    def repoconf(self):
+        """Returns the pacman.conf"""
+        reply = self.apicall('repo_config')
+        return reply.text
+
+    @property
+    def url(self):
+        """Reutrns the API URL"""
+        return '{proto}://{host}{path}'.format(
+            proto=self.PROTO, host=self.HOST, path=self.PATH)
+
+    def apicall(self, action):
+        """Contact the API with the respective
+        user name, password and action call
+        """
+        params = {
+            'user_name': self._user,
+            'passwd': self._passwd,
+            'action': action,
+            'cid': self._cid,
+            'tid': self._tid
+        }
+        reply = get(self.url, params=params)
+        status_code = reply.status_code
+        if status_code == 200:
+            return reply
+        elif status_code == 401:
+            if reply.text == 'Invalid credentials':
+                raise InvalidCredentials()
+            else:
+                raise Unauthorized()
+        else:
+            raise APIError(reply.text)
+
+
+class Configurator():
+    """Terminal configurator"""
+
+    PACMAN_CONF_SRC = 'pacman.conf'
+    PACMAN_CONF_DST = '/etc/pacman.conf'
+    VPN_ARCHIVE = 'openvpn.tar.gz'
+    HOSTNAME_FILE_SRC = 'hostname'
+    HOSTNAME_FILE_DST = '/etc/hostname'
+
+    PACMAN_INST = '/usr/bin/install -o root -g root -m 644 -T {src} {dst}'
+    VPN_INST = '/usr/bin/tar xzf {arch} -C /etc/openvpn'
+    HOSTNAME_INST = '/usr/bin/install -o root -g root -m 644 -T {src} {dst}'
+
+    def __init__(self, tid, cid, vpndata, repoconf):
+        """Sets VPN configuration and repository configuration"""
+        self._tid = tid
+        self._cid = cid
+        self._vpndata = vpndata
+        self._repoconf = repoconf
+        self._tmpdir = None
+
+    def __enter__(self):
+        self._tmpdir = mkdtemp()
+        pacmanconf_path = join(self._tmpdir, self.PACMAN_CONF_SRC)
+        vpndata_path = join(self._tmpdir, self.VPN_ARCHIVE)
+        with open(pacmanconf_path, 'w') as pacmanconf_file:
+            pacmanconf_file.write(repoconf)
+        with open(vpndata_path, 'wb') as vpndata_file:
+            vpndata_file.write(self._vpndata)
+        return self
+
+    def __exit__(self, *_):
+        rmtree(self._tmpdir)
+        self._tmpdir = None
+
+    def sudo(self, cmd):
+        """Run a command as root using sudo"""
+        result = run('/usr/bin/sudo -n {cmd}'.format(cmd=cmd), shell=True)
+        result.check_returncode()
+
+    def configure_pacman(self):
+        """Actually perform configuration of pacman.conf"""
+        if self._tmpdir is not None:
+            chdir(self._tmpdir)
+            self.sudo(self.PACMAN_INST.format(
+                src=self.PACMAN_CONF_SRC, dst=self.PACMAN_CONF_DST))
+        else:
+            raise OutsideOfWithStatement('Not within with statement')
+
+    def configure_openvpn(self):
+        """Actually perform configuration of openVPN"""
+        if self._tmpdir is not None:
+            # Clean up openVPN config
+            self.sudo('/usr/bin/rm /etc/openvpn/*')
+            # Unpack openVPN archive
+            chdir(self._tmpdir)
+            self.sudo(self.VPN_INST.format(arch=self.VPN_ARCHIVE))
+        else:
+            raise OutsideOfWithStatement('Not within with statement')
+
+    def configure_hostname(self):
+        """Actually perform configuration of openVPN"""
+        if self._tmpdir is not None:
+            chdir(self._tmpdir)
+            hostname = '{tid}.{cid}'.format(tid=self._tid, cid=self._cid)
+            with open(self.HOSTNAME_FILE_SRC, 'w') as hostname_tmp:
+                hostname_tmp.write(hostname)
+            self.sudo(self.HOSTNAME_INST.format(
+                src=self.HOSTNAME_FILE_SRC, dst=self.HOSTNAME_FILE_DST))
+        else:
+            raise OutsideOfWithStatement('Not within with statement')
+
 
 if __name__ == '__main__':
     options = docopt(__doc__)
