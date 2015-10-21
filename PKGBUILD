@@ -33,9 +33,9 @@ package_hidsl-cfg() {
 }
 
 package_hidsl-setup() {
-    pkgdesc="HOMEINFO Digital Sigange Linux setup scripts"
-    pkgdir="${pkgdir}/${pkgname}"
-    srcdir="${srcdir}/${pkgname}"
+    local pkgdesc="HOMEINFO Digital Sigange Linux setup scripts"
+    local pkgdir="${pkgdir}/${pkgname}"
+    local srcdir="${srcdir}/${pkgname}"
 
     # TODO: implement
 }
