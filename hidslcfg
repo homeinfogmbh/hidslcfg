@@ -189,12 +189,17 @@ class Configurator():
     PACMAN_CONF_SRC = 'pacman.conf'
     PACMAN_CONF_DST = '/etc/pacman.conf'
     VPN_ARCHIVE = 'openvpn.tar.gz'
+    HOSTNAME_FILE_SRC = 'hostname'
+    HOSTNAME_FILE_DST = '/etc/hostname'
 
     PACMAN_INST = '/usr/bin/install -o root -g root -m 644 -T {src} {dst}'
     VPN_INST = '/usr/bin/tar xzf {arch} -C /etc/openvpn'
+    HOSTNAME_INST = '/usr/bin/install -o root -g root -m 644 -T {src} {dst}'
 
-    def __init__(self, vpndata, repoconf):
+    def __init__(self, tid, cid, vpndata, repoconf):
         """Sets VPN configuration and repository configuration"""
+        self._tid = tid
+        self._cid = cid
         self._vpndata = vpndata
         self._repoconf = repoconf
         self._tmpdir = None
@@ -222,7 +227,6 @@ class Configurator():
         """Actually perform configuration of pacman.conf"""
         if self._tmpdir is not None:
             chdir(self._tmpdir)
-            # Install pacman.conf
             self.sudo(self.PACMAN_INST.format(
                 src=self.PACMAN_CONF_SRC, dst=self.PACMAN_CONF_DST))
         else:
@@ -231,9 +235,23 @@ class Configurator():
     def configure_openvpn(self):
         """Actually perform configuration of openVPN"""
         if self._tmpdir is not None:
-            chdir(self._tmpdir)
+            # Clean up openVPN config
+            self.sudo('/usr/bin/rm /etc/openvpn/*')
             # Unpack openVPN archive
+            chdir(self._tmpdir)
             self.sudo(self.VPN_INST.format(arch=self.VPN_ARCHIVE))
+        else:
+            raise OutsideOfWithStatement('Not within with statement')
+
+    def configure_hostname(self):
+        """Actually perform configuration of openVPN"""
+        if self._tmpdir is not None:
+            chdir(self._tmpdir)
+            hostname = '{tid}.{cid}'.format(tid=self._tid, cid=self._cid)
+            with open(self.HOSTNAME_FILE_SRC, 'w') as hostname_tmp:
+                hostname_tmp.write(hostname)
+            self.sudo(self.HOSTNAME_INST.format(
+                src=self.HOSTNAME_FILE_SRC, dst=self.HOSTNAME_FILE_DST))
         else:
             raise OutsideOfWithStatement('Not within with statement')
 
@@ -251,12 +269,15 @@ if __name__ == '__main__':
             fail('INVALID IDENT',
                  'Identifier must be like <tid>.<cid>')
     user = options['--user']
-    if cid is None:
-        cid = input('Customer ID: ')
-    if tid is None:
-        tid = input('Terminal ID: ')
-    if not user:
-        user = input('User name: ')
+    try:
+        if cid is None:
+            cid = input('Customer ID: ')
+        if tid is None:
+            tid = input('Terminal ID: ')
+        if not user:
+            user = input('User name: ')
+    except KeyboardInterrupt:
+        fail('Setup aborted by user')
     passwd = getpass('Password: ')
     client = APIClient(user, passwd, cid, tid)
     try:
@@ -284,7 +305,7 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         fail('Setup aborted by user')
     else:
-        with Configurator(vpndata, repoconf) as configurator:
+        with Configurator(tid, cid, vpndata, repoconf) as configurator:
             try:
                 configurator.configure_openvpn()
             except CalledProcessError:

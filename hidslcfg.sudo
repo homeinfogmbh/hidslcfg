@@ -1,4 +1,6 @@
+Cmnd_Alias CLEANUP_OPENVPN = /usr/bin/rm /etc/openvpn/*
 Cmnd_Alias HIDSL_CONFIGURE_OPENVPN = /usr/bin/tar xzf openvpn.tar.gz -C /etc/openvpn
 Cmnd_Alias HIDSL_CONFIGURE_PACMAN = /usr/bin/install -o root -g root -m 644 -T pacman.conf /etc/pacman.conf
+Cmnd_Alias HIDSL_CONFIGURE_HOSTNAME = /usr/bin/install -o root -g root -m 644 -T hostname /etc/hostname
 
-hidslcfg localhost = (root) NOPASSWD: HIDSL_CONFIGURE_OPENVPN, HIDSL_CONFIGURE_PACMAN
+hidslcfg ALL = NOPASSWD: HIDSL_CONFIGURE_OPENVPN, HIDSL_CONFIGURE_PACMAN
