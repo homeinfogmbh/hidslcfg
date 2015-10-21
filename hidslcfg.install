@@ -1,0 +1,26 @@
+#! /bin/bash
+
+HIDSLCFG_USER="hidslcfg"
+HIDSLCFG_HOME="/home/${HIDSLCFG_USER}"
+
+
+_fix_modes() {
+    chown -R ${HIDSLCFG_USER}.${HIDSLCFG_USER} "${HIDSLCFG_HOME}"
+}
+
+
+pre_install() {
+    if ( ! id -u ${HIDSLCFG_USER} > /dev/null 2> /dev/null ); then
+        useradd -mU ${HIDSLCFG_USER}
+    fi
+}
+
+
+post_install() {
+    _fix_modes
+}
+
+
+post_upgrade() {
+    _fix_modes
+}
