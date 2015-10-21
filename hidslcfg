@@ -27,7 +27,7 @@ from subprocess import run, CalledProcessError
 
 
 __all__ = ['InvalidCredentials', 'Unauthorized', 'ErrorMessage', 'APIError',
-           'OutOfWithStatement', 'fail', 'TerminalAddress', 'APIClient',
+           'OutsideOfWithStatement', 'fail', 'TerminalAddress', 'APIClient',
            'Configurator']
 
 
@@ -62,7 +62,7 @@ class APIError(ErrorMessage):
     pass
 
 
-class OutOfWithStatement(ErrorMessage):
+class OutsideOfWithStatement(ErrorMessage):
     """Indicates that an operation that requires being
     within a with statement was executed outside of it
     """
@@ -144,13 +144,13 @@ class APIClient():
     @property
     def vpndata(self):
         """Gets the terminal's VPN keys and configuration"""
-        reply = self.apicall('vpn')
+        reply = self.apicall('vpn_data')
         return reply.content
 
     @property
     def repoconf(self):
         """Returns the pacman.conf"""
-        reply = self.apicall('repo')
+        reply = self.apicall('repo_config')
         return reply.text
 
     @property
@@ -201,16 +201,17 @@ class Configurator():
 
     def __enter__(self):
         self._tmpdir = mkdtemp()
-        pacmanconf_path = join(self._tmpdir, self.PACMAN_CONF)
+        pacmanconf_path = join(self._tmpdir, self.PACMAN_CONF_SRC)
         vpndata_path = join(self._tmpdir, self.VPN_ARCHIVE)
         with open(pacmanconf_path, 'w') as pacmanconf_file:
             pacmanconf_file.write(repoconf)
         with open(vpndata_path, 'wb') as vpndata_file:
             vpndata_file.write(self._vpndata)
+        return self
 
-    def __exit__(self):
-        self._tmpdir = None
+    def __exit__(self, *_):
         rmtree(self._tmpdir)
+        self._tmpdir = None
 
     def sudo(self, cmd):
         """Run a command as root using sudo"""
@@ -219,13 +220,13 @@ class Configurator():
 
     def configure_pacman(self):
         """Actually perform configuration of pacman.conf"""
-        if self._within:
+        if self._tmpdir is not None:
             chdir(self._tmpdir)
             # Install pacman.conf
             self.sudo(self.PACMAN_INST.format(
                 src=self.PACMAN_CONF_SRC, dst=self.PACMAN_CONF_DST))
         else:
-            raise Exception('Not within with statement')
+            raise OutsideOfWithStatement('Not within with statement')
 
     def configure_openvpn(self):
         """Actually perform configuration of openVPN"""
@@ -234,7 +235,7 @@ class Configurator():
             # Unpack openVPN archive
             self.sudo(self.VPN_INST.format(arch=self.VPN_ARCHIVE))
         else:
-            raise Exception('Not within with statement')
+            raise OutsideOfWithStatement('Not within with statement')
 
 
 if __name__ == '__main__':
@@ -247,7 +248,8 @@ if __name__ == '__main__':
         try:
             tid, cid = ident.split('.')
         except ValueError:
-            fail('Identifier must be like <tid>.<cid>')
+            fail('INVALID IDENT',
+                 'Identifier must be like <tid>.<cid>')
     user = options['--user']
     if cid is None:
         cid = input('Customer ID: ')
@@ -264,7 +266,7 @@ if __name__ == '__main__':
         print(location)
         print()
         yn = input('Is this correct? [y/N]: ')
-        if yn.lower() in ['y', 'yes', 'j', 'ja']:
+        if yn.lower() in ['y', 'yes']:
             print('Retrieving openVPN data')
             vpndata = client.vpndata
             print('Retrieving pacman.conf')
@@ -272,27 +274,31 @@ if __name__ == '__main__':
         else:
             fail('Setup aborted by user')
     except InvalidCredentials:
-        fail('Invalid credentials')
+        fail('INVALID CREDENTIALS',
+             'Your user name and / or password are incorrect')
     except Unauthorized:
-        fail('You are not authorized to set up this terminal')
+        fail('UNAUTHORIZED',
+             'You are not authorized to set up this terminal')
     except APIError as api_err:
-        fail(api_err)
+        fail('WEB API ERROR', api_err)
+    except KeyboardInterrupt:
+        fail('Setup aborted by user')
     else:
         with Configurator(vpndata, repoconf) as configurator:
             try:
                 configurator.configure_openvpn()
             except CalledProcessError:
-                pass  # TODO: Implement
-            except:
-                pass  # TODO: implement
+                fail('SUBPROCESS ERROR',
+                     'Installation of openVPN configuration failed')
             else:
                 print('Successfully installed openVPN configuration')
                 try:
-                    configurator.configure_openvpn()
+                    configurator.configure_pacman()
                 except CalledProcessError:
-                    pass  # TODO: Implement
-                except:
-                    pass  # TODO: implement
+                    fail('SUBPROCESS ERROR',
+                         'Installation of /etc/pacman.conf failed')
                 else:
                     print('Successfully installed pacman.conf')
+                    print()
+                    print('Setup completed successfully')
                     exit(0)
