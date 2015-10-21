@@ -15,6 +15,7 @@ package_hidsl-cfg() {
     depends=('python' 'python-docopt' 'python-requests' 'systemd' 'sudo' 'tar')
     makedepends=('python')
     install=${pkgname}.install
+    pkgdir="${pkgdir}/${pkgname}"
 
     # Install python module
     python "${srcdir}/setup.py" install --root="${pkgdir}" 
@@ -36,6 +37,7 @@ package_hidsl-cfg() {
 
 package_hidsl-setup() {
     pkgdesc="HOMEINFO Digital Sigange Linux setup scripts"
+    pkgdir="${pkgdir}/${pkgname}"
 
     # TODO: implement
 }
