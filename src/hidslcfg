@@ -199,6 +199,7 @@ def configure(tid, cid, vpndata, repoconf, output, verbose):
         try:
             yn = input('Do you want to reboot now? [y/N]')
         except KeyboardInterrupt:
+            print()
             reboot = False
         else:
             reboot = yn.lower() in ['y', 'yes']

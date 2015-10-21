@@ -1,7 +1,7 @@
 # Maintainer: Richard Neumann aka rne. <r dot neumann at homeinfo fullstop de>
 
 pkgname=('hidsl-cfg' 'hidsl-setup')
-pkgver='1.1.3'
+pkgver='1.1.4'
 pkgrel=1
 arch=('any')
 license=('GPL3')
