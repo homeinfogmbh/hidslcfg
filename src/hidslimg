@@ -3,13 +3,16 @@
 
 Usage:
     hidslimg backup <partition> <image> [--compression=<x>]
-    hidslimg restore <image> <device> [--efi [--size=<size>] [--i386]]
+    hidslimg restore <image> <device> [--efi [--size=<size>] [--i386]] \
+[--rootfs=<fs>]
 
 Options:
     --compression=<x>  Compress tar archive using <x>
     --efi              Restore for (U)EFI boot
     --size=<size>      Create EFI partition of specified size [default: +100M]
     --i386             When restoring for (U)EFI boot, use a 32 bit EFI loader
+    --rootfs=<fs>      Specifies the root file system to be used \
+[default: ext4]
     -h --help          Show this page.
     -v --version       Show version.
 """
@@ -26,6 +29,9 @@ import tarfile
 from docopt import docopt
 
 
+__all__ = ['PartType', 'Partition', 'Partitioner', 'Chroot']
+
+
 def fail(err, *msgs, exit_code=3):
     """Print message to stderr and exit"""
     print('\033[91m\033[1m', end='', file=stderr)  # Red and bold
@@ -33,6 +39,50 @@ def fail(err, *msgs, exit_code=3):
     print('\033[0m', end=' ', file=stderr)
     print(*msgs, file=stderr)
     exit(exit_code)
+
+
+def mkparts(device, efi=False):
+    """Create partitions"""
+    partitioner = Partitioner(device)
+    if efi:
+        efi_size = options['--size']
+        partitioner.new(gpt=True)
+        partitioner.add(end=efi_size)
+        partitioner.typ(PartType.EFI)
+    else:
+        partitioner.new()
+    # Create root partition
+    partitioner.add()
+    partitioner.typ(PartType.LINUX)
+    if not efi:
+        partitioner.boot()
+
+
+def mkfs(rootpartpath, rootfs, efipartpath=None):
+    """Create file systems"""
+    if efi:
+        efipart = Partition(efipartpath)
+        efipart.format('vfat', label='EFI')
+    rootpart = Partition(rootpartpath)
+    rootpart.format(rootfs, label='root')
+
+
+def restore(image, rootpartpath, efi=False, efi32=False):
+    """Restore the image"""
+    with Partition(rootpartpath) as rootpart:
+        rootpart.restore(image)
+        if efi:
+            esp = '/boot/efi'
+            esppath = join(rootpart.mountpoint, esp)
+            makedirs(esp, mode=0o755, exist_ok=True)
+            efipart = Partition(efipartpath)
+            efipart.mount(esppath)
+        chroot = Chroot(rootpart.mountpoint)
+        if efi:
+            chroot.mkboot(efi=True, efi32=efi32, esp=esp)
+            efipart.umount()
+        else:
+            chroot.mkboot(bootdev=rootpartpath, efi, efi32, esp)
 
 
 class PartType():
@@ -296,20 +346,10 @@ if __name__ == '__main__':
         device = options['<device>']
         efi = options['--efi']
         efi32 = options['--i386']
+        rootfs = options['--rootfs']
         # Partition disk
-        partitioner = Partitioner(device)
-        if efi:
-            efi_size = options['--size']
-            partitioner.new(gpt=True)
-            partitioner.add(end=efi_size)
-            partitioner.typ(PartType.EFI)
-        else:
-            partitioner.new()
-        # Create root partition
-        partitioner.add()
-        partitioner.typ(PartType.LINUX)
-        if not efi:
-            partitioner.boot()
+        mkparts(device, efi=efi)
+        # Set partition paths
         efipartno = 1 if efi else None
         rootpartno = 2 if efi else 1
         # Compensate for mmcblkXpY naming scheme
@@ -321,23 +361,6 @@ if __name__ == '__main__':
             efipartpath = pattern.format(device, efipartno)
         rootpartpath = pattern.format(device, rootpartno)
         # Format partitions
-        if efi:
-            efipart = Partition(efipartpath)
-            efipart.format('vfat', label='EFI')
-        rootpart = Partition(efipartpath)
-        rootpart.format('ext4', label='root')
+        mkfs(rootpartpath, rootfs, efipartpath=efipartpath)
         # Restore image
-        with Partition(rootpartpath) as rootpart:
-            rootpart.restore(image)
-            if efi:
-                esp = '/boot/efi'
-                esppath = join(rootpart.mountpoint, esp)
-                makedirs(esp, mode=0o755, exist_ok=True)
-                efipart = Partition(efipartpath)
-                efipart.mount(esppath)
-            chroot = Chroot(rootpart.mountpoint)
-            if efi:
-                chroot.mkboot(efi=True, efi32=efi32, esp=esp)
-                efipart.umount()
-            else:
-                chroot.mkboot(bootdev=rootpartpath, efi, efi32, esp)
+        restore(image, rootpartpath, efi=efi, efi32=efi32)

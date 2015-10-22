@@ -22,6 +22,7 @@ from getpass import getpass
 from shutil import rmtree
 from tempfile import mkdtemp
 from subprocess import run, CalledProcessError, DEVNULL
+from contextlib import suppress
 from time import sleep
 
 from docopt import docopt
@@ -381,7 +382,8 @@ class Configurator():
         """Install OpenVPN configuration"""
         if self._tmpdir is not None:
             # Clean up OpenVPN config
-            self.sudo('/usr/bin/rm /etc/openvpn/*')
+            with suppress(CalledProcessError):
+                self.sudo('/usr/bin/rm /etc/openvpn/*')
             # Unpack OpenVPN archive
             chdir(self._tmpdir)
             self.sudo(self.VPN_INST.format(arch=self.VPN_ARCHIVE))
