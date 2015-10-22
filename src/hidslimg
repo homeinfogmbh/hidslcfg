@@ -1,125 +1,343 @@
 #! /usr/bin/env python3
-"""HOMEINFO Digital Signage Linux setup
+"""HOMEINFO Digital Signage Linux image manager
 
 Usage:
-    hi_img (backup | restore) <device> <image>
+    hidslimg backup <partition> <image> [--compression=<x>]
+    hidslimg restore <image> <device> [--efi [--size=<size>] [--i386]]
 
 Options:
-    -h --help           Show this page.
-    -v --version        Show version.
-    --user=<user_name>  Specifies the setup user's name.
-    --passwd=<passwd>   Specifies the setup user's password.
+    --compression=<x>  Compress tar archive using <x>
+    --efi              Restore for (U)EFI boot
+    --size=<size>      Create EFI partition of specified size [default: +100M]
+    --i386             When restoring for (U)EFI boot, use a 32 bit EFI loader
+    -h --help          Show this page.
+    -v --version       Show version.
 """
 
-from docopt import docopt
 from sys import stderr
-from homeinfo.lib.strf import Terminal
-from os import system
+from os import listdir, makedirs
+from os.path import join, basename
+from tempfile import TemporaryFile, mkdtemp
+from subprocess import run
+from itertools import chain
+
 import tarfile
-from tempfile import NamedTemporaryFile, TemporaryDirectory
 
-options = docopt(__doc__)
-
-image_dir = '/usr/local/share/homeinfo/images'
-api_url = 'https://tls.homeinfo.de/termgr/setup'
-
-
-class InvalidUserName(Exception):
-    pass
-
-
-class WrongPassword(Exception):
-    pass
-
-
-class NotAllowed(Exception):
-    pass
+from docopt import docopt
 
 
 def fail(err, *msgs, exit_code=3):
     """Print message to stderr and exit"""
-    print(Terminal.red(Terminal.bold(err)), *msgs, file=stderr)
+    print('\033[91m\033[1m', end='', file=stderr)  # Red and bold
+    print(err, end='', file=stderr)
+    print('\033[0m', end=' ', file=stderr)
+    print(*msgs, file=stderr)
     exit(exit_code)
 
 
-class Mode():
-    """Partition backup mode"""
+class PartType():
+    """Partition types"""
 
-    CREATE = 0
-    RESTORE = 1
+    EFI = 'C12A7328-F81F-11D2-BA4B-00A0C93EC93B'
+    LINUX = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'
 
 
-class BlockDevice():
-    """A UNIX-like block device wrapper"""
+class Partition():
+    """A Linux file system mount point"""
+
+    _MOUNT = '/usr/bin/mount'
+    _UMOUNT = '/usr/bin/umount'
+    _MKFS = '/usr/bin/mkfs'
+
+    _WRITE_MODES = {
+        None: 'w',
+        'gz': 'w:gz',
+        'bz2': 'w:bz2',
+        'xz': 'w:xz'
+    }
 
     def __init__(self, path):
-        """Sets the device path"""
+        """Sets the path to the partition device file"""
         self._path = path
+        self._mountpoint = None
+
+    def __enter__(self):
+        """Enters a with statement"""
+        self.mount(mkdtemp())
+        return self
+
+    def __exit__(self, *_):
+        """Exits a with statement"""
+        self.umount()
 
     @property
     def path(self):
-        """Returns the device path"""
+        """Returns the mount point's path"""
         return self._path
 
     @property
-    def mbr(self):
-        """Gets master boot record of the device"""
-        with open(self.device, 'rb') as dev:
-            return dev.read(512)
+    def mountpoint(self):
+        """Returns the mount point"""
+        return self._mountpoint
 
-    @mbr.setter
-    def mbr(self, data):
-        """Writes master boot record to the disk"""
-        if len(data) != 512:
-            raise ValueError('MBR must be exactly 512 bytes in size')
+    def _addfiles(self, tar):
+        """Add files to the specified tar archive"""
+        for inode in listdir(self.path):
+            path = join(self.path, inode)
+            tar.add(path, arcname=inode)
+
+    def mount(self, mountpoint):
+        """Mounts the partition"""
+        if self._mountpoint is None:
+            self._mountpoint = mountpoint
+            cmd = '{mount} {part} {mountpoint}'.format(
+                mount=self._MOUNT, part=self.path,
+                mountpoint=self._mountpoint)
+            return run(cmd, shell=True).exitcode == 0
+
+    def umount(self):
+        """Un-mounts the partition"""
+        if self._mountpoint is None:
+            cmd = '{umount} {part}'.format(
+                umount=self._UMOUNT, part=self.path)
+            return run(cmd, shell=True).exitcode == 0
         else:
-            with open(self.path, 'r+b') as dev:
-                dev.seek(0)
-                dev.write(data)
+            cmd = '{umount} {mountpoint}'.format(
+                umount=self._UMOUNT, mountpoint=self._mountpoint)
+            self._mountpoint = None
+            return run(cmd, shell=True).exitcode == 0
 
-    def partition(self, n):
-        """Get partition no. n"""
-        return ''.join(self.path, str(n))
+    def format(self, fs, label=None):
+        """Format the partition with the specified file system"""
+        cmd = '{mkfs}.{fs}'.format(mkfs=self._MKFS, fs=fs)
+        if label is not None:
+            if fs not in ['fat', 'vfat']:
+                pattern = '-L {0}'
+            else:
+                pattern = '-n {0}'
+            label = pattern.format(label)
+            cmd = '{cmd} {label}'.format(cmd=cmd, label=label)
+        cmd = '{cmd} {part}'.format(cmd=cmd, part=self.path)
+        return run(cmd, shell=True).returncode == 0
+
+    def backup(self, name=None, compression=None, autosuffix=True):
+        """Backup the mount point into a tar archive of
+        the given file name with the given compression.
+        If name is None, return bytes of the archive.
+        """
+        try:
+            mode = self._WRITE_MODES[compression]
+        except KeyError:
+            msg = 'Compression must be one of'
+            comps = [comp for comp in self._WRITE_MODES]
+            msg = '{msg}: {comps}'.format(msg=msg, comps=comps)
+            raise ValueError(msg) from None
+        else:
+            if name is None:
+                with TemporaryFile(mode='w+b') as tmp:
+                    with tarfile.open(mode=mode, fileobj=tmp) as tar:
+                        self._addfiles(tar)
+                    tmp.seek(0)
+                    return tmp.read()
+            else:
+                if autosuffix:
+                    tar_suffix = '.tar'
+                    if compression is not None:
+                        comp_suffix = '.{0}'.format(compression)
+                    else:
+                        comp_suffix = ''
+                    if comp_suffix:
+                        suffix = '{0}{1}'.format(tar_suffix, comp_suffix)
+                    else:
+                        suffix = tar_suffix
+                    if not name.endswith(suffix):
+                        if not name.endswith(tar_suffix):
+                            name += suffix
+                        else:
+                            name += comp_suffix
+                with tarfile.open(name=name, mode=mode) as tar:
+                    self._addfiles(tar)
+
+    def restore(self, img):
+        """Restores a backup image"""
+        with tarfile.open(name=img, mode='r:*') as tar:
+            tar.extractall(path=self.mountpoint)
 
 
-class PartitionImage():
-    """Represents a partition image"""
+class Partitioner():
+    """Class to partition a block device"""
 
-    def __init__(self, file):
-        """Loads a partition image from a backup file"""
-        self._file = file
+    _ECHO = '/usr/bin/echo'
+    _FDISK = '/usr/bin/fdisk'
+
+    def __init__(self, blockdevice):
+        """Sets the respective block device"""
+        self._blockdevice = blockdevice
 
     @property
-    def file(self):
-        """Returns the backup file"""
-        return self._file
-
-    def create(self, device, label=None):
-        """Creates a partition image"""
-        with tarfile.open(name=self.file, mode='w') as archive:
-            with NamedTemporaryFile('wb') as mbr:
-                mbr.write(device.mbr)
-            archive.add(mbr.name, 'mbr')
-            with TemporaryDirectory() as mount:
-                cmd = ' '.join(['/usr/bin/mount', device.drive(0), mount])
-                system(cmd)
-                device.partition(0)
-                archive.add(mount.name, 'mbr')
-
-
-class PartitionBackup():
-    """Represents a partition backup"""
+    def blockdevice(self):
+        """Returns the block device"""
+        return self._blockdevice
 
     @property
-    def mbr(self):
-        """Gets the master boot record of a device"""
-        if self.mode == Mode.CREATE:
-            pass  # TODO: Implement
-        elif self.mode == Mode.RESTORE:
-            return self.image.mbr
+    def dev(self):
+        """Alias to self.blockdevice"""
+        return self.blockdevice
 
-    @mbr.setter
-    def mbr(self, data):
-        """Writes the master boot record to the device"""
-        pass    # TODO: Implement
-     
+    def fdisk(self, *commands):
+        """Returns a fdisk proxy"""
+        cmds = '"{cmds}\nw\n"'.format(cmds='\n'.join(commands))
+        cmd = '{echo} -e {cmds} | {fdisk} {dev}'.format(
+            echo=self._ECHO, cmds=cmds, fdisk=self._FDISK,
+            dev=self.blockdevice)
+        return run(cmd).returncode == 0
+
+    def new(self, gpt=False):
+        """Creates a new DOS partition table if gpt
+        is False else a new GPT table will be created
+        """
+        if gpt:
+            return self.fdisk('g')
+        else:
+            return self.fdisk('o')
+
+    def add(self, typ=None, num=None, start=None, end=None):
+        """Adds a partition"""
+        if typ is None:
+            typ = ''
+        else:
+            typ = str(typ)
+        if num is None:
+            num = ''
+        else:
+            num = str(num)
+        if start is None:
+            start = ''
+        else:
+            start = str(start)
+        if end is None:
+            end = ''
+        else:
+            end = str(end)
+        return self.fdisk('n', typ, num, start, end)
+
+    def typ(self, typ, num=None):
+        """Changes the partition type"""
+        if num is None:
+            num = ''
+        else:
+            num = str(num)
+        return self.fdisk('t', num, typ)
+
+    def boot(self, num=None):
+        """Makes the partition bootable"""
+        if num is None:
+            num = ''
+        else:
+            num = str(num)
+        return self.fdisk('a', num)
+
+
+class Chroot():
+    """Chroot manager"""
+
+    _CHROOT = '/usr/bin/arch-chroot'
+    _GRUB_INSTALL = '/usr/bin/grub-install'
+    _GRUB_MKCONFIG = '/usr/bin/grub-mkconfig'
+
+    def __init__(self, root):
+        """Sets the chroot root"""
+        self._root = root
+
+    @property
+    def root(self):
+        """Returns the chroot root"""
+        return self._root
+
+    def _exec(self, cmd, *args):
+        """Execute commands inside the chroot jail"""
+        cmd_args = ' '.join(chain([cmd], args))
+        cmd = '{chroot} {cmd_args}'.format(
+            chroot=self._CHROOT, cmd_args=cmd_args)
+        return run(cmd).returncode == 0
+
+    def mkboot(self, bootdev=None, efi=False, efi32=False, esp=None):
+        """Installs the bootloader"""
+        cmd = self._GRUB_INSTALL
+        recheck = '--recheck'
+        if efi or efi32:
+            self._exec('/usr/bin/modprobe', 'efivarfs')
+            if efi32:
+                target = '--target=i386-efi'
+            else:
+                target = '--target=x86_64-efi'
+            efi_dir = '--efi-directory={0}'.format(esp)
+            ident = '--bootloader-id=grub'
+            args = [target, efi_dir, ident, recheck]
+        else:
+            args = ['--target=i386-pc', recheck, bootdev]
+        if self._exec(cmd, *args):
+            cmd = self._GRUB_MKCONFIG
+            args = ['-o', '/boot/grub/grub.cfg']
+            self._exec(cmd, *args)
+
+
+if __name__ == '__main__':
+    options = docopt(__doc__)
+    backup = options['backup']
+    restore = options['restore']
+    image = options['<image>']
+    if backup:
+        partition = options['<partition>']
+        compression = options['--compression']
+        with Partition(partition) as part:
+            part.backup(name=image, compression=compression)
+    elif restore:
+        device = options['<device>']
+        efi = options['--efi']
+        efi32 = options['--i386']
+        # Partition disk
+        partitioner = Partitioner(device)
+        if efi:
+            efi_size = options['--size']
+            partitioner.new(gpt=True)
+            partitioner.add(end=efi_size)
+            partitioner.typ(PartType.EFI)
+        else:
+            partitioner.new()
+        # Create root partition
+        partitioner.add()
+        partitioner.typ(PartType.LINUX)
+        if not efi:
+            partitioner.boot()
+        efipartno = 1 if efi else None
+        rootpartno = 2 if efi else 1
+        # Compensate for mmcblkXpY naming scheme
+        if basename(device).startswith('mmcblk'):
+            pattern = '{0}p{1}'
+        else:
+            pattern = '{0}{1}'
+        if efi:
+            efipartpath = pattern.format(device, efipartno)
+        rootpartpath = pattern.format(device, rootpartno)
+        # Format partitions
+        if efi:
+            efipart = Partition(efipartpath)
+            efipart.format('vfat', label='EFI')
+        rootpart = Partition(efipartpath)
+        rootpart.format('ext4', label='root')
+        # Restore image
+        with Partition(rootpartpath) as rootpart:
+            rootpart.restore(image)
+            if efi:
+                esp = '/boot/efi'
+                esppath = join(rootpart.mountpoint, esp)
+                makedirs(esp, mode=0o755, exist_ok=True)
+                efipart = Partition(efipartpath)
+                efipart.mount(esppath)
+            chroot = Chroot(rootpart.mountpoint)
+            if efi:
+                chroot.mkboot(efi=True, efi32=efi32, esp=esp)
+                efipart.umount()
+            else:
+                chroot.mkboot(bootdev=rootpartpath, efi, efi32, esp)

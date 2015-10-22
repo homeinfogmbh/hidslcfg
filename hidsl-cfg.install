@@ -5,6 +5,11 @@ HIDSLCFG_HOME="/home/${HIDSLCFG_USER}"
 
 
 _fix_modes() {
+    chmod 550 "${HIDSLCFG_HOME}"
+}
+
+
+_fix_own() {
     chown -R ${HIDSLCFG_USER}.${HIDSLCFG_USER} "${HIDSLCFG_HOME}"
 }
 
@@ -13,14 +18,15 @@ pre_install() {
     if ( ! id -u ${HIDSLCFG_USER} > /dev/null 2> /dev/null ); then
         useradd -mU ${HIDSLCFG_USER}
     fi
+    _fix_modes
 }
 
 
 post_install() {
-    _fix_modes
+    _fix_own
 }
 
 
 post_upgrade() {
-    _fix_modes
+    _fix_own
 }
