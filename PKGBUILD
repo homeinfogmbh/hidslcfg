@@ -1,6 +1,6 @@
 # Maintainer: Richard Neumann aka rne. <r dot neumann at homeinfo fullstop de>
 
-pkgname=('hidsl-cfg' 'hidsl-setup')
+pkgname=('hidsl-cfg' 'hidsl-img')
 pkgver='1.1.6'
 pkgrel=1
 arch=('any')
@@ -11,7 +11,7 @@ srcdir='src'
 
 
 package_hidsl-cfg() {
-    pkgdesc="HOMEINFO Digital Sigange Linux configuration scripts"
+    pkgdesc="HOMEINFO Digital Sigange Linux configuration script"
     depends=('python' 'python-docopt' 'python-requests' 'systemd' 'sudo' 'tar')
     replaces=('hi-setup')
     install=${pkgname}.install
@@ -35,8 +35,11 @@ package_hidsl-cfg() {
     install -m 440 -T "${srcdir}/bash_profile" "${pkgdir}/home/hidslcfg/.bash_profile"
 }
 
-package_hidsl-setup() {
-    pkgdesc="HOMEINFO Digital Sigange Linux setup scripts"
+package_hidsl-img() {
+    pkgdesc="HOMEINFO Digital Sigange Linux setup script"
+    depends=('python' 'python-docopt' 'arch')
 
-    # TODO: implement
+    # Install binaries
+    install -d -m 755 "${pkgdir}/usr/bin"
+    install -m 755 "${srcdir}/hidslimg" "${pkgdir}/usr/bin"
 }
