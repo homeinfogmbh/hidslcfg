@@ -327,7 +327,7 @@ class Configurator():
     HOSTNAME_FILE_DST = '/etc/hostname'
 
     PACMAN_INST = '/usr/bin/install -o root -g root -m 644 -T {src} {dst}'
-    VPN_INST = '/usr/bin/tar xzf {arch} -C /etc/openvpn'
+    VPN_INST = '/usr/bin/tar xf {arch} -C /etc/openvpn'
     HOSTNAME_INST = '/usr/bin/install -o root -g root -m 644 -T {src} {dst}'
 
     SYSTEMD_TARGET = 'digital-signage.target'
