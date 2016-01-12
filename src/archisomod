@@ -386,7 +386,9 @@ class IsoFileModifier():
                 grub_standalone_gen = GrubStandalone(timestamp)
                 grub_standalone_img = grub_standalone_gen()
                 # Write GRUB image to ISO
-                with open(self.EFI32_LOADER, 'wb') as grub_img:
+                grub_standalone_iso = join(
+                    working_directory, self.EFI32_LOADER)
+                with open(grub_standalone_iso, 'wb') as grub_img:
                     grub_img.write(grub_standalone_img)
                 # Update EFI image with GRUB image
                 img_path = join(working_directory, self.EFI32_IMG)
