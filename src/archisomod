@@ -1,0 +1,402 @@
+#! /usr/bin/env python3
+"""archisomod
+
+Modifies ArchLinux ISO files with custom extensions
+
+Usage:
+    archisomod <iso_file> <out_file> [options]
+
+Options:
+    --root32=<i386_root>    Select source for override of 32 bit system
+    --root64=<x64_64_root>  Select source for override of 32 bit system
+    --efi32                 Generate a 32-bit EFI loader image
+"""
+from tempfile import TemporaryDirectory, NamedTemporaryFile
+from subprocess import run, check_output
+from os import chdir, unlink, getcwd
+from os.path import join, splitext, basename, dirname
+from pathlib import Path
+from shutil import rmtree
+from hashlib import md5
+from datetime import date
+
+from docopt import docopt
+
+
+GRUB_CFG = '\n'.join([
+    'insmod part_gpt',
+    'insmod part_msdos',
+    'insmod fat',
+    '',
+    'insmod efi_gop',
+    'insmod efi_uga',
+    'insmod video_bochs',
+    'insmod video_cirrus',
+    '',
+    'insmod font',
+    '',
+    'if loadfont "${prefix}/fonts/unicode.pf2" ; then',
+    'insmod gfxterm',
+    'set gfxmode="1024x768x32;auto"',
+    'terminal_input console',
+    'terminal_output gfxterm',
+    'fi',
+    '',
+    'menuentry "Arch Linux archiso x86_64" {',
+    'set gfxpayload=keep',
+    'search --no-floppy --set=root --label ARCH_YYYYMM',
+    'linux /arch/boot/x86_64/vmlinuz archisobasedir='  # no line break!
+    'arch archisolabel=ARCH_YYYYMM add_efi_memmap',
+    'initrd /arch/boot/x86_64/archiso.img',
+    '}',
+    '',
+    'menuentry "UEFI Shell x86_64 v2" {',
+    'search --no-floppy --set=root --label ARCH_YYYYMM',
+    'chainloader /EFI/shellx64_v2.efi',
+    '}',
+    '',
+    'menuentry "UEFI Shell x86_64 v1" {',
+    'search --no-floppy --set=root --label ARCH_YYYYMM',
+    'chainloader /EFI/shellx64_v1.efi',
+    '}'
+])
+
+
+def md5sum(fh, block_size=2**20):
+    """Creates an MD5 checksum"""
+    md5_hash = md5()
+    while True:
+        data = fh.read(block_size)
+        if not data:
+            break
+        md5_hash.update(data)
+    return md5_hash
+
+
+def copy_contents(src, dst, verbose=False):
+    """Recursively copy all files and directories
+    inside directory src into directory dst
+    """
+    src_glob = join(src, '*')
+    verbose = 'v' if verbose else ''
+    cmd = 'cp -a{verbose} {0} {1}'.format(src_glob, dst, verbose=verbose)
+    run(cmd, shell=True)
+
+
+def dirsize(d, bs=None):
+    """Returns the size of directory d in bytes"""
+    if bs is None:
+        cmd = 'du -s {0}'.format(d)
+    else:
+        cmd = 'du -s --block-size={0} {1}'.format(bs, d)
+    result = check_output(cmd, shell=True).decode().split('\t')[0]
+    return int(result)
+
+
+def timestamp(iso_file):
+    """Extracts the time stamp of the
+    respective ArchLinux ISO file
+    """
+    try:
+        _, date_str, _ = iso_file.split('-')
+        year, month, _ = date_str.split('.')
+    except ValueError:
+        print('WARNING', 'Could not extract date from ISO file name',
+              '-', 'Getting date from current time')
+        return date.today().strftime('%Y%m')
+    else:
+        return year + month
+
+
+class Chdir():
+    """Perform stuff in a changed directory"""
+
+    def __init__(self, path):
+        self.path = path
+        self.old_path = getcwd()
+        chdir(self.path)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        chdir(self.old_path)
+
+
+class Mount():
+    """Context manager for mounting devices"""
+
+    def __init__(self, device, mount_point, typ=None, options=None):
+        self.device = device
+        self.mount_point = mount_point
+        self.typ = typ
+        self.options = options
+
+    def __enter__(self):
+        typ = '-t {0}'.format(self.typ) if self.typ else ''
+        options = ','.join(self.options) if self.options else ''
+        options = '-o {0}'.format(options) if options else ''
+        cmd = 'mount {typ} {options} {target} {mount_point}'.format(
+            typ=typ, options=options, target=self.device,
+            mount_point=self.mount_point)
+        run(cmd, shell=True)
+        return self
+
+    def __exit__(self, *_):
+        mount_point = Path(self.mount_point)
+        pwd = Path(getcwd())
+        if mount_point in pwd.parents:
+            chdir(dirname(getcwd()))
+        run(['umount', self.mount_point])
+
+
+class Squashfs():
+    """Context manager for modifying squashfs"""
+
+    ROOT = 'squashfs-root'
+
+    def __init__(self, image):
+        self.image = image
+
+    def __enter__(self):
+        self.open()
+        return self
+
+    def __exit__(self, *_):
+        self.close()
+
+    @property
+    def dirname(self):
+        return dirname(self.image)
+
+    @property
+    def basename(self):
+        return basename(self.image)
+
+    @property
+    def root(self):
+        return join(self.dirname, self.ROOT)
+
+    @property
+    def md5file(self):
+        fname, _ = splitext(self.basename)
+        return '{0}.md5'.format(fname)
+
+    def open(self):
+        """Opens the squashfs"""
+        with Chdir(self.dirname):
+            run('unsquashfs {0}'.format(self.basename), shell=True)
+
+    def close(self):
+        """Closes the squashfs"""
+        with Chdir(self.dirname):
+            rmtree(self.ROOT)
+
+    def write(self):
+        """Write changes"""
+        with Chdir(self.dirname):
+            unlink(self.basename)
+            cmd = 'mksquashfs {0} {1}'.format(self.ROOT, self.basename)
+            run(cmd, shell=True)
+            with open(self.md5file, 'w') as md5file:
+                with open(self.basename, 'rb') as img:
+                    md5hash = md5sum(img).hexdigest()
+                md5content = '{0}  {1}'.format(md5hash, self.basename)
+                md5file.write(md5content)
+
+
+class GrubStandalone():
+    """Grub standalone image"""
+
+    GRUB_CFG = 'grub.cfg'
+
+    GRUB_CMD = (
+        'grub-mkstandalone '
+        '-d /usr/lib/grub/{arch}-efi/ '
+        '-O {arch}-efi '
+        '--modules="part_gpt part_msdos" '
+        '--fonts="unicode" '
+        '--locales="en@quot" '
+        '--themes="" '
+        '-o "{out_file}" '
+        '"boot/grub/grub.cfg={grub_cfg}" '
+        '-v'
+    )
+
+    def __init__(self, timestamp, arch='i386'):
+        if arch == 'i386':
+            self.out_file = 'bootia32.efi'
+        elif arch == 'x86_64':
+            self.out_file = 'bootx64.efi'
+        else:
+            raise ValueError('Architecture must be i386 or x86_64')
+        self.timestamp = timestamp
+        self.arch = arch
+
+    def __call__(self):
+        with TemporaryDirectory() as tmpd:
+            with Chdir(tmpd):
+                with open(self.GRUB_CFG, 'w') as grub_cfg:
+                    grub_cfg.write(self.config)
+                cmd = self.GRUB_CMD.format(
+                    arch=self.arch,
+                    grub_cfg=self.GRUB_CFG,
+                    out_file=self.out_file)
+                run(cmd, shell=True).check_returncode()
+                unlink('grub.cfg')
+                with open(self.out_file, 'rb') as grub_img:
+                    return grub_img.read()
+
+    @property
+    def config(self):
+        return GRUB_CFG.replace('YYYYMM', self.timestamp)
+
+
+class EFIImage():
+    """An EFI image"""
+
+    DD_CMD = 'dd if=/dev/zero bs=1M count={0} of={1}'
+    MKFS_CMD = 'mkfs.fat -n "ARCHISO_EFI" {0}'
+
+    def __init__(self, size):
+        self._file = NamedTemporaryFile('w+b', suffix='.efi')
+        self.size = size
+        run(self.DD_CMD.format(self.size, self.name), shell=True)
+        run(self.MKFS_CMD.format(self.name), shell=True)
+        self.seek(0)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self._file.__exit__(*args)
+
+    @property
+    def name(self):
+        return self._file.name
+
+    @property
+    def seek(self):
+        return self._file.seek
+
+    @property
+    def read(self):
+        return self._file.read
+
+    @property
+    def write(self):
+        return self._file.write
+
+
+class EFIImageGenerator():
+    """EFI image generator"""
+
+    IMG_PATH = 'EFI/archiso/efiboot.img'
+
+    def __init__(self, src_iso):
+        self.src_iso = src_iso
+
+    def __call__(self, arch='i386'):
+        """Generates the image"""
+        with TemporaryDirectory() as build_dir:
+            # Copy original image's content
+            with TemporaryDirectory() as iso_mnt:
+                with Mount(self.src_iso, iso_mnt):
+                    with TemporaryDirectory() as src_img_mnt:
+                        with Mount(join(iso_mnt, self.IMG_PATH), src_img_mnt):
+                            copy_contents(src_img_mnt, build_dir)
+            # Go to loaders directory
+            loader_path = join(build_dir, 'EFI/boot')
+            with Chdir(loader_path):
+                # Write GRUB standalone image
+                grub_standalone = GrubStandalone(timestamp(self.src_iso))
+                with open(grub_standalone.out_file, 'wb') as grub_img:
+                    grub_img.write(grub_standalone())
+            # Calculate required EFI image size in megabytes
+            img_size = dirsize(build_dir, bs='1M')
+            # Add additional space to be safe
+            img_size = int(img_size * 1.1)
+            # Generate new EFI image
+            with EFIImage(img_size) as efi_image:
+                with TemporaryDirectory() as dst_img_mnt:
+                    with Mount(efi_image.name, dst_img_mnt):
+                        copy_contents(build_dir, dst_img_mnt)
+                efi_image.seek(0)
+                return efi_image.read()
+
+
+class IsoFileModifier():
+    """ISO file context manager"""
+
+    SQUASHFS = 'airootfs.sfs'
+
+    COMMAND_TMP = (
+        'xorriso -as mkisofs '
+        '-iso-level 3 '
+        '-full-iso9660-filenames '
+        '-volid "ARCH_{timestamp}" '
+        '-eltorito-boot isolinux/isolinux.bin '
+        '-eltorito-catalog isolinux/boot.cat '
+        '-no-emul-boot '
+        '-boot-load-size 4 '
+        '-boot-info-table '
+        '-isohybrid-mbr "{root}/isolinux/isohdpfx.bin" '
+        '-eltorito-alt-boot '
+        '-e EFI/archiso/efiboot.img '
+        '-isohybrid-gpt-basdat '
+        '-output "{out_file}" '
+        '"{root}"'
+    )
+
+    def __init__(self, src_iso):
+        self.src_iso = src_iso
+
+    def __call__(self, out_file, root32=None, root64=None, efi32=None):
+        """Modifies the ISO"""
+        pwd = getcwd()
+        with TemporaryDirectory() as dst_root:
+            # Mount source image
+            with TemporaryDirectory() as src_root:
+                with Mount(self.src_iso, src_root,
+                           typ='iso9660', options=('loop', 'ro')):
+                    copy_contents(src_root, dst_root)
+            # Update 32-bit environment
+            if root32:
+                root32_dst = join(dst_root, 'arch', 'i686')
+                root32_sfs = join(root32_dst, self.SQUASHFS)
+                with Squashfs(root32_sfs) as sfs:
+                    with Chdir(pwd):
+                        copy_contents(root32, sfs.root, verbose=True)
+                    sfs.write()
+            # Update 64-bit environment
+            if root64:
+                root64_dst = join(dst_root, 'arch', 'x86_64')
+                root64_sfs = join(root64_dst, self.SQUASHFS)
+                with Squashfs(root64_sfs) as sfs:
+                    with Chdir(pwd):
+                        copy_contents(root64, sfs.root, verbose=True)
+                    sfs.write()
+            # Generate 32-bit EFI loader
+            if efi32:
+                img_gen = EFIImageGenerator(self.src_iso)
+                img_path = join(dst_root, 'EFI/archiso/efiboot.img')
+                with open(img_path, 'wb') as efi_img:
+                    efi_img.write(img_gen())
+            # Generate ISO
+            cmd = self.COMMAND_TMP.format(
+                timestamp=timestamp(self.src_iso),
+                root=dst_root,
+                out_file=out_file)
+            run(cmd, shell=True)
+
+
+if __name__ == '__main__':
+    options = docopt(__doc__)
+    src_iso = options['<iso_file>']
+    root32 = options['--root32']
+    root64 = options['--root64']
+    efi32 = options['--efi32']
+    out_file = options['<out_file>']
+
+    iso_mod = IsoFileModifier(src_iso)
+    iso_mod(out_file, root32=root32, root64=root64, efi32=efi32)
