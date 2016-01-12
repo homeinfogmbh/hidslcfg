@@ -409,7 +409,7 @@ class IsoFileModifier():
         respective ArchLinux ISO file
         """
         try:
-            _, date_str, _ = basename(self.iso_file).split('-')
+            _, date_str, _ = basename(self.src_iso).split('-')
             year, month, _ = date_str.split('.')
         except ValueError:
             return date.today().strftime('%Y%m')
