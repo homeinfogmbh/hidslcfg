@@ -19,13 +19,13 @@ from pathlib import Path
 from shutil import rmtree
 from hashlib import md5
 from datetime import date
-from logging import INFO, basicConfig, getLogger
+from logging import DEBUG, basicConfig, getLogger
 
 from docopt import docopt
 
 
 # Initialize logging
-basicConfig(level=INFO)
+basicConfig(level=DEBUG)
 
 
 GRUB_CFG = '\n'.join([
@@ -145,6 +145,7 @@ class WorkingDirectory():
     def __init__(self, path):
         self.path = path
         self.previous = getcwd()
+        self.logger.debug('Changing to {0}', path)
         chdir(self.path)
 
     def __enter__(self):
@@ -188,16 +189,19 @@ class SquashfsImage():
 
     def open(self):
         """Opens the squashfs"""
+        self.logger.debug('Unpacking squashfs')
         with WorkingDirectory(self.dirname):
             run('unsquashfs {0}'.format(self.basename), shell=True)
 
     def close(self):
         """Closes the squashfs"""
+        self.logger.debug('Closing squashfs')
         with WorkingDirectory(self.dirname):
             rmtree(self.ROOT)
 
     def write(self):
         """Write changes"""
+        self.logger.debug('Writing squashfs')
         with WorkingDirectory(self.dirname):
             unlink(self.basename)
             cmd = 'mksquashfs {0} {1}'.format(self.ROOT, self.basename)
