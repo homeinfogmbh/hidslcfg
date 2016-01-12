@@ -19,13 +19,8 @@ from pathlib import Path
 from shutil import rmtree
 from hashlib import md5
 from datetime import date
-from logging import DEBUG, basicConfig, getLogger
 
 from docopt import docopt
-
-
-# Initialize logging
-basicConfig(level=DEBUG)
 
 
 GRUB_CFG = '\n'.join([
@@ -145,7 +140,6 @@ class WorkingDirectory():
     def __init__(self, path):
         self.path = path
         self.previous = getcwd()
-        self.logger.debug('Changing to {0}', path)
         chdir(self.path)
 
     def __enter__(self):
@@ -189,19 +183,16 @@ class SquashfsImage():
 
     def open(self):
         """Opens the squashfs"""
-        self.logger.debug('Unpacking squashfs')
         with WorkingDirectory(self.dirname):
             run('unsquashfs {0}'.format(self.basename), shell=True)
 
     def close(self):
         """Closes the squashfs"""
-        self.logger.debug('Closing squashfs')
         with WorkingDirectory(self.dirname):
             rmtree(self.ROOT)
 
     def write(self):
         """Write changes"""
-        self.logger.debug('Writing squashfs')
         with WorkingDirectory(self.dirname):
             unlink(self.basename)
             cmd = 'mksquashfs {0} {1}'.format(self.ROOT, self.basename)
@@ -359,7 +350,6 @@ class IsoFileModifier():
     def __init__(self, src_iso):
         """Sets the original ISO"""
         self.src_iso = src_iso
-        self.logger = getLogger(self.__class__.__name__)
 
     def __call__(self, out_file, root32=None, root64=None, efi32=None):
         """Modifies the ISO"""
@@ -368,18 +358,14 @@ class IsoFileModifier():
         with TemporaryDirectory() as working_directory:
             # Mount source image
             with TemporaryDirectory() as source_directory:
-                self.logger.info('Mounting source ISO')
                 with MountContext(
                         self.src_iso,
                         source_directory,
                         typ='iso9660',
                         options=('loop', 'ro')):
-                    self.logger.info("Copying source ISO file's content")
                     copy_contents(source_directory, working_directory)
-                    self.logger.info('Unmounting source ISO')
             # Update 32-bit environment
             if root32:
-                self.logger.info('Updating i386 root')
                 root32_dst = join(working_directory, 'arch', 'i686')
                 root32_sfs = join(root32_dst, self.SQUASHFS)
                 with SquashfsImage(root32_sfs) as sfs:
@@ -388,7 +374,6 @@ class IsoFileModifier():
                     sfs.write()
             # Update 64-bit environment
             if root64:
-                self.logger.info('Updating x86_64 root')
                 root64_dst = join(working_directory, 'arch', 'x86_64')
                 root64_sfs = join(root64_dst, self.SQUASHFS)
                 with SquashfsImage(root64_sfs) as sfs:
@@ -397,7 +382,6 @@ class IsoFileModifier():
                     sfs.write()
             # Generate 32-bit EFI loader
             if efi32:
-                self.logger.info('Generating EFI-32 boot image')
                 # Create GRUB stand-alone image
                 grub_standalone_gen = GrubStandalone(timestamp)
                 grub_standalone_img = grub_standalone_gen()
@@ -413,13 +397,13 @@ class IsoFileModifier():
                 with open(img_path, 'wb') as efi_img:
                     efi_img.write(img_data)
             # Generate ISO
-            self.logger.info('Generating ISO file')
             cmd = self.COMMAND_TMP.format(
                 timestamp=timestamp,
                 root=working_directory,
                 out_file=out_file)
             run(cmd, shell=True)
 
+    @property
     def timestamp(self):
         """Extracts the time stamp of the
         respective ArchLinux ISO file
@@ -428,9 +412,6 @@ class IsoFileModifier():
             _, date_str, _ = basename(self.iso_file).split('-')
             year, month, _ = date_str.split('.')
         except ValueError:
-            self.logger.warn(
-                'WARNING Could not extract date from ISO file name '
-                ' - Getting date from current time')
             return date.today().strftime('%Y%m')
         else:
             return year + month
