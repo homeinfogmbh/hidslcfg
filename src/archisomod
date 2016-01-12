@@ -19,8 +19,13 @@ from pathlib import Path
 from shutil import rmtree
 from hashlib import md5
 from datetime import date
+from logging import INFO, basicConfig, getLogger
 
 from docopt import docopt
+
+
+# Initialize logging
+basicConfig(level=INFO)
 
 
 GRUB_CFG = '\n'.join([
@@ -91,21 +96,6 @@ def dirsize(d, bs=None):
         cmd = 'du -s --block-size={0} {1}'.format(bs, d)
     result = check_output(cmd, shell=True).decode().split('\t')[0]
     return int(result)
-
-
-def timestamp(iso_file):
-    """Extracts the time stamp of the
-    respective ArchLinux ISO file
-    """
-    try:
-        _, date_str, _ = iso_file.split('-')
-        year, month, _ = date_str.split('.')
-    except ValueError:
-        print('WARNING', 'Could not extract date from ISO file name',
-              '-', 'Getting date from current time')
-        return date.today().strftime('%Y%m')
-    else:
-        return year + month
 
 
 def umount(mount_point_or_device):
@@ -365,21 +355,27 @@ class IsoFileModifier():
     def __init__(self, src_iso):
         """Sets the original ISO"""
         self.src_iso = src_iso
+        self.logger = getLogger(self.__class__.__name__)
 
     def __call__(self, out_file, root32=None, root64=None, efi32=None):
         """Modifies the ISO"""
         pwd = getcwd()
+        timestamp = self.timestamp
         with TemporaryDirectory() as working_directory:
             # Mount source image
             with TemporaryDirectory() as source_directory:
+                self.logger.info('Mounting source ISO')
                 with MountContext(
                         self.src_iso,
                         source_directory,
                         typ='iso9660',
                         options=('loop', 'ro')):
+                    self.logger.info("Copying source ISO file's content")
                     copy_contents(source_directory, working_directory)
+                    self.logger.info('Unmounting source ISO')
             # Update 32-bit environment
             if root32:
+                self.logger.info('Updating i386 root')
                 root32_dst = join(working_directory, 'arch', 'i686')
                 root32_sfs = join(root32_dst, self.SQUASHFS)
                 with SquashfsImage(root32_sfs) as sfs:
@@ -388,6 +384,7 @@ class IsoFileModifier():
                     sfs.write()
             # Update 64-bit environment
             if root64:
+                self.logger.info('Updating x86_64 root')
                 root64_dst = join(working_directory, 'arch', 'x86_64')
                 root64_sfs = join(root64_dst, self.SQUASHFS)
                 with SquashfsImage(root64_sfs) as sfs:
@@ -396,8 +393,9 @@ class IsoFileModifier():
                     sfs.write()
             # Generate 32-bit EFI loader
             if efi32:
+                self.logger.info('Generating EFI-32 boot image')
                 # Create GRUB stand-alone image
-                grub_standalone_gen = GrubStandalone(timestamp(self.src_iso))
+                grub_standalone_gen = GrubStandalone(timestamp)
                 grub_standalone_img = grub_standalone_gen()
                 # Write GRUB image to ISO
                 with open(self.EFI32_LOADER, 'wb') as grub_img:
@@ -411,11 +409,27 @@ class IsoFileModifier():
                 with open(img_path, 'wb') as efi_img:
                     efi_img.write(img_data)
             # Generate ISO
+            self.logger.info('Generating ISO file')
             cmd = self.COMMAND_TMP.format(
-                timestamp=timestamp(self.src_iso),
+                timestamp=timestamp,
                 root=working_directory,
                 out_file=out_file)
             run(cmd, shell=True)
+
+    def timestamp(self):
+        """Extracts the time stamp of the
+        respective ArchLinux ISO file
+        """
+        try:
+            _, date_str, _ = basename(self.iso_file).split('-')
+            year, month, _ = date_str.split('.')
+        except ValueError:
+            self.logger.warn(
+                'WARNING Could not extract date from ISO file name '
+                ' - Getting date from current time')
+            return date.today().strftime('%Y%m')
+        else:
+            return year + month
 
 
 if __name__ == '__main__':
