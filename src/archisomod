@@ -108,50 +108,64 @@ def timestamp(iso_file):
         return year + month
 
 
-class Chdir():
-    """Perform stuff in a changed directory"""
-
-    def __init__(self, path):
-        self.path = path
-        self.old_path = getcwd()
-        chdir(self.path)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *_):
-        chdir(self.old_path)
+def umount(mount_point_or_device):
+    """Umounts a mount point or device"""
+    run('umount {0}'.format(mount_point_or_device), shell=True)
 
 
-class Mount():
+def mount(device, mount_point, typ=None, options=None):
+    """Mounts a device"""
+    typ = '-t {0}'.format(typ) if typ else ''
+    options = ','.join(options) if options else ''
+    options = '-o {0}'.format(options) if options else ''
+    cmd = 'mount {typ} {options} {target} {mount_point}'.format(
+        typ=typ, options=options, target=device,
+        mount_point=mount_point)
+    run(cmd, shell=True)
+
+
+class MountContext():
     """Context manager for mounting devices"""
 
     def __init__(self, device, mount_point, typ=None, options=None):
+        self.mounted = False
         self.device = device
         self.mount_point = mount_point
         self.typ = typ
         self.options = options
 
     def __enter__(self):
-        typ = '-t {0}'.format(self.typ) if self.typ else ''
-        options = ','.join(self.options) if self.options else ''
-        options = '-o {0}'.format(options) if options else ''
-        cmd = 'mount {typ} {options} {target} {mount_point}'.format(
-            typ=typ, options=options, target=self.device,
-            mount_point=self.mount_point)
-        run(cmd, shell=True)
+        self.mounted = True
+        mount(self.device, self.mount_point,
+              typ=self.typ, options=self.options)
         return self
 
     def __exit__(self, *_):
         mount_point = Path(self.mount_point)
-        pwd = Path(getcwd())
-        if mount_point in pwd.parents:
-            chdir(dirname(getcwd()))
-        run(['umount', self.mount_point])
+        # Get out of mount point
+        while mount_point in Path(getcwd()).parents:
+            chdir('..')
+        umount(self.mount_point)
+        self.mounted = False
 
 
-class Squashfs():
-    """Context manager for modifying squashfs"""
+class WorkingDirectory():
+    """Perform stuff in a changed directory"""
+
+    def __init__(self, path):
+        self.path = path
+        self.previous = getcwd()
+        chdir(self.path)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        chdir(self.previous)
+
+
+class SquashfsImage():
+    """Context manager for modifying squashfs images"""
 
     ROOT = 'squashfs-root'
 
@@ -184,17 +198,17 @@ class Squashfs():
 
     def open(self):
         """Opens the squashfs"""
-        with Chdir(self.dirname):
+        with WorkingDirectory(self.dirname):
             run('unsquashfs {0}'.format(self.basename), shell=True)
 
     def close(self):
         """Closes the squashfs"""
-        with Chdir(self.dirname):
+        with WorkingDirectory(self.dirname):
             rmtree(self.ROOT)
 
     def write(self):
         """Write changes"""
-        with Chdir(self.dirname):
+        with WorkingDirectory(self.dirname):
             unlink(self.basename)
             cmd = 'mksquashfs {0} {1}'.format(self.ROOT, self.basename)
             run(cmd, shell=True)
@@ -235,7 +249,7 @@ class GrubStandalone():
 
     def __call__(self):
         with TemporaryDirectory() as tmpd:
-            with Chdir(tmpd):
+            with WorkingDirectory(tmpd):
                 with open(self.GRUB_CFG, 'w') as grub_cfg:
                     grub_cfg.write(self.config)
                 cmd = self.GRUB_CMD.format(
@@ -301,13 +315,14 @@ class EFIImageGenerator():
         with TemporaryDirectory() as build_dir:
             # Copy original image's content
             with TemporaryDirectory() as iso_mnt:
-                with Mount(self.src_iso, iso_mnt):
+                with MountContext(self.src_iso, iso_mnt):
                     with TemporaryDirectory() as src_img_mnt:
-                        with Mount(join(iso_mnt, self.IMG_PATH), src_img_mnt):
+                        efi_image = join(iso_mnt, self.IMG_PATH)
+                        with MountContext(efi_image, src_img_mnt):
                             copy_contents(src_img_mnt, build_dir)
             # Go to loaders directory
             loader_path = join(build_dir, 'EFI/boot')
-            with Chdir(loader_path):
+            with WorkingDirectory(loader_path):
                 # Write GRUB standalone image
                 grub_standalone = GrubStandalone(timestamp(self.src_iso))
                 with open(grub_standalone.out_file, 'wb') as grub_img:
@@ -319,7 +334,7 @@ class EFIImageGenerator():
             # Generate new EFI image
             with EFIImage(img_size) as efi_image:
                 with TemporaryDirectory() as dst_img_mnt:
-                    with Mount(efi_image.name, dst_img_mnt):
+                    with MountContext(efi_image.name, dst_img_mnt):
                         copy_contents(build_dir, dst_img_mnt)
                 efi_image.seek(0)
                 return efi_image.read()
@@ -343,6 +358,7 @@ class IsoFileModifier():
         '-isohybrid-mbr "{root}/isolinux/isohdpfx.bin" '
         '-eltorito-alt-boot '
         '-e EFI/archiso/efiboot.img '
+        '-no-emul-boot '
         '-isohybrid-gpt-basdat '
         '-output "{out_file}" '
         '"{root}"'
@@ -357,23 +373,23 @@ class IsoFileModifier():
         with TemporaryDirectory() as dst_root:
             # Mount source image
             with TemporaryDirectory() as src_root:
-                with Mount(self.src_iso, src_root,
-                           typ='iso9660', options=('loop', 'ro')):
+                with MountContext(self.src_iso, src_root,
+                                  typ='iso9660', options=('loop', 'ro')):
                     copy_contents(src_root, dst_root)
             # Update 32-bit environment
             if root32:
                 root32_dst = join(dst_root, 'arch', 'i686')
                 root32_sfs = join(root32_dst, self.SQUASHFS)
-                with Squashfs(root32_sfs) as sfs:
-                    with Chdir(pwd):
+                with SquashfsImage(root32_sfs) as sfs:
+                    with WorkingDirectory(pwd):
                         copy_contents(root32, sfs.root, verbose=True)
                     sfs.write()
             # Update 64-bit environment
             if root64:
                 root64_dst = join(dst_root, 'arch', 'x86_64')
                 root64_sfs = join(root64_dst, self.SQUASHFS)
-                with Squashfs(root64_sfs) as sfs:
-                    with Chdir(pwd):
+                with SquashfsImage(root64_sfs) as sfs:
+                    with WorkingDirectory(pwd):
                         copy_contents(root64, sfs.root, verbose=True)
                     sfs.write()
             # Generate 32-bit EFI loader
