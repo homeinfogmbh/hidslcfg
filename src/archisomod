@@ -238,14 +238,12 @@ class GrubStandalone():
     )
 
     def __init__(self, timestamp, arch='i386'):
-        if arch == 'i386':
-            self.out_file = 'bootia32.efi'
-        elif arch == 'x86_64':
-            self.out_file = 'bootx64.efi'
-        else:
+        if arch not in ['i386', 'x86_64']:
             raise ValueError('Architecture must be i386 or x86_64')
-        self.timestamp = timestamp
-        self.arch = arch
+        else:
+            self.out_file = 'grub.efi'
+            self.timestamp = timestamp
+            self.arch = arch
 
     def __call__(self):
         with TemporaryDirectory() as tmpd:
@@ -307,26 +305,23 @@ class EFIImageGenerator():
 
     IMG_PATH = 'EFI/archiso/efiboot.img'
 
-    def __init__(self, src_iso):
-        self.src_iso = src_iso
+    def __init__(self, src_image):
+        self.src_image = src_image
 
-    def __call__(self, arch='i386'):
+    def __call__(self, files):
         """Generates the image"""
         with TemporaryDirectory() as build_dir:
             # Copy original image's content
-            with TemporaryDirectory() as iso_mnt:
-                with MountContext(self.src_iso, iso_mnt):
-                    with TemporaryDirectory() as src_img_mnt:
-                        efi_image = join(iso_mnt, self.IMG_PATH)
-                        with MountContext(efi_image, src_img_mnt):
-                            copy_contents(src_img_mnt, build_dir)
-            # Go to loaders directory
-            loader_path = join(build_dir, 'EFI/boot')
-            with WorkingDirectory(loader_path):
-                # Write GRUB standalone image
-                grub_standalone = GrubStandalone(timestamp(self.src_iso))
-                with open(grub_standalone.out_file, 'wb') as grub_img:
-                    grub_img.write(grub_standalone())
+            with TemporaryDirectory() as src_img_mnt:
+                with MountContext(self.src_image, src_img_mnt):
+                    copy_contents(src_img_mnt, build_dir)
+            # Go to build directory
+            with WorkingDirectory(build_dir):
+                # Write files
+                for file_name in files:
+                    data = files[file_name]
+                    with open(file_name, 'wb') as f:
+                        f.write(data)
             # Calculate required EFI image size in megabytes
             img_size = dirsize(build_dir, bs='1M')
             # Add additional space to be safe
@@ -344,6 +339,9 @@ class IsoFileModifier():
     """ISO file context manager"""
 
     SQUASHFS = 'airootfs.sfs'
+
+    EFI32_LOADER = 'EFI/boot/bootia32.efi'
+    EFI32_IMG = 'EFI/archiso/efiboot.img'
 
     COMMAND_TMP = (
         'xorriso -as mkisofs '
@@ -365,20 +363,24 @@ class IsoFileModifier():
     )
 
     def __init__(self, src_iso):
+        """Sets the original ISO"""
         self.src_iso = src_iso
 
     def __call__(self, out_file, root32=None, root64=None, efi32=None):
         """Modifies the ISO"""
         pwd = getcwd()
-        with TemporaryDirectory() as dst_root:
+        with TemporaryDirectory() as working_directory:
             # Mount source image
-            with TemporaryDirectory() as src_root:
-                with MountContext(self.src_iso, src_root,
-                                  typ='iso9660', options=('loop', 'ro')):
-                    copy_contents(src_root, dst_root)
+            with TemporaryDirectory() as source_directory:
+                with MountContext(
+                        self.src_iso,
+                        source_directory,
+                        typ='iso9660',
+                        options=('loop', 'ro')):
+                    copy_contents(source_directory, working_directory)
             # Update 32-bit environment
             if root32:
-                root32_dst = join(dst_root, 'arch', 'i686')
+                root32_dst = join(working_directory, 'arch', 'i686')
                 root32_sfs = join(root32_dst, self.SQUASHFS)
                 with SquashfsImage(root32_sfs) as sfs:
                     with WorkingDirectory(pwd):
@@ -386,7 +388,7 @@ class IsoFileModifier():
                     sfs.write()
             # Update 64-bit environment
             if root64:
-                root64_dst = join(dst_root, 'arch', 'x86_64')
+                root64_dst = join(working_directory, 'arch', 'x86_64')
                 root64_sfs = join(root64_dst, self.SQUASHFS)
                 with SquashfsImage(root64_sfs) as sfs:
                     with WorkingDirectory(pwd):
@@ -394,14 +396,24 @@ class IsoFileModifier():
                     sfs.write()
             # Generate 32-bit EFI loader
             if efi32:
-                img_gen = EFIImageGenerator(self.src_iso)
-                img_path = join(dst_root, 'EFI/archiso/efiboot.img')
+                # Create GRUB stand-alone image
+                grub_standalone_gen = GrubStandalone(timestamp(self.src_iso))
+                grub_standalone_img = grub_standalone_gen()
+                # Write GRUB image to ISO
+                with open(self.EFI32_LOADER, 'wb') as grub_img:
+                    grub_img.write(grub_standalone_img)
+                # Update EFI image with GRUB image
+                img_path = join(working_directory, self.EFI32_IMG)
+                files = {self.EFI32_LOADER: grub_standalone_img}
+                img_gen = EFIImageGenerator(img_path)
+                img_data = img_gen(files)
+                # Write EFI image to ISO
                 with open(img_path, 'wb') as efi_img:
-                    efi_img.write(img_gen())
+                    efi_img.write(img_data)
             # Generate ISO
             cmd = self.COMMAND_TMP.format(
                 timestamp=timestamp(self.src_iso),
-                root=dst_root,
+                root=working_directory,
                 out_file=out_file)
             run(cmd, shell=True)
 
