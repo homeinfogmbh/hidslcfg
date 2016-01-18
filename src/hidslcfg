@@ -302,8 +302,7 @@ class APIClient():
             'passwd': self._passwd,
             'action': action,
             'cid': self._cid,
-            'tid': self._tid
-        }
+            'tid': self._tid}
         reply = get(self.url, params=params)
         status_code = reply.status_code
         if status_code == 200:

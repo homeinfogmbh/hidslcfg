@@ -325,8 +325,7 @@ class MountPoint():
         None: 'w',
         'gz': 'w:gz',
         'bz2': 'w:bz2',
-        'xz': 'w:xz'
-    }
+        'xz': 'w:xz'}
 
     def __init__(self, partition, mountpoint=None):
         """Sets the path to the partition device file"""
