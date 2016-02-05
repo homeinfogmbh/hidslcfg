@@ -4,8 +4,7 @@ Cmnd_Alias HIDSL_CONFIGURE_OPENVPN = /usr/bin/tar xf openvpn.tar.gz -C /etc/open
 Cmnd_Alias HIDSL_CONFIGURE_PACMAN = /usr/bin/install -o root -g root -m 644 -T pacman.conf /etc/pacman.conf
 Cmnd_Alias HIDSL_CONFIGURE_HOSTNAME = /usr/bin/install -o root -g root -m 644 -T hostname /etc/hostname
 Cmnd_Alias HIDSL_RESET_HOSTNAME = /usr/bin/rm -f /etc/hostname
-Cmnd_Alias HIDSL_BACKUP_PACKMAN_CONF = /usr/bin/mv /etc/pacman.conf /etc/.pacman.conf.bak
-Cmnd_Alias HIDSL_RESTORE_PACKMAN_CONF = /usr/bin/mv /etc/.pacman.conf.bak /etc/pacman.conf
+Cmnd_Alias HIDSL_RESTORE_PACKMAN_CONF = /usr/bin/cp -f /etc/pacman.conf.pacnew /etc/pacman.conf
 Cmnd_Alias HIDSL_SET_TARGET = /usr/bin/systemctl set-default digital-signage.target
 Cmnd_Alias HIDSL_RESET_TARGET = /usr/bin/systemctl set-default hidslcfg.target
 Cmnd_Alias HIDSL_RESTART_VPN = /usr/bin/systemctl restart openvpn@terminals.service
@@ -17,7 +16,6 @@ hidslcfg ALL = NOPASSWD: HIDSL_CLEANUP_OPENVPN, \
                          HIDSL_CONFIGURE_PACMAN, \
                          HIDSL_CONFIGURE_HOSTNAME, \
                          HIDSL_RESET_HOSTNAME, \
-                         HIDSL_BACKUP_PACKMAN_CONF, \
                          HIDSL_RESTORE_PACKMAN_CONF, \
                          HIDSL_SET_TARGET, \
                          HIDSL_RESET_TARGET, \

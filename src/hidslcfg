@@ -18,7 +18,7 @@ Options:
 
 from sys import stderr
 from os import chdir, geteuid
-from os.path import join, basename, isfile
+from os.path import join, basename
 from getpass import getpass
 from shutil import rmtree
 from tempfile import mkdtemp
@@ -75,9 +75,7 @@ HOSTNAME_FILE_SRC = 'hostname'
 HOSTNAME_FILE_DST = '/etc/hostname'
 
 PACMAN_INST = '/usr/bin/install -o root -g root -m 644 -T {src} {dst}'
-_CP_TEMPLATE = '/usr/bin/cp {0} {1}'
-PACMAN_BACKUP = _CP_TEMPLATE.format(PACMAN_CONF_DST, PACMAN_CONF_BAK)
-PACMAN_RESTORE = _CP_TEMPLATE.format(PACMAN_CONF_BAK, PACMAN_CONF_DST)
+PACMAN_RESTORE = '/usr/bin/cp -f /etc/pacman.conf.pacnew /etc/pacman.conf'
 VPN_INST = '/usr/bin/tar xf {arch} -C /etc/openvpn'
 VPN_CLEAN = '/usr/bin/rm -R /etc/openvpn/*'
 HOSTNAME_INST = '/usr/bin/install -o root -g root -m 644 -T {src} {dst}'
@@ -400,8 +398,6 @@ class Configurator():
     def configure_pacman(self):
         """Install /etc/pacman.conf"""
         if self._tmpdir is not None:
-            if not isfile(PACMAN_CONF_DST):
-                sudo(PACMAN_BACKUP)
             chdir(self._tmpdir)
             cmd = PACMAN_INST.format(
                 src=PACMAN_CONF_SRC, dst=PACMAN_CONF_DST)
