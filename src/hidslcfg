@@ -6,6 +6,7 @@ Maintainer: Richard Neumann <r.neumann@homeinfo.de>
 Usage:
     hidslcfg <ident> [--user=<user_name>] [--verbose]
     hidslcfg [options]
+    hidslreset
 
 Options:
     --tid=<terminal_id>  Specifies the physical terminal identifier
@@ -17,7 +18,7 @@ Options:
 
 from sys import stderr
 from os import chdir, geteuid
-from os.path import join
+from os.path import join, basename
 from getpass import getpass
 from shutil import rmtree
 from tempfile import mkdtemp
@@ -32,6 +33,59 @@ from requests import get
 __all__ = ['InvalidCredentials', 'Unauthorized', 'APIError',
            'OutsideOfWithStatement', 'fail', 'TerminalAddress', 'APIClient',
            'Configurator']
+
+SCRIPTS = {
+    # hidslcfg
+    'hidslcfg': """HOMEINFO Digital Signage Linux configurator
+
+Maintainer: Richard Neumann <r.neumann@homeinfo.de>
+
+Usage:
+    hidslcfg <ident> [--user=<user_name>] [--verbose]
+    hidslcfg [options]
+
+Options:
+    --tid=<terminal_id>  Specifies the physical terminal identifier
+    --cid=<customer_id>  Specifies the customer identifier
+    --user=<user_name>   Specifies the setup user's name
+    --verbose            Be gassy
+    -h --help            Show this page""",
+    # hidslreset
+    'hidslreset': """HOMEINFO Digital Signage Linux resetter
+
+Maintainer: Richard Neumann <r.neumann@homeinfo.de>
+
+Usage:
+    hidslreset
+
+Options:
+    --verbose            Be gassy
+    -h --help            Show this page"""}
+
+INVALID_SCRIPT = 'Script name "{0}" is invalid'
+
+VERBOSE = False
+
+PACMAN_CONF_SRC = 'pacman.conf'
+PACMAN_CONF_DST = '/etc/pacman.conf'
+PACMAN_CONF_BAK = '/etc/.pacman.conf.bak'
+VPN_ARCHIVE = 'openvpn.tar.gz'
+HOSTNAME_FILE_SRC = 'hostname'
+HOSTNAME_FILE_DST = '/etc/hostname'
+
+PACMAN_INST = '/usr/bin/install -o root -g root -m 644 -T {src} {dst}'
+VPN_INST = '/usr/bin/tar xf {arch} -C /etc/openvpn'
+HOSTNAME_INST = '/usr/bin/install -o root -g root -m 644 -T {src} {dst}'
+
+DIGSIG_TARGET = 'digital-signage.target'
+CONFIG_TARGET = 'hidslcfg.target'
+SYSTEMD_CMD = '/usr/bin/systemctl set-default {target}'
+
+VPN_CMD = '/usr/bin/systemctl restart openvpn@{instance}.service'
+VPN_CONFIG = 'terminals'
+
+PING_CMD = '/usr/bin/ping -W 1 -c 5 {host}'
+VPN_SERVER = '10.8.0.1'
 
 
 class InvalidCredentials(Exception):
@@ -82,36 +136,16 @@ def fail(err, *msgs, exit_code=3):
     exit(exit_code)
 
 
-def getopts(options):
-    """Parse options and get missing ones interactively"""
-    ident = options['<ident>']
-    verbose = options['--verbose']
-    if ident is None:
-        tid = options['--tid']
-        cid = options['--cid']
-    else:
-        try:
-            tid, cid = ident.split('.')
-        except ValueError:
-            fail('INVALID IDENT',
-                 'Identifier must be like <tid>.<cid>')
-    user = options['--user']
-    try:
-        if cid is None:
-            cid = input('Customer ID: ')
-        if tid is None:
-            tid = input('Terminal ID: ')
-        if not user:
-            user = input('User name: ')
-        passwd = getpass('Password: ')
-    except KeyboardInterrupt:
-        print()
-        fail('Setup aborted by user')
-    else:
-        return (tid, cid, user, passwd, verbose)
+def sudo(cmd):
+    """Run a command as root using sudo"""
+    output = None if VERBOSE else DEVNULL
+    result = run(
+        '/usr/bin/sudo -n {cmd}'.format(cmd=cmd), shell=True,
+        stdin=DEVNULL, stdout=output, stderr=output)
+    result.check_returncode()
 
 
-def getdata(tid, cid, user, passwd, verbose):
+def getdata(tid, cid, user, passwd):
     """Get data from web API"""
     client = APIClient(user, passwd, cid, tid)
     try:
@@ -122,12 +156,12 @@ def getdata(tid, cid, user, passwd, verbose):
         print()
         yn = input('Is this correct? [y/N]: ')
         if yn.lower() in ['y', 'yes']:
-            if verbose:
+            if VERBOSE:
                 print('Retrieving OpenVPN data')
             else:
                 print('Please wait...')
             vpndata = client.vpndata
-            if verbose:
+            if VERBOSE:
                 print('Retrieving pacman.conf')
             repoconf = client.repoconf
         else:
@@ -147,35 +181,35 @@ def getdata(tid, cid, user, passwd, verbose):
         return (vpndata, repoconf)
 
 
-def configure(tid, cid, vpndata, repoconf, output, verbose):
+def configure(tid, cid, vpndata, repoconf):
     """Performs the terminal configuration"""
     with Configurator(
-            tid, cid, vpndata, repoconf, output=output) as configurator:
-        if verbose:
+            tid, cid, vpndata, repoconf) as configurator:
+        if VERBOSE:
             print('Installing OpenVPN configuration')
         try:
             configurator.configure_openvpn()
         except CalledProcessError:
             fail('SUBPROCESS ERROR',
                  'Installation of OpenVPN configuration failed')
-        if verbose:
+        if VERBOSE:
             print('Restarting OpenVPN')
         try:
             configurator.restart_vpn()
         except CalledProcessError:
             fail('SUBPROCESS ERROR',
                  'Restart of OpenVPN server failed')
-        if verbose:
+        if VERBOSE:
             print('Waiting for OpenVPN server to start')
         sleep(3)
-        if verbose:
+        if VERBOSE:
             print('Checking OpenVPN connection')
         try:
             configurator.test_vpn()
         except CalledProcessError:
             fail('SUBPROCESS ERROR',
                  'Cannot contact OpenVPN server')
-        if verbose:
+        if VERBOSE:
             print('Installing /etc/pacman.conf')
         try:
             configurator.configure_pacman()
@@ -188,7 +222,7 @@ def configure(tid, cid, vpndata, repoconf, output, verbose):
         except CalledProcessError:
             fail('SUBPROCESS ERROR',
                  'Installation of /etc/hostname failed')
-        if verbose:
+        if VERBOSE:
             print('Setting systemd target to digital signage')
         try:
             configurator.set_systemd_target()
@@ -211,6 +245,21 @@ def configure(tid, cid, vpndata, repoconf, output, verbose):
                   'You can reboot any time by pressing',
                   '[CTRL]+[ALT]+[DEL]', sep='\n')
             exit(0)
+
+
+def reset():
+    """Resets the system's configuration"""
+    reset_commands = {
+        'Reset hostname': '/usr/bin/rm /etc/hostname',
+        'Remove digital signage data': '/usr/bin/rm -R /var/cache/digsig/*',
+        'Remove OpenVPN configuration': '/usr/bin/rm -R /etc/openvpn/*',
+        'Reset systemd.target': SYSTEMD_CMD.format(target=DIGSIG_TARGET)}
+    for reset_command in reset_commands:
+        cmd = reset_commands[reset_command]
+        try:
+            self.sudo(cmd)
+        except CalledProcessError as cpe:
+            fail('Could not {0}'.format(reset_command))
 
 
 class TerminalAddress():
@@ -246,10 +295,10 @@ class APIClient():
 
     def __init__(self, user, passwd, cid, tid):
         """Initialize with credentials"""
-        self._user = user
-        self._passwd = passwd
-        self._cid = cid
-        self._tid = tid
+        self.user = user
+        self.passwd = passwd
+        self.cid = cid
+        self.tid = tid
 
     def __call__(self):
         """Get configuration data"""
@@ -298,11 +347,11 @@ class APIClient():
         user name, password and action call
         """
         params = {
-            'user_name': self._user,
-            'passwd': self._passwd,
+            'user_name': self.user,
+            'passwd': self.passwd,
             'action': action,
-            'cid': self._cid,
-            'tid': self._tid}
+            'cid': self.cid,
+            'tid': self.tid}
         reply = get(self.url, params=params)
         status_code = reply.status_code
         if status_code == 200:
@@ -319,61 +368,35 @@ class APIClient():
 class Configurator():
     """Terminal configurator"""
 
-    PACMAN_CONF_SRC = 'pacman.conf'
-    PACMAN_CONF_DST = '/etc/pacman.conf'
-    VPN_ARCHIVE = 'openvpn.tar.gz'
-    HOSTNAME_FILE_SRC = 'hostname'
-    HOSTNAME_FILE_DST = '/etc/hostname'
-
-    PACMAN_INST = '/usr/bin/install -o root -g root -m 644 -T {src} {dst}'
-    VPN_INST = '/usr/bin/tar xf {arch} -C /etc/openvpn'
-    HOSTNAME_INST = '/usr/bin/install -o root -g root -m 644 -T {src} {dst}'
-
-    SYSTEMD_TARGET = 'digital-signage.target'
-    SYSTEMD_CMD = '/usr/bin/systemctl set-default {target}'
-
-    VPN_CMD = '/usr/bin/systemctl restart openvpn@{instance}.service'
-    VPN_CONFIG = 'terminals'
-
-    PING_CMD = '/usr/bin/ping -W 1 -c 5 {host}'
-    VPN_SERVER = '10.8.0.1'
-
-    def __init__(self, tid, cid, vpndata, repoconf, output=DEVNULL):
+    def __init__(self, tid, cid, vpndata, repoconf):
         """Sets VPN configuration and repository configuration"""
-        self._tid = tid
-        self._cid = cid
-        self._vpndata = vpndata
-        self._repoconf = repoconf
-        self._output = output
+        self.tid = tid
+        self.cid = cid
+        self.vpndata = vpndata
+        self.repoconf = repoconf
         self._tmpdir = None
 
     def __enter__(self):
         self._tmpdir = mkdtemp()
-        pacmanconf_path = join(self._tmpdir, self.PACMAN_CONF_SRC)
-        vpndata_path = join(self._tmpdir, self.VPN_ARCHIVE)
+        pacmanconf_path = join(self._tmpdir, PACMAN_CONF_SRC)
+        vpndata_path = join(self._tmpdir, VPN_ARCHIVE)
         with open(pacmanconf_path, 'w') as pacmanconf_file:
             pacmanconf_file.write(repoconf)
         with open(vpndata_path, 'wb') as vpndata_file:
-            vpndata_file.write(self._vpndata)
+            vpndata_file.write(self.vpndata)
         return self
 
     def __exit__(self, *_):
         rmtree(self._tmpdir)
         self._tmpdir = None
 
-    def sudo(self, cmd):
-        """Run a command as root using sudo"""
-        result = run(
-            '/usr/bin/sudo -n {cmd}'.format(cmd=cmd), shell=True,
-            stdin=DEVNULL, stdout=self._output, stderr=self._output)
-        result.check_returncode()
-
     def configure_pacman(self):
         """Install /etc/pacman.conf"""
         if self._tmpdir is not None:
             chdir(self._tmpdir)
-            self.sudo(self.PACMAN_INST.format(
-                src=self.PACMAN_CONF_SRC, dst=self.PACMAN_CONF_DST))
+            cmd = PACMAN_INST.format(
+                src=PACMAN_CONF_SRC, dst=PACMAN_CONF_DST)
+            sudo(cmd)
         else:
             raise OutsideOfWithStatement('Not within with statement')
 
@@ -382,52 +405,94 @@ class Configurator():
         if self._tmpdir is not None:
             # Clean up OpenVPN config
             with suppress(CalledProcessError):
-                self.sudo('/usr/bin/rm /etc/openvpn/*')
+                sudo('/usr/bin/rm /etc/openvpn/*')
             # Unpack OpenVPN archive
             chdir(self._tmpdir)
-            self.sudo(self.VPN_INST.format(arch=self.VPN_ARCHIVE))
+            cmd = VPN_INST.format(arch=VPN_ARCHIVE)
+            sudo(cmd)
         else:
             raise OutsideOfWithStatement('Not within with statement')
 
     def restart_vpn(self):
         """Set systemd default target to digital-signage.target"""
-        self.sudo(self.VPN_CMD.format(instance=self.VPN_CONFIG))
+        cmd = VPN_CMD.format(instance=VPN_CONFIG)
+        sudo(cmd)
 
     def test_vpn(self):
         """Set systemd default target to digital-signage.target"""
+        output = None if VERBOSE else DEVNULL
         result = run(
-            self.PING_CMD.format(host=self.VPN_SERVER), shell=True,
-            stdin=DEVNULL, stdout=self._output, stderr=self._output)
+            PING_CMD.format(host=VPN_SERVER), shell=True,
+            stdin=DEVNULL, stdout=output, stderr=output)
         result.check_returncode()
 
     def configure_hostname(self):
         """Configure /etc/hostname"""
         if self._tmpdir is not None:
             chdir(self._tmpdir)
-            hostname = '{tid}.{cid}'.format(tid=self._tid, cid=self._cid)
-            with open(self.HOSTNAME_FILE_SRC, 'w') as hostname_tmp:
+            hostname = '{tid}.{cid}'.format(tid=self.tid, cid=self.cid)
+            with open(HOSTNAME_FILE_SRC, 'w') as hostname_tmp:
                 hostname_tmp.write(hostname)
-            self.sudo(self.HOSTNAME_INST.format(
-                src=self.HOSTNAME_FILE_SRC, dst=self.HOSTNAME_FILE_DST))
+            cmd = HOSTNAME_INST.format(
+                src=HOSTNAME_FILE_SRC, dst=HOSTNAME_FILE_DST)
+            sudo(cmd)
         else:
             raise OutsideOfWithStatement('Not within with statement')
 
     def set_systemd_target(self):
         """Set systemd default target to digital-signage.target"""
-        self.sudo(self.SYSTEMD_CMD.format(target=self.SYSTEMD_TARGET))
+        cmd = SYSTEMD_CMD.format(target=DIGSIG_TARGET)
+        sudo(cmd)
 
 
 if __name__ == '__main__':
     if geteuid() == 0:
         fail('Refusing to run as root!')
     else:
-        options = docopt(__doc__)
-        tid, cid, user, passwd, verbose = getopts(options)
-        output = None if verbose else DEVNULL
+        script_name = basename(__file__)
         try:
-            vpndata, repoconf = getdata(tid, cid, user, passwd, verbose)
-        except ConnectionError:
-            fail('Cannot connect to webservice '
-                 '- check your internet connection')
+            doc = SCRIPTS[script_name]
+        except KeyError:
+            fail(INVALID_SCRIPT.format(script_name))
         else:
-            configure(tid, cid, vpndata, repoconf, output, verbose)
+            options = docopt(doc)
+            VERBOSE = options['--verbose']
+            if script_name == 'hidslcfg':
+                # Validate options
+                ident = options['<ident>']
+                if ident is None:
+                    tid = options['--tid']
+                    cid = options['--cid']
+                else:
+                    try:
+                        tid, cid = ident.split('.')
+                    except ValueError:
+                        fail('INVALID IDENT',
+                             'Identifier must be like <tid>.<cid>')
+                user = options['--user']
+                try:
+                    if cid is None:
+                        cid = input('Customer ID: ')
+                    if tid is None:
+                        tid = input('Terminal ID: ')
+                    if not user:
+                        user = input('User name: ')
+                    passwd = getpass('Password: ')
+                except KeyboardInterrupt:
+                    print()
+                    fail('Setup aborted by user')
+                else:
+                    # Call API
+                    try:
+                        vpndata, repoconf = getdata(
+                            tid, cid, user, passwd)
+                    except ConnectionError:
+                        fail('Cannot connect to webservice '
+                             '- check your internet connection')
+                    else:
+                        # Configure system
+                        configure(tid, cid, vpndata, repoconf)
+            elif script_name == 'hidslreset':
+                reset()
+            else:
+                fail(INVALID_SCRIPT.format(script_name))
