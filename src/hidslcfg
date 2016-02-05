@@ -18,7 +18,7 @@ Options:
 
 from sys import stderr
 from os import chdir, geteuid
-from os.path import join, basename
+from os.path import join, basename, isfile
 from getpass import getpass
 from shutil import rmtree
 from tempfile import mkdtemp
@@ -66,6 +66,7 @@ INVALID_SCRIPT = 'Script name "{0}" is invalid'
 
 VERBOSE = False
 
+
 PACMAN_CONF_SRC = 'pacman.conf'
 PACMAN_CONF_DST = '/etc/pacman.conf'
 PACMAN_CONF_BAK = '/etc/.pacman.conf.bak'
@@ -74,8 +75,14 @@ HOSTNAME_FILE_SRC = 'hostname'
 HOSTNAME_FILE_DST = '/etc/hostname'
 
 PACMAN_INST = '/usr/bin/install -o root -g root -m 644 -T {src} {dst}'
+_CP_TEMPLATE = '/usr/bin/cp {0} {1}'
+PACMAN_BACKUP = _CP_TEMPLATE.format(PACMAN_CONF_DST, PACMAN_CONF_BAK)
+PACMAN_RESTORE = _CP_TEMPLATE.format(PACMAN_CONF_BAK, PACMAN_CONF_DST)
 VPN_INST = '/usr/bin/tar xf {arch} -C /etc/openvpn'
+VPN_CLEAN = '/usr/bin/rm -R /etc/openvpn/*'
 HOSTNAME_INST = '/usr/bin/install -o root -g root -m 644 -T {src} {dst}'
+HOSTNAME_RESET = '/usr/bin/rm -f /etc/hostname'
+DIGSIG_DATA_CLEAN = '/usr/bin/rm -R /var/cache/digsig/*'
 
 DIGSIG_TARGET = 'digital-signage.target'
 CONFIG_TARGET = 'hidslcfg.target'
@@ -250,10 +257,11 @@ def configure(tid, cid, vpndata, repoconf):
 def reset():
     """Resets the system's configuration"""
     reset_commands = [
-        ('reset hostname', '/usr/bin/rm /etc/hostname'),
-        ('remove digital signage data', '/usr/bin/rm -R /var/cache/digsig/*'),
-        ('remove OpenVPN configuration', '/usr/bin/rm -R /etc/openvpn/*'),
-        ('reset systemd.target', SYSTEMD_CMD.format(target=DIGSIG_TARGET))]
+        ('reset hostname', HOSTNAME_RESET),
+        ('remove digital signage data', DIGSIG_DATA_CLEAN),
+        ('remove OpenVPN configuration', VPN_CLEAN),
+        ('reset systemd.target', SYSTEMD_CMD.format(target=CONFIG_TARGET)),
+        ('restore pacman.conf', PACMAN_RESTORE)]
     for op, cmd in reset_commands:
         try:
             sudo(cmd)
@@ -392,6 +400,8 @@ class Configurator():
     def configure_pacman(self):
         """Install /etc/pacman.conf"""
         if self._tmpdir is not None:
+            if not isfile(PACMAN_CONF_DST):
+                sudo(PACMAN_BACKUP)
             chdir(self._tmpdir)
             cmd = PACMAN_INST.format(
                 src=PACMAN_CONF_SRC, dst=PACMAN_CONF_DST)
