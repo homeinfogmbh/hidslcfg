@@ -56,7 +56,7 @@ Options:
 Maintainer: Richard Neumann <r.neumann@homeinfo.de>
 
 Usage:
-    hidslreset
+    hidslreset [options]
 
 Options:
     --verbose            Be gassy
@@ -249,17 +249,16 @@ def configure(tid, cid, vpndata, repoconf):
 
 def reset():
     """Resets the system's configuration"""
-    reset_commands = {
-        'Reset hostname': '/usr/bin/rm /etc/hostname',
-        'Remove digital signage data': '/usr/bin/rm -R /var/cache/digsig/*',
-        'Remove OpenVPN configuration': '/usr/bin/rm -R /etc/openvpn/*',
-        'Reset systemd.target': SYSTEMD_CMD.format(target=DIGSIG_TARGET)}
-    for reset_command in reset_commands:
-        cmd = reset_commands[reset_command]
+    reset_commands = [
+        ('reset hostname', '/usr/bin/rm /etc/hostname'),
+        ('remove digital signage data', '/usr/bin/rm -R /var/cache/digsig/*'),
+        ('remove OpenVPN configuration', '/usr/bin/rm -R /etc/openvpn/*'),
+        ('reset systemd.target', SYSTEMD_CMD.format(target=DIGSIG_TARGET))]
+    for op, cmd in reset_commands:
         try:
-            self.sudo(cmd)
+            sudo(cmd)
         except CalledProcessError as cpe:
-            fail('Could not {0}'.format(reset_command))
+            fail('Could not {0}'.format(op))
 
 
 class TerminalAddress():
@@ -480,7 +479,7 @@ if __name__ == '__main__':
                     passwd = getpass('Password: ')
                 except KeyboardInterrupt:
                     print()
-                    fail('Setup aborted by user')
+                    fail('Configuration aborted by user')
                 else:
                     # Call API
                     try:
@@ -493,6 +492,10 @@ if __name__ == '__main__':
                         # Configure system
                         configure(tid, cid, vpndata, repoconf)
             elif script_name == 'hidslreset':
-                reset()
+                try:
+                    reset()
+                except KeyboardInterrupt:
+                    print()
+                    fail('Reset aborted by user')
             else:
                 fail(INVALID_SCRIPT.format(script_name))
