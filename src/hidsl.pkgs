@@ -1,0 +1,20 @@
+#! /usr/bin/python
+#
+#  HIDSL Setup packages list
+#
+############################
+
+
+### Official repositories ###
+
+# Explicit Packages
+grub
+openssh
+openvpn
+ufw
+ntp
+vim
+wget
+iputils
+iperf
+beep
