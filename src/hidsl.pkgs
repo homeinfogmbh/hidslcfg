@@ -5,16 +5,19 @@
 ############################
 
 
-### Official repositories ###
+# ### Official repositories ### #
 
-# Explicit Packages
+# Core Packages
 grub
 openssh
 openvpn
 ufw
 ntp
+
+# Utility packages
 vim
 wget
 iputils
 iperf
 beep
+lm_sensors
