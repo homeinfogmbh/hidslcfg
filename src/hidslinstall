@@ -1,0 +1,587 @@
+#! /usr/bin/env python3
+"""hidslinstall
+
+Freshly set up a HIDSL system
+
+Usage:
+    hidslinstall <disk> [options]
+    hidslinstall --list
+
+Options:
+    --efi=<arch>    Set up for EFI boot with <arch> either "32" or "64".
+    --debug         Verbose output.
+"""
+
+from os import getcwd, chdir, listdir
+from os.path import realpath, dirname, basename, join
+from subprocess import CalledProcessError, run
+from logging import INFO, DEBUG, basicConfig, getLogger
+from re import match
+
+
+__all__ = ['PartitioningError', 'FormattingError',
+           'PartType', 'BootMode', 'FileSystem',
+           'BlockDevice', 'Disk', 'Partition', 'PackageList',
+           'Command', 'Pacstrap', 'ArchChroot', 'GrubInstall',
+           'Chdir', 'Fdisk', 'Mkfs', 'Mount']
+
+
+# ### Exceptions ### #
+class PartitioningError(Exception):
+    """Indicated an error during partitioning"""
+
+    pass
+
+
+class FormattingError(Exception):
+    """Indicated an error during file system creation"""
+
+    pass
+
+
+class DiskTypeError(ValueError):
+    """Indicates wrong disk type"""
+
+    pass
+
+
+# ### Module methods ### #
+def setup(disk, mode, logger=None):
+    """Sets up HIDSL on disk <disk> with boot mode <mode>"""
+    logger = getLogger(__file__) if logger is None else logger
+
+    # Partition the disk
+    with Fdisk(self.disk) as fdisk:
+        if self.mode == BootMode.MBR:
+            fdisk.new()
+            fdisk.add()
+        else:
+            # EFI 32/64 mode
+            fdisk.new('g')
+            fdisk.add(end='+100M')
+            fdisk.chtyp('ef')
+            fdisk.add()
+        fdisk.write()
+        fdisk()
+
+    try:
+        run('/usr/bin/partprobe').check_returncode()
+    except CompletedProcessError:
+        logger.warning('Could not reload partitioning table')
+
+    # Format disks
+    if  mode != BootMode.MBR:
+        uefi_mkfs = Mkfs(self.disk[1])
+
+        try:
+            uefi_mkfs('fat32', label='UEFI').check_returncode()
+        except CompletedProcessError:
+            logger.error('Could not format EFI partition')
+            exit(2)
+        else:
+            root_mkfs = Mkfs(self.disk[2])
+    else:
+        root_mkfs = Mkfs(self.disk[1])
+
+    try:
+        root_mkfs('ext4', label='root').check_returncode()
+    except CompletedProcessError:
+        logger.error('Could not format root partition')
+        exit(3)
+
+
+# ### Enumerations ### #
+class PartType():
+    """Partition types"""
+
+    EFI = 'C12A7328-F81F-11D2-BA4B-00A0C93EC93B'
+    LINUX = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'
+
+
+class BootMode:
+    """Boot modes"""
+
+    MBR = 'i386-pc'
+    EFI32 = 'i386-efi'
+    EFI64 = 'x86_64-efi'
+
+
+class FileSystem():
+    """Supported file systems"""
+
+    FAT32 = 'fat32'
+    EXT4 = 'ext4'
+
+
+# ### System abstraction ### #
+class BlockDevice():
+    """Block device wrapper
+
+    XXX: Abstract, do not use this class directly.
+    Use HDD, SSD or MMCBLK instead.
+    """
+
+    BASE_DIR = '/dev'
+
+    def __init__(self, path):
+        self.path = path
+
+    def __index__(self, i):
+        dev = basename(self.path)
+        partname = self.PART.format(self.path, i)
+        return Partition(path=partname)
+
+    def __iter__(self):
+        directory = dirname(self.path)
+        diskname = basename(self.path)
+
+        for inode in listdir(directory):
+            # Skip disk itself
+            if inode != diskname:
+                if inode.startswith(self.PART.format(diskname, '')):
+                    path = join(directory, inode)
+                    yield Partition(path=path)
+
+    def __str__(self):
+        return self.path
+
+    @classmethod
+    def list(cls):
+        completed_process = run(cls.LIST)
+        return completed_process.returncode == 0
+
+
+class Disk(BlockDevice):
+    """Basic disk wrapper
+
+    XXX: Abstract, do not use this class directly.
+    Use HDD, SSD or MMCBLK instead.
+    """
+
+    @property
+    def path(self):
+        """Returns the path"""
+        return self._path
+
+    @path.setter
+    def path(self, path):
+        """Verifies and sets the path"""
+        dir_ = dirname(path)
+        file_ = basename(path)
+
+        if dir_ == self.BASE_DIR:
+            if match(self.REGEX, file_):
+                self._path = path
+            else:
+                raise DiskTypeError(
+                    'Device "{0}" does not match regex pattern "{1}"'.format(
+                        file_, self.REGEX))
+        else:
+            raise DiskTypeError(
+                'Device is not inside base dir {0}'.format(
+                    self.BASE_DIR))
+
+    @classmethod
+    def by_path(cls, path):
+        """Creates an instance of a Disk
+        implementation by the path name
+        """
+        for class_ in (HDD, SSD, MMCBLK):
+            try:
+                return class_(path=path)
+            except DiskTypeError:
+                continue
+        else:
+            raise DiskTypeError('Unsupported disk type: {}'.format(path))
+
+
+class HDD(Disk):
+    """Disk device wrapper"""
+
+    REGEX = '^sd[a-z]$'
+    PART = '{0}{1}'
+
+
+SSD = HDD
+
+
+class MMCBLK(Disk):
+    """Disk device wrapper"""
+
+    REGEX = '^mmcblk[0-9]$'
+    PART = '{0}p{1}'
+
+
+class Partition(BlockDevice):
+    """Partition wrapper"""
+
+    LIST = '/usr/bin/lsblk'
+    UUIDS_DIR = '/dev/disk/by-uuid'
+    LABELS_DIR = '/dev/disk/by-label'
+
+    def __init__(self, path=None, label=None, uuid=None):
+        args = [arg for arg in (path, label, uuid) if arg is not None]
+        argc_err = ValueError('Must specify one of path, label or uuid')
+
+        if len(args) != 1:
+            raise argc_err
+        else:
+            if path is not None:
+                self.path = path
+            elif label is not None:
+                self.path = realpath(join(self.LABELS_DIR, label))
+            elif uuid is not None:
+                self.path = realpath(join(self.UUIDS_DIR, uuid))
+            else:
+                raise argc_err
+
+    def __repr__(self):
+        return self.uuid
+
+    @property
+    def uuid(self):
+        for uuid in listdir(self.UUIDS_DIR):
+            if realpath(join(self.UUIDS_DIR, uuid)) == self.path:
+                return uuid
+
+    @property
+    def label(self):
+        for label in listdir(self.LABELS_DIR):
+            if realpath(join(self.LABELS_DIR, label)) == self.path:
+                return label
+
+
+class ConfigFile():
+    """Config file wrapper"""
+
+    COMMENTS = ['#', ';']
+
+    def __init__(self, path):
+        """Sets the file path"""
+        self.path = path
+
+    def __iter__(self):
+        """Yields package names"""
+        with open(self.path, 'r') as f:
+            for line in f:
+                stripped_line = line.strip()
+                if stripped_line:
+                    if not is_comment(line):
+                        yield line
+
+    def is_comment(self, line):
+        for comment in self.COMMENTS:
+            if line.startswith(comment):
+                return True
+
+        return False
+
+
+# ### CLI commands ### #
+class Command():
+    """Abstract CLI command"""
+
+    def __init__(self, command, *args, shell=False):
+        self.command = command
+        self.args = args
+        self.shell = shell
+
+    def __call__(self, *pkgs):
+        return run(self)
+
+    def __str__(self):
+        return ' '.join(self)
+
+    def __iter__(self):
+        yield self.command
+        yield from self.args
+
+
+class Pacstrap(Command):
+    """Pacstrap wrapper"""
+
+    COMMAND = '/usr/bin/pacstrap'
+
+    def __init__(self, dst, *pkgs):
+        super().__init__(self.COMMAND, dst, *pkgs)
+        self.dst = dst
+        self.pkgs = pkgs
+
+
+class ArchChroot(Command):
+    """Chroot wrapper"""
+
+    COMMAND = '/usr/bin/arch-chroot'
+
+    def __init__(self, dst, command):
+        """Initialize the chroot with a Command() instance"""
+        super().__init__(self.COMMAND, dst, *command)
+
+
+class GrubInstall(Command):
+    """Installation wrapper for the grub2 bootloader"""
+
+    COMMAND = '/usr/bin/grub-install'
+    TARGET = '--target={}'
+    EFI_DIR = '--efi-directory={}'
+    BOOTLOADER_ID = '--bootloader-id={}'
+
+    def __init__(self, dst, mode=BootMode.MBR, bootloader_id='grub'):
+        super().__init__(self.COMMAND, dst, mode)
+        self.dst = dst
+        self.mode = mode
+        self.bootloader_id = bootloader_id
+
+    def __iter__(self):
+        yield self.COMMAND
+
+        if self.mode is GrubMode.MBR:
+            yield self.dst
+        else:
+            yield self.TARGET.format(self.mode)
+            yield self.EFI_DIR.format(self.dst)
+            yield self.BOOTLOADER_ID.format(self.bootloader_id)
+
+
+class Chdir():
+    """Temporarily change working directory"""
+
+    def __init__(self, dst, origin=None):
+        self.dst = dst
+        self.origin = origin
+        self.cwd = None
+
+    def __enter__(self):
+        self.cwd = getcwd()
+        chdir(self.dst)
+        return self
+
+    def __exit__(self, *_):
+        chdir(self.cwd)
+
+    @property
+    def cwd(self):
+        if self.origin is not None:
+            return self.origin
+        else:
+            return self._cwd
+
+    @cwd.setter
+    def cwd(self, cwd):
+        self._cwd = cwd
+
+
+class Fdisk():
+    """Fdisk wrapper
+
+    XXX: Not derived from Command(), because
+    it needs to echo its settings first.s
+    """
+
+    def __init__(self, disk, newtyp=None, partitions=None, types=None):
+        """Initializes the fdisk wrapper"""
+        self.disk = disk
+        self.commands = []
+
+        if newtyp is not None:
+            self.new(typ=newtyp)
+        if partitions is not None:
+            for partition in partitions:
+                self.add(*partition)
+        if types is not None:
+            for typ in types:
+                self.chtyp(*typ)
+
+        self.partitions = partitions
+        self.types = types
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        """Resets all commands"""
+        self.commands = []
+
+    def __call__(self):
+        """Actually calls fdisk"""
+        if self.commands:
+            if 'w' not in self.commands:
+                return False
+            else:
+                return run(self.command_line, shell=True)
+        else:
+            return False
+
+    @property
+    def input_line(self):
+        return '\n'.join(chain(self.commands, ['']))
+
+    @property
+    def command_line(self):
+        return ('/usr/bin/echo -e "{input_line}" | '
+                '/usr/bin/fdisk {disk}').format(
+            input_line=self.input_line, disk=self.disk)
+
+    def new(self, typ=None):
+        """Creates a new partition table"""
+        if typ is not None:
+            self.commands.append(typ)
+        else:
+            self.commands.append('o')
+
+    def add(self, typ=None, partno=None, start=None, end=None):
+        """Adds a new partition"""
+        typ = '' if typ is None else typ
+        partno = '' if partno is None else str(partno)
+        start = '' if start is None else str(start)
+        end = '' if end is None else str(end)
+        self.commands += ['n', typ, partno, start, end]
+
+    def chtyp(self, typ, partno=None):
+        """Changes the type of a partition"""
+        self.commands.append('t')
+
+        if partno is not None:
+            self.commands.append(str(partno))
+
+        self.commands.append(str(typ))
+
+    def write(self):
+        """Adds a write statement to the commands list"""
+        self.commands.append('w')
+
+
+class Mkfs(Command):
+    """Creates a file system on a partition"""
+
+    CMD = '/usr/bin/mkfs.{}'
+    FS_CMDS = {
+        FileSystem.FAT32: ('vfat -F32', ' -n {}'),
+        FileSystem.EXT4: ('ext4', ' -L {}')}
+
+    def __init__(self, partition):
+        """Sets the partition"""
+        self.partition = partition
+
+    def __call__(self, fs, label=None):
+        """Performs the formatting"""
+        if fs in self.FS_CMDS:
+            cmdline, label_temp = self.FS_CMDS[fs]
+
+            if label is not None:
+                cmdline += label_temp.format(label)
+
+            cmdline += ' {}'.format(self.partition)
+        else:
+            raise NotImplementedError(
+                'Unsupported file system {0}'.format(fs))
+
+        cmd = self.CMD.format(cmdline)
+
+        return run(cmd, shell=True)
+
+
+class Mount():
+    """A Linux file system mount point"""
+
+    MOUNT = '/usr/bin/mount'
+    UMOUNT = '/usr/bin/umount'
+
+    def __init__(self, partition, mountpoint=None):
+        """Sets the path to the partition device file"""
+        self.partition = partition
+        self.mountpoint = mountpoint
+        self.mounted = False
+
+    def __enter__(self):
+        """Enters a with statement"""
+        if not self.mounted:
+            if self.mountpoint is None:
+                self.mountpoint = mkdtemp()
+
+            self.mounted = self.mount()
+
+        return self
+
+    def __exit__(self, *_):
+        """Exits a with statement"""
+        try:
+            self.umount().check_returncode()
+        except CalledProcessError:
+            self.mounted = True
+        else:
+            self.mounted = False
+
+    @property
+    def path(self):
+        """Returns the mount point's path"""
+        return self.path
+
+    @property
+    def mountpoint(self):
+        """Returns the mount point"""
+        return self.mountpoint
+
+    def mount(self):
+        """Mounts the partition"""
+        cmd = '{command} {partition} {mountpoint}'.format(
+            command=self.MOUNT,
+            partition=self.partition,
+            mountpoint=self._mountpoint)
+
+        return run(cmd, shell=True)
+
+    def umount(self):
+        """Un-mounts the partition"""
+        if self.mountpoint is None:
+            cmd = '{umount} {partition}'.format(
+                umount=self.UMOUNT, partition=self.partition)
+
+            return run(cmd, shell=True)
+        else:
+            cmd = '{umount} {mountpoint}'.format(
+                umount=self.UMOUNT, mountpoint=self.mountpoint)
+            self.mountpoint = None
+
+            return run(cmd, shell=True)
+
+
+# ### CLI ### #
+if __name__ == '__main__':
+    # Process options
+    options = docopt(__doc__)
+    _efi = options['--efi']
+    _disk = options['<disk>']
+    _debug = options['--debug']
+    _list = options['--list']
+
+    # Initialize logger
+    if _debug:
+        basicConfig(DEBUG)
+    else:
+        basicConfig(INFO)
+    logger = getLogger(basename(__file__))
+
+    if _list:
+        Disk.list()
+    else:
+        # Determine boot mode
+        if _efi is None:
+            mode = BootMode.MBR
+        else:
+            if efi == '32':
+                mode = BootMode.EFI32
+            elif efi == '64':
+                mode = BootMode.EFI64
+            else:
+                logger.error('Invalid EFI mode: {}'.format(_efi))
+                exit(1)
+
+        # Determine disk
+        try:
+            disk = Disk.by_path(_disk)
+        except DiskTypeError:
+            logger.error('Unsupported disk type: {}'.format(_disk))
+            exit(2)
+        else:
+            setup(disk, mode, logger=logger)

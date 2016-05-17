@@ -1,0 +1,5 @@
+# Configures services using systemctl
+ufw.service
+ntpd.service
+sshd.service
+openvpn@terminals.service
