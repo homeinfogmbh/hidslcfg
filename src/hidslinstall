@@ -48,19 +48,26 @@ class DiskTypeError(ValueError):
 # ### Module methods ### #
 def setup(disk, mode, logger=None):
     """Sets up HIDSL on disk <disk> with boot mode <mode>"""
-    logger = getLogger(__file__) if logger is None else logger
+    logger = getLogger(__name__) if logger is None else logger
 
     # Partition the disk
+    logger.info('Partitioning disk')
+
     with Fdisk(self.disk) as fdisk:
         if self.mode == BootMode.MBR:
+            logger.debug('Creating new DOS partitioning table')
             fdisk.new()
+            logger.debug('Creating root partition')
             fdisk.add()
         else:
-            # EFI 32/64 mode
+            logger.debug('Creating new GPT partitioning table')
             fdisk.new('g')
+            logger.debug('Creating EFI partition')
             fdisk.add(end='+100M')
             fdisk.chtyp('ef')
+            logger.debug('Creating root partition')
             fdisk.add()
+
         fdisk.write()
         fdisk()
 
@@ -70,8 +77,13 @@ def setup(disk, mode, logger=None):
         logger.warning('Could not reload partitioning table')
 
     # Format disks
-    if  mode != BootMode.MBR:
-        uefi_mkfs = Mkfs(self.disk[1])
+    logger.info('Creating file systems')
+
+    if mode == BootMode.MBR:
+        root_mkfs = Mkfs(disk[1])
+    else:
+        uefi_mkfs = Mkfs(disk[1])
+        logger.debug('Formatting EFI partition')
 
         try:
             uefi_mkfs('fat32', label='UEFI').check_returncode()
@@ -79,15 +91,25 @@ def setup(disk, mode, logger=None):
             logger.error('Could not format EFI partition')
             exit(2)
         else:
-            root_mkfs = Mkfs(self.disk[2])
-    else:
-        root_mkfs = Mkfs(self.disk[1])
+            root_mkfs = Mkfs(disk[2])
+
+    logger.debug('Formatting root partition')
 
     try:
         root_mkfs('ext4', label='root').check_returncode()
     except CompletedProcessError:
         logger.error('Could not format root partition')
         exit(3)
+
+    # Mount partitions
+    if mode == BootMode.MBR:
+        root_part = disk[1]
+        with Mount(str(root_part)) as rootfs:
+            pacstrap(rootfs.mountpoint)
+
+            with ArchChroot(rootfs.mountpoint) as chroot:
+                chroot
+            configure(rootfs.mountpoint)
 
 
 # ### Enumerations ### #
@@ -114,6 +136,34 @@ class FileSystem():
 
 
 # ### System abstraction ### #
+class DiskType():
+    """A disk type"""
+
+    ENCAP = '^{}$'
+
+    def __init__(self, disk, disks, part, parts):
+        self.disk = disk
+        self.disks = disks
+        self.part = part
+        self.parts = parts
+
+    @property
+    def diskmatch(self):
+        return self.ENCAP.format(self.disk.format(self.disks))
+
+    @property
+    def partmatch(self):
+        return self.ENCAP.format(
+            self.part.format(
+                self.disk.format(self.disks),
+                self.parts))
+
+
+HDD = DiskType('sd{}', '[a-z]', '{0}{1}', '[0-9]')
+SSD = HDD
+MMCBLK = DiskType('mmcblk{}', '[0-9]', '{0}p{1}', '[0-9]')
+
+
 class BlockDevice():
     """Block device wrapper
 
@@ -122,25 +172,10 @@ class BlockDevice():
     """
 
     BASE_DIR = '/dev'
+    LIST = '/usr/bin/lsblk'
 
     def __init__(self, path):
-        self.path = path
-
-    def __index__(self, i):
-        dev = basename(self.path)
-        partname = self.PART.format(self.path, i)
-        return Partition(path=partname)
-
-    def __iter__(self):
-        directory = dirname(self.path)
-        diskname = basename(self.path)
-
-        for inode in listdir(directory):
-            # Skip disk itself
-            if inode != diskname:
-                if inode.startswith(self.PART.format(diskname, '')):
-                    path = join(directory, inode)
-                    yield Partition(path=path)
+        self.__path = path
 
     def __str__(self):
         return self.path
@@ -150,76 +185,87 @@ class BlockDevice():
         completed_process = run(cls.LIST)
         return completed_process.returncode == 0
 
-
-class Disk(BlockDevice):
-    """Basic disk wrapper
-
-    XXX: Abstract, do not use this class directly.
-    Use HDD, SSD or MMCBLK instead.
-    """
+    def match(self, typ):
+        raise NotImplementedError()
 
     @property
     def path(self):
         """Returns the path"""
-        return self._path
+        return self.__path
 
     @path.setter
     def path(self, path):
         """Verifies and sets the path"""
-        dir_ = dirname(path)
-        file_ = basename(path)
-
-        if dir_ == self.BASE_DIR:
-            if match(self.REGEX, file_):
-                self._path = path
+        if self.dirname == self.BASE_DIR:
+            if match(self.match(self.typ), self.basename):
+                self.__path = path
             else:
                 raise DiskTypeError(
                     'Device "{0}" does not match regex pattern "{1}"'.format(
-                        file_, self.REGEX))
+                        self.basename, self.match))
         else:
             raise DiskTypeError(
                 'Device is not inside base dir {0}'.format(
                     self.BASE_DIR))
 
-    @classmethod
-    def by_path(cls, path):
-        """Creates an instance of a Disk
-        implementation by the path name
-        """
-        for class_ in (HDD, SSD, MMCBLK):
-            try:
-                return class_(path=path)
-            except DiskTypeError:
-                continue
+    @property
+    def typ(self):
+        return self.__typ
+
+    @typ.setter
+    def typ(self, typ):
+        if typ is None:
+            for typ in (HDD, SSD, MMCBLK):
+                try:
+                    self.typ = typ
+                except DiskTypeError:
+                    continue
+                else:
+                    break
+            else:
+                raise DiskTypeError('Unsupported disk type: {}'.format(path))
         else:
-            raise DiskTypeError('Unsupported disk type: {}'.format(path))
+            if match(self.match(typ), self.path):
+                self.typ = typ
+            else:
+                raise DiskTypeError('Unsupported disk type: {}'.format(self.path))
+
+    @property
+    def dirname(self):
+        return dirname(self.path)
+
+    @property
+    def basename(self):
+        return basename(self.path)
 
 
-class HDD(Disk):
-    """Disk device wrapper"""
+class Disk(BlockDevice):
+    """A disk"""
 
-    REGEX = '^sd[a-z]$'
-    PART = '{0}{1}'
+    def __init__(self, path, typ=None):
+        super().__init__(path)
+        self.typ = typ
 
+    def __index__(self, i):
+        return Partition(self.typ.part.format(self.path, i))
 
-SSD = HDD
+    def __iter__(self):
+        for inode in listdir(self.dirname):
+            if match(self.typ.partmatch, inode):
+                path = join(self.directory, inode)
+                yield Partition(path, typ=self.typ)
 
-
-class MMCBLK(Disk):
-    """Disk device wrapper"""
-
-    REGEX = '^mmcblk[0-9]$'
-    PART = '{0}p{1}'
+    def match(self, typ):
+        return typ.diskmatch
 
 
 class Partition(BlockDevice):
     """Partition wrapper"""
 
-    LIST = '/usr/bin/lsblk'
     UUIDS_DIR = '/dev/disk/by-uuid'
     LABELS_DIR = '/dev/disk/by-label'
 
-    def __init__(self, path=None, label=None, uuid=None):
+    def __init__(self, path=None, label=None, uuid=None, typ=None):
         args = [arg for arg in (path, label, uuid) if arg is not None]
         argc_err = ValueError('Must specify one of path, label or uuid')
 
@@ -227,13 +273,16 @@ class Partition(BlockDevice):
             raise argc_err
         else:
             if path is not None:
-                self.path = path
+                pass
             elif label is not None:
-                self.path = realpath(join(self.LABELS_DIR, label))
+                path = realpath(join(self.LABELS_DIR, label))
             elif uuid is not None:
-                self.path = realpath(join(self.UUIDS_DIR, uuid))
+                path = realpath(join(self.UUIDS_DIR, uuid))
             else:
                 raise argc_err
+
+            super().__init__(path)
+            self.typ = typ
 
     def __repr__(self):
         return self.uuid
@@ -250,6 +299,9 @@ class Partition(BlockDevice):
             if realpath(join(self.LABELS_DIR, label)) == self.path:
                 return label
 
+    def match(self, typ):
+        return typ.partmatch
+
 
 class ConfigFile():
     """Config file wrapper"""
@@ -265,11 +317,13 @@ class ConfigFile():
         with open(self.path, 'r') as f:
             for line in f:
                 stripped_line = line.strip()
+
                 if stripped_line:
                     if not is_comment(line):
                         yield line
 
     def is_comment(self, line):
+        """Determines whether the given line is a comment"""
         for comment in self.COMMENTS:
             if line.startswith(comment):
                 return True
@@ -313,9 +367,13 @@ class ArchChroot(Command):
 
     COMMAND = '/usr/bin/arch-chroot'
 
-    def __init__(self, dst, command):
+    def __init__(self, dst):
         """Initialize the chroot with a Command() instance"""
-        super().__init__(self.COMMAND, dst, *command)
+        super().__init__(self.COMMAND, dst, shell=True)
+        self.dst = dst
+
+    def __call__(self, command):
+        return run(chain(self, command))
 
 
 class GrubInstall(Command):
@@ -511,11 +569,6 @@ class Mount():
             self.mounted = True
         else:
             self.mounted = False
-
-    @property
-    def path(self):
-        """Returns the mount point's path"""
-        return self.path
 
     @property
     def mountpoint(self):
