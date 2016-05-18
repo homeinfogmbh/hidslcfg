@@ -42,7 +42,15 @@ class FormattingError(Exception):
 class DiskTypeError(ValueError):
     """Indicates wrong disk type"""
 
-    pass
+    def __init__(self, path_or_msg, typ=None):
+        if typ is None:
+            super().__init__(path_or_msg)
+            self.path = None
+        else:
+            super().__init__('{0} / {1}'.format(path_or_msg, typ))
+            self.path = path
+
+        self.typ = typ
 
 
 # ### Module methods ### #
@@ -120,7 +128,7 @@ class PartType():
     LINUX = '0FC63DAF-8483-4772-8E79-3D69D8477DE4'
 
 
-class BootMode:
+class BootMode():
     """Boot modes"""
 
     MBR = 'i386-pc'
@@ -136,8 +144,8 @@ class FileSystem():
 
 
 # ### System abstraction ### #
-class DiskType():
-    """A disk type"""
+class DevType():
+    """A block device type"""
 
     ENCAP = '^{}$'
 
@@ -158,10 +166,22 @@ class DiskType():
                 self.disk.format(self.disks),
                 self.parts))
 
+    def match(self, target, path):
+        if isinstance(target, Disk):
+            return match(self.diskmatch, path)
+        elif isinstance(target, Partition):
+            return match(self.partmatch, path)
+        else:
+            raise ValueError(
+                'Target "{}" is neither a disk nor a Partition.'.format(
+                    target))
 
-HDD = DiskType('sd{}', '[a-z]', '{0}{1}', '[0-9]')
+
+HDD = DevType('/dev/sd{}', '[a-z]', '{0}{1}', '[0-9]')
 SSD = HDD
-MMCBLK = DiskType('mmcblk{}', '[0-9]', '{0}p{1}', '[0-9]')
+MMCBLK = DevType('/dev/mmcblk{}', '[0-9]', '{0}p{1}', '[0-9]')
+
+DEV_TYPES = (HDD, SSD, MMCBLK)
 
 
 class BlockDevice():
@@ -171,11 +191,23 @@ class BlockDevice():
     Use HDD, SSD or MMCBLK instead.
     """
 
-    BASE_DIR = '/dev'
     LIST = '/usr/bin/lsblk'
 
-    def __init__(self, path):
-        self.__path = path
+    def __init__(self, path, typ=None):
+        if typ is None:
+            for typ_ in DEV_TYPES:
+                if typ_.match(self, path):
+                    self.__path = path
+                    self.__typ = typ_
+                    break
+            else:
+                raise DiskTypeError('Unsupported disk type: {}'.format(path))
+        else:
+            if typ.match(self, path):
+                self.__path = path
+                self.__typ = typ
+            else:
+                raise DiskTypeError(path, typ)
 
     def __str__(self):
         return self.path
@@ -193,42 +225,9 @@ class BlockDevice():
         """Returns the path"""
         return self.__path
 
-    @path.setter
-    def path(self, path):
-        """Verifies and sets the path"""
-        if self.dirname == self.BASE_DIR:
-            if match(self.match(self.typ), self.basename):
-                self.__path = path
-            else:
-                raise DiskTypeError(
-                    'Device "{0}" does not match regex pattern "{1}"'.format(
-                        self.basename, self.match))
-        else:
-            raise DiskTypeError(
-                'Device is not inside base dir {0}'.format(
-                    self.BASE_DIR))
-
     @property
     def typ(self):
         return self.__typ
-
-    @typ.setter
-    def typ(self, typ):
-        if typ is None:
-            for typ in (HDD, SSD, MMCBLK):
-                try:
-                    self.typ = typ
-                except DiskTypeError:
-                    continue
-                else:
-                    break
-            else:
-                raise DiskTypeError('Unsupported disk type: {}'.format(path))
-        else:
-            if match(self.match(typ), self.path):
-                self.typ = typ
-            else:
-                raise DiskTypeError('Unsupported disk type: {}'.format(self.path))
 
     @property
     def dirname(self):
@@ -241,10 +240,6 @@ class BlockDevice():
 
 class Disk(BlockDevice):
     """A disk"""
-
-    def __init__(self, path, typ=None):
-        super().__init__(path)
-        self.typ = typ
 
     def __index__(self, i):
         return Partition(self.typ.part.format(self.path, i))
@@ -281,8 +276,7 @@ class Partition(BlockDevice):
             else:
                 raise argc_err
 
-            super().__init__(path)
-            self.typ = typ
+            super().__init__(path, typ=typ)
 
     def __repr__(self):
         return self.uuid
