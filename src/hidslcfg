@@ -151,9 +151,9 @@ def getdata(tid, cid, user, passwd):
         print(location)
         print()
 
-        yn = input('Is this correct? [y/N]: ')
+        answer = input('Is this correct? [y/N]: ')
 
-        if yn.lower() in ['y', 'yes']:
+        if answer.lower() in ['y', 'yes']:
             if VERBOSE:
                 print('Retrieving OpenVPN data')
             else:
@@ -241,12 +241,12 @@ def configure(tid, cid, vpndata, location):
         print('Setup completed successfully')
 
         try:
-            yn = input('Do you want to reboot now? [y/N]: ')
+            answer = input('Do you want to reboot now? [y/N]: ')
         except KeyboardInterrupt:
             print()
             reboot = False
         else:
-            reboot = yn.lower() in ['y', 'yes']
+            reboot = answer.lower() in ['y', 'yes']
 
         if reboot:
             run('/usr/bin/sudo -n /usr/bin/reboot', shell=True)
@@ -469,6 +469,7 @@ class Configurator():
 
             with open(LOCATION_FILE_SRC, 'w') as location_tmp:
                 location_tmp.write(location)
+                location_tmp.write('\n')
 
             cmd = LOCATION_INST.format(
                 src=LOCATION_FILE_SRC, dst=LOCATION_FILE_DST)
