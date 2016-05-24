@@ -286,7 +286,7 @@ class TerminalAddress():
 
     def __init__(self, s):
         """Generate terminal address from a string"""
-        lines = s.split('\n')
+        lines = [line for line in s.split('\n') if line.strip()]
 
         if len(lines) == 1:
             # Unconfigured
