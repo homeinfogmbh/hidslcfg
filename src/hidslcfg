@@ -288,16 +288,16 @@ class TerminalAddress():
     def __init__(self, s):
         """Generate terminal address from a string"""
         try:
-            json = loads(s)
+            location = loads(s)
         except (TypeError, ValueError):
             print('Unexpected API reply')
-            json = {}
+            location = {}
 
-        self.street = json.get('street', '(unknown)')
-        self.house_number = json.get('house_number', '(unknown)')
-        self.zip_code = json.get('zip_code', '(unknown)')
-        self.city = json.get('city', '(unknown)')
-        self.annotation = json.get('annotation', '-')
+        self.street = location.get('street', '(unknown)')
+        self.house_number = location.get('house_number', '(unknown)')
+        self.zip_code = location.get('zip_code', '(unknown)')
+        self.city = location.get('city', '(unknown)')
+        self.annotation = location.get('annotation', '-')
 
     def __str__(self):
         """Converts the address into a human readable form"""
