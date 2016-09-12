@@ -15,40 +15,15 @@ from json import loads
 from requests import get
 
 
-__all__ = ['InvalidCredentials', 'Unauthorized', 'APIError',
-           'OutsideOfWithStatement', 'fail', 'TerminalAddress', 'APIClient',
-           'Configurator']
-
-SCRIPTS = {
-    'hidslcfg': """HOMEINFO Digital Signage Linux configurator
-
-Maintainer: Richard Neumann <r.neumann@homeinfo.de>
-
-Usage:
-    hidslcfg <ident> [--user=<user_name>] [--verbose]
-    hidslcfg [options]
-
-Options:
-    --tid=<terminal_id>  Specifies the physical terminal identifier
-    --cid=<customer_id>  Specifies the customer identifier
-    --user=<user_name>   Specifies the setup user's name
-    --verbose            Be gassy
-    -h --help            Show this page""",
-
-    'hidslreset': """HOMEINFO Digital Signage Linux resetter
-
-Maintainer: Richard Neumann <r.neumann@homeinfo.de>
-
-Usage:
-    hidslreset [options]
-
-Options:
-    --verbose            Be gassy
-    -h --help            Show this page"""}
-
-INVALID_SCRIPT = 'Script name "{0}" is invalid'
-
-VERBOSE = False
+__all__ = [
+    'InvalidCredentials',
+    'Unauthorized',
+    'APIError',
+    'OutsideOfWithStatement',
+    'fail',
+    'TerminalAddress',
+    'APIClient',
+    'Configurator']
 
 SYSTEMD_CMD = '/usr/bin/systemctl set-default {target}'
 PING_CMD = '/usr/bin/ping -W 1 -c 5 {host}'
@@ -129,17 +104,17 @@ def fail(err, *msgs, exit_code=3):
     exit(exit_code)
 
 
-def sudo(cmd):
+def sudo(cmd, verbose=False):
     """Run a command as root using sudo"""
 
-    output = None if VERBOSE else DEVNULL
+    output = None if verbose else DEVNULL
     result = run(
         '/usr/bin/sudo -n {cmd}'.format(cmd=cmd), shell=True,
         stdin=DEVNULL, stdout=output, stderr=output)
     result.check_returncode()
 
 
-def getdata(tid, cid, user, passwd):
+def getdata(tid, cid, user, passwd, verbose=False):
     """Get data from web API"""
 
     client = APIClient(user, passwd, cid, tid)
@@ -155,7 +130,7 @@ def getdata(tid, cid, user, passwd):
         answer = input('Is this correct? [y/N]: ')
 
         if answer.lower() in ['y', 'yes']:
-            if VERBOSE:
+            if verbose:
                 print('Retrieving OpenVPN data')
             else:
                 print('Please wait...')
@@ -178,11 +153,11 @@ def getdata(tid, cid, user, passwd):
         return (vpndata, location)
 
 
-def configure(tid, cid, vpndata, location):
+def configure(tid, cid, vpndata, location, verbose=False):
     """Performs the terminal configuration"""
 
     with Configurator(tid, cid, vpndata, location) as configurator:
-        if VERBOSE:
+        if verbose:
             print('Installing OpenVPN configuration')
 
         try:
@@ -191,7 +166,7 @@ def configure(tid, cid, vpndata, location):
             fail('SUBPROCESS ERROR',
                  'Installation of OpenVPN configuration failed')
 
-        if VERBOSE:
+        if verbose:
             print('Restarting OpenVPN')
 
         try:
@@ -199,12 +174,12 @@ def configure(tid, cid, vpndata, location):
         except CalledProcessError:
             fail('SUBPROCESS ERROR', 'Restart of OpenVPN server failed')
 
-        if VERBOSE:
+        if verbose:
             print('Waiting for OpenVPN server to start')
 
         sleep(VPN_GRACETIME)
 
-        if VERBOSE:
+        if verbose:
             print('Checking OpenVPN connection')
 
         try:
@@ -212,7 +187,7 @@ def configure(tid, cid, vpndata, location):
         except CalledProcessError:
             fail('SUBPROCESS ERROR', 'Cannot contact OpenVPN server')
 
-        if VERBOSE:
+        if verbose:
             print('Installing', HOSTNAME_FILE_DST)
 
         try:
@@ -221,7 +196,7 @@ def configure(tid, cid, vpndata, location):
             fail('SUBPROCESS ERROR', 'Installation of',
                  HOSTNAME_FILE_DST, 'failed')
 
-        if VERBOSE:
+        if verbose:
             print('Installing', LOCATION_FILE)
 
         try:
@@ -230,7 +205,7 @@ def configure(tid, cid, vpndata, location):
             fail('SUBPROCESS ERROR', 'Installation of',
                  LOCATION_FILE, 'failed')
 
-        if VERBOSE:
+        if verbose:
             print('Setting systemd target to digital signage')
 
         try:
@@ -258,7 +233,7 @@ def configure(tid, cid, vpndata, location):
             exit(0)
 
 
-def reset():
+def reset(verbose=False):
     """Resets the system's configuration"""
 
     reset_commands = [
@@ -270,7 +245,7 @@ def reset():
 
     for op, cmd in reset_commands:
         try:
-            sudo(cmd)
+            sudo(cmd, verbose=verbose)
         except CalledProcessError as cpe:
             fail('Could not {0}'.format(op))
 
@@ -389,12 +364,13 @@ class APIClient():
 class Configurator():
     """Terminal configurator"""
 
-    def __init__(self, tid, cid, vpndata, location):
+    def __init__(self, tid, cid, vpndata, location, verbose=False):
         """Sets VPN and location configuration"""
         self.tid = tid
         self.cid = cid
         self.vpndata = vpndata
         self.location = location
+        self.verbose = verbose
         self._tmpdir = None
 
     def __enter__(self):
@@ -415,23 +391,23 @@ class Configurator():
         if self._tmpdir is not None:
             # Clean up OpenVPN config
             with suppress(CalledProcessError):
-                sudo('/usr/bin/rm /etc/openvpn/*')
+                sudo('/usr/bin/rm /etc/openvpn/*', verbose=self.verbose)
 
             # Unpack OpenVPN archive
             chdir(self._tmpdir)
             cmd = VPN_INST.format(arch=VPN_ARCHIVE)
-            sudo(cmd)
+            sudo(cmd, verbose=self.verbose)
         else:
             raise OutsideOfWithStatement('Not within with statement')
 
     def restart_vpn(self):
         """Set systemd default target to digital-signage.target"""
         cmd = VPN_CMD.format(instance=VPN_CONFIG)
-        sudo(cmd)
+        sudo(cmd, verbose=self.verbose)
 
     def test_vpn(self):
         """Set systemd default target to digital-signage.target"""
-        output = None if VERBOSE else DEVNULL
+        output = None if self.verbose else DEVNULL
         result = run(
             PING_CMD.format(host=VPN_SERVER), shell=True,
             stdin=DEVNULL, stdout=output, stderr=output)
@@ -448,7 +424,7 @@ class Configurator():
 
             cmd = HOSTNAME_INST.format(
                 src=HOSTNAME_FILE_SRC, dst=HOSTNAME_FILE_DST)
-            sudo(cmd)
+            sudo(cmd, verbose=self.verbose)
         else:
             raise OutsideOfWithStatement('Not within with statement')
 
@@ -464,14 +440,91 @@ class Configurator():
 
             cmd = LOCATION_INST.format(
                 src=LOCATION_FILE_SRC, dst=LOCATION_FILE_DST)
-            sudo(cmd)
+            sudo(cmd, verbose=self.verbose)
         else:
             raise OutsideOfWithStatement('Not within with statement')
 
     def set_systemd_target(self):
         """Set systemd default target to digital-signage.target"""
         cmd = SYSTEMD_CMD.format(target=DIGSIG_TARGET)
-        sudo(cmd)
+        sudo(cmd, verbose=self.verbose)
+
+
+def hidslcfg(options):
+    """HOMEINFO Digital Signage Linux configurator
+
+    Maintainer: Richard Neumann <r.neumann@homeinfo.de>
+
+    Usage:
+        hidslcfg <ident> [--user=<user_name>] [--verbose]
+        hidslcfg [options]
+
+    Options:
+        --tid=<terminal_id>  Specifies the physical terminal identifier
+        --cid=<customer_id>  Specifies the customer identifier
+        --user=<user_name>   Specifies the setup user's name
+        --verbose            Be gassy
+        -h --help            Show this page
+    """
+    verbose = options['--verbose']
+    ident = options['<ident>']
+
+    if ident is None:
+        tid = options['--tid']
+        cid = options['--cid']
+    else:
+        try:
+            tid, cid = ident.split('.')
+        except ValueError:
+            fail('INVALID IDENT',
+                 'Identifier must be like <tid>.<cid>')
+
+    user = options['--user']
+
+    try:
+        if cid is None:
+            cid = input('Customer ID: ')
+        if tid is None:
+            tid = input('Terminal ID: ')
+        if not user:
+            user = input('User name: ')
+
+        passwd = getpass('Password: ')
+    except KeyboardInterrupt:
+        print()
+        fail('Configuration aborted by user')
+    else:
+        # Call API
+        try:
+            vpndata, location = getdata(
+                tid, cid, user, passwd, verbose=verbose)
+        except ConnectionError:
+            fail('Cannot connect to webservice '
+                 '- check your internet connection')
+        else:
+            # Configure system
+            configure(tid, cid, vpndata, location, verbose=verbose)
+
+
+def hidslreset(options):
+    """HOMEINFO Digital Signage Linux resetter
+
+    Maintainer: Richard Neumann <r.neumann@homeinfo.de>
+
+    Usage:
+        hidslreset [options]
+
+    Options:
+        --verbose            Be gassy
+        -h --help            Show this page
+    """
+    verbose = options['--verbose']
+
+    try:
+        reset(verbose=verbose)
+    except KeyboardInterrupt:
+        print()
+        fail('Reset aborted by user')
 
 
 if __name__ == '__main__':
@@ -482,58 +535,9 @@ if __name__ == '__main__':
     else:
         script_name = basename(__file__)
 
-        try:
-            doc = SCRIPTS[script_name]
-        except KeyError:
-            fail(INVALID_SCRIPT.format(script_name))
+        if script_name == 'hidslcfg':
+            hidslcfg(docopt(hidslcfg.__doc__))
+        elif script_name == 'hidslreset':
+            hidslreset(docopt(hidslreset.__doc__))
         else:
-            options = docopt(doc)
-            VERBOSE = options['--verbose']
-
-            if script_name == 'hidslcfg':
-                # Validate options
-                ident = options['<ident>']
-
-                if ident is None:
-                    tid = options['--tid']
-                    cid = options['--cid']
-                else:
-                    try:
-                        tid, cid = ident.split('.')
-                    except ValueError:
-                        fail('INVALID IDENT',
-                             'Identifier must be like <tid>.<cid>')
-
-                user = options['--user']
-
-                try:
-                    if cid is None:
-                        cid = input('Customer ID: ')
-                    if tid is None:
-                        tid = input('Terminal ID: ')
-                    if not user:
-                        user = input('User name: ')
-
-                    passwd = getpass('Password: ')
-                except KeyboardInterrupt:
-                    print()
-                    fail('Configuration aborted by user')
-                else:
-                    # Call API
-                    try:
-                        vpndata, location = getdata(
-                            tid, cid, user, passwd)
-                    except ConnectionError:
-                        fail('Cannot connect to webservice '
-                             '- check your internet connection')
-                    else:
-                        # Configure system
-                        configure(tid, cid, vpndata, location)
-            elif script_name == 'hidslreset':
-                try:
-                    reset()
-                except KeyboardInterrupt:
-                    print()
-                    fail('Reset aborted by user')
-            else:
-                fail(INVALID_SCRIPT.format(script_name))
+            fail('Script name "{}" is invalid'.format(script_name))
