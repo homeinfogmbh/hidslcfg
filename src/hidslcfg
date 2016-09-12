@@ -19,7 +19,7 @@ __all__ = [
     'InvalidCredentials',
     'Unauthorized',
     'APIError',
-    'OutsideOfWithStatement',
+    'OutOfContext',
     'fail',
     'TerminalAddress',
     'APIClient',
@@ -85,7 +85,7 @@ class APIError(ErrorMessage):
     pass
 
 
-class OutsideOfWithStatement(ErrorMessage):
+class OutOfContext(ErrorMessage):
     """Indicates that an operation that requires being
     within a with statement was executed outside of it
     """
@@ -109,7 +109,7 @@ def sudo(cmd, verbose=False):
 
     output = None if verbose else DEVNULL
     result = run(
-        '/usr/bin/sudo -n {cmd}'.format(cmd=cmd), shell=True,
+        '/usr/bin/sudo -n {}'.format(cmd), shell=True,
         stdin=DEVNULL, stdout=output, stderr=output)
     result.check_returncode()
 
@@ -247,7 +247,84 @@ def reset(verbose=False):
         try:
             sudo(cmd, verbose=verbose)
         except CalledProcessError as cpe:
-            fail('Could not {0}'.format(op))
+            fail('Could not {}'.format(op))
+
+
+def hidslcfg(options):
+    """HOMEINFO Digital Signage Linux configurator
+
+    Maintainer: Richard Neumann <r.neumann@homeinfo.de>
+
+    Usage:
+        hidslcfg <ident> [--user=<user_name>] [--verbose]
+        hidslcfg [options]
+
+    Options:
+        --tid=<terminal_id>  Specifies the physical terminal identifier
+        --cid=<customer_id>  Specifies the customer identifier
+        --user=<user_name>   Specifies the setup user's name
+        --verbose            Be gassy
+        -h --help            Show this page
+    """
+    verbose = options['--verbose']
+    ident = options['<ident>']
+
+    if ident is None:
+        tid = options['--tid']
+        cid = options['--cid']
+    else:
+        try:
+            tid, cid = ident.split('.')
+        except ValueError:
+            fail('INVALID IDENT',
+                 'Identifier must be like <tid>.<cid>')
+
+    user = options['--user']
+
+    try:
+        if cid is None:
+            cid = input('Customer ID: ')
+        if tid is None:
+            tid = input('Terminal ID: ')
+        if not user:
+            user = input('User name: ')
+
+        passwd = getpass('Password: ')
+    except KeyboardInterrupt:
+        print()
+        fail('Configuration aborted by user')
+    else:
+        # Call API
+        try:
+            vpndata, location = getdata(
+                tid, cid, user, passwd, verbose=verbose)
+        except ConnectionError:
+            fail('Cannot connect to webservice '
+                 '- check your internet connection')
+        else:
+            # Configure system
+            configure(tid, cid, vpndata, location, verbose=verbose)
+
+
+def hidslreset(options):
+    """HOMEINFO Digital Signage Linux resetter
+
+    Maintainer: Richard Neumann <r.neumann@homeinfo.de>
+
+    Usage:
+        hidslreset [options]
+
+    Options:
+        --verbose            Be gassy
+        -h --help            Show this page
+    """
+    verbose = options['--verbose']
+
+    try:
+        reset(verbose=verbose)
+    except KeyboardInterrupt:
+        print()
+        fail('Reset aborted by user')
 
 
 class TerminalAddress():
@@ -398,7 +475,7 @@ class Configurator():
             cmd = VPN_INST.format(arch=VPN_ARCHIVE)
             sudo(cmd, verbose=self.verbose)
         else:
-            raise OutsideOfWithStatement('Not within with statement')
+            raise OutOfContext('Not within with statement')
 
     def restart_vpn(self):
         """Set systemd default target to digital-signage.target"""
@@ -426,7 +503,7 @@ class Configurator():
                 src=HOSTNAME_FILE_SRC, dst=HOSTNAME_FILE_DST)
             sudo(cmd, verbose=self.verbose)
         else:
-            raise OutsideOfWithStatement('Not within with statement')
+            raise OutOfContext('Not within with statement')
 
     def configure_location(self):
         """Configures location settings"""
@@ -442,89 +519,12 @@ class Configurator():
                 src=LOCATION_FILE_SRC, dst=LOCATION_FILE_DST)
             sudo(cmd, verbose=self.verbose)
         else:
-            raise OutsideOfWithStatement('Not within with statement')
+            raise OutOfContext('Not within with statement')
 
     def set_systemd_target(self):
         """Set systemd default target to digital-signage.target"""
         cmd = SYSTEMD_CMD.format(target=DIGSIG_TARGET)
         sudo(cmd, verbose=self.verbose)
-
-
-def hidslcfg(options):
-    """HOMEINFO Digital Signage Linux configurator
-
-    Maintainer: Richard Neumann <r.neumann@homeinfo.de>
-
-    Usage:
-        hidslcfg <ident> [--user=<user_name>] [--verbose]
-        hidslcfg [options]
-
-    Options:
-        --tid=<terminal_id>  Specifies the physical terminal identifier
-        --cid=<customer_id>  Specifies the customer identifier
-        --user=<user_name>   Specifies the setup user's name
-        --verbose            Be gassy
-        -h --help            Show this page
-    """
-    verbose = options['--verbose']
-    ident = options['<ident>']
-
-    if ident is None:
-        tid = options['--tid']
-        cid = options['--cid']
-    else:
-        try:
-            tid, cid = ident.split('.')
-        except ValueError:
-            fail('INVALID IDENT',
-                 'Identifier must be like <tid>.<cid>')
-
-    user = options['--user']
-
-    try:
-        if cid is None:
-            cid = input('Customer ID: ')
-        if tid is None:
-            tid = input('Terminal ID: ')
-        if not user:
-            user = input('User name: ')
-
-        passwd = getpass('Password: ')
-    except KeyboardInterrupt:
-        print()
-        fail('Configuration aborted by user')
-    else:
-        # Call API
-        try:
-            vpndata, location = getdata(
-                tid, cid, user, passwd, verbose=verbose)
-        except ConnectionError:
-            fail('Cannot connect to webservice '
-                 '- check your internet connection')
-        else:
-            # Configure system
-            configure(tid, cid, vpndata, location, verbose=verbose)
-
-
-def hidslreset(options):
-    """HOMEINFO Digital Signage Linux resetter
-
-    Maintainer: Richard Neumann <r.neumann@homeinfo.de>
-
-    Usage:
-        hidslreset [options]
-
-    Options:
-        --verbose            Be gassy
-        -h --help            Show this page
-    """
-    verbose = options['--verbose']
-
-    try:
-        reset(verbose=verbose)
-    except KeyboardInterrupt:
-        print()
-        fail('Reset aborted by user')
 
 
 if __name__ == '__main__':
