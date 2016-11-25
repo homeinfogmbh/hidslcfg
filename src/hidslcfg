@@ -197,13 +197,13 @@ def configure(tid, cid, vpndata, location, verbose=False):
                  HOSTNAME_FILE_DST, 'failed')
 
         if verbose:
-            print('Installing', LOCATION_FILE)
+            print('Installing', LOCATION_FILE_DST)
 
         try:
             configurator.configure_location()
         except CalledProcessError:
             fail('SUBPROCESS ERROR', 'Installation of',
-                 LOCATION_FILE, 'failed')
+                 LOCATION_FILE_DST, 'failed')
 
         if verbose:
             print('Setting systemd target to digital signage')
