@@ -1,7 +1,7 @@
 # Maintainer: Richard Neumann aka rne. <r dot neumann at homeinfo fullstop de>
 
 pkgname=('hidsl-cfg' 'hidsl-img')
-pkgver='1.2.5'
+pkgver='2.0.1'
 pkgrel=1
 arch=('any')
 license=('GPL3')
@@ -19,6 +19,7 @@ package_hidsl-cfg() {
     # Install binaries
     install -d -m 755 "${pkgdir}/usr/bin"
     install -m 755 "${srcdir}/hidslcfg" "${pkgdir}/usr/bin"
+
     # Create symlink "hidslreset"
     local CWD=$(pwd)
     cd "${pkgdir}/usr/bin"
