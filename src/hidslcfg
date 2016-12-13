@@ -25,26 +25,26 @@ __all__ = [
     'APIClient',
     'Configurator']
 
-SYSTEMD_CMD = '/usr/bin/systemctl set-default {target}'
-PING_CMD = '/usr/bin/ping -W 1 -c 5 {host}'
+SYSTEMD_TARGET = '/usr/bin/systemctl set-default {}'
+PING_HOST = '/usr/bin/ping -W 1 -c 5 {}'
 
 VPN_ARCHIVE = 'openvpn.tar.gz'
-VPN_INST = '/usr/bin/tar xf {arch} -C /etc/openvpn'
+VPN_INST = '/usr/bin/tar xf {} -C /etc/openvpn'.format(VPN_ARCHIVE)
 VPN_CLEAN = '/usr/bin/rm -Rf /etc/openvpn/*'
-VPN_CMD = '/usr/bin/systemctl restart openvpn@{instance}.service'
-VPN_CONFIG = 'terminals'
+VPN_CFG = 'terminals'
+VPN_RESTART = '/usr/bin/systemctl restart openvpn@{}.service'.format(VPN_CFG)
 VPN_SERVER = '10.8.0.1'
 VPN_GRACETIME = 3
 
 HOSTNAME_FILE_SRC = 'hostname'
 HOSTNAME_FILE_DST = '/etc/hostname'
 HOSTNAME_INST = '/usr/bin/install -o root -g root -m 644 -T {src} {dst}'
-HOSTNAME_RESET = '/usr/bin/rm -f {dst}'
+HOSTNAME_RESET = '/usr/bin/rm -f {}'
 
 LOCATION_FILE_SRC = 'location'
 LOCATION_FILE_DST = '/usr/local/etc/location'
 LOCATION_INST = '/usr/bin/install -o root -g root -m 644 -T {src} {dst}'
-LOCATION_RESET = '/usr/bin/rm -f {dst}'
+LOCATION_RESET = '/usr/bin/rm -f {}'
 
 DIGSIG_TARGET = 'digital-signage.target'
 DIGSIG_DATA_CLEAN = '/usr/bin/rm -Rf /usr/share/digsig/*'
@@ -129,7 +129,7 @@ def getdata(tid, cid, user, passwd, verbose=False):
 
         answer = input('Is this correct? [y/N]: ')
 
-        if answer.lower() in ['y', 'yes']:
+        if answer.lower() in ('y', 'yes'):
             if verbose:
                 print('Retrieving OpenVPN data')
             else:
@@ -236,14 +236,12 @@ def configure(tid, cid, vpndata, location, verbose=False):
 def reset(verbose=False):
     """Resets the system's configuration"""
 
-    reset_commands = [
-        ('reset hostname', HOSTNAME_RESET.format(dst=HOSTNAME_FILE_DST)),
-        ('reset location', LOCATION_RESET.format(dst=LOCATION_FILE_DST)),
-        ('remove digital signage data', DIGSIG_DATA_CLEAN),
-        ('remove OpenVPN configuration', VPN_CLEAN),
-        ('reset systemd.target', SYSTEMD_CMD.format(target=CONFIG_TARGET))]
-
-    for op, cmd in reset_commands:
+    for op, cmd in (
+            ('reset hostname', HOSTNAME_RESET.format(HOSTNAME_FILE_DST)),
+            ('reset location', LOCATION_RESET.format(LOCATION_FILE_DST)),
+            ('remove digital signage data', DIGSIG_DATA_CLEAN),
+            ('remove OpenVPN configuration', VPN_CLEAN),
+            ('reset systemd.target', SYSTEMD_TARGET.format(CONFIG_TARGET))):
         try:
             sudo(cmd, verbose=verbose)
         except CalledProcessError as cpe:
@@ -472,21 +470,19 @@ class Configurator():
 
             # Unpack OpenVPN archive
             chdir(self._tmpdir)
-            cmd = VPN_INST.format(arch=VPN_ARCHIVE)
-            sudo(cmd, verbose=self.verbose)
+            sudo(VPN_INST, verbose=self.verbose)
         else:
             raise OutOfContext('Not within with statement')
 
     def restart_vpn(self):
         """Set systemd default target to digital-signage.target"""
-        cmd = VPN_CMD.format(instance=VPN_CONFIG)
-        sudo(cmd, verbose=self.verbose)
+        sudo(VPN_RESTART, verbose=self.verbose)
 
     def test_vpn(self):
         """Set systemd default target to digital-signage.target"""
         output = None if self.verbose else DEVNULL
         result = run(
-            PING_CMD.format(host=VPN_SERVER), shell=True,
+            PING_HOST.format(VPN_SERVER), shell=True,
             stdin=DEVNULL, stdout=output, stderr=output)
         result.check_returncode()
 
@@ -523,21 +519,24 @@ class Configurator():
 
     def set_systemd_target(self):
         """Set systemd default target to digital-signage.target"""
-        cmd = SYSTEMD_CMD.format(target=DIGSIG_TARGET)
+        cmd = SYSTEMD_TARGET.format(DIGSIG_TARGET)
         sudo(cmd, verbose=self.verbose)
 
 
 if __name__ == '__main__':
-    from docopt import docopt
-
-    if geteuid() == 0:
-        fail('Refusing to run as root!')
+    try:
+        from docopt import docopt
+    except ImportError:
+        fail('"docopt" not available', 'CLI mode not available.', exit_code=4)
     else:
-        script_name = basename(__file__)
-
-        if script_name == 'hidslcfg':
-            hidslcfg(docopt(hidslcfg.__doc__))
-        elif script_name == 'hidslreset':
-            hidslreset(docopt(hidslreset.__doc__))
+        if geteuid() == 0:
+            fail('Refusing to run as root!')
         else:
-            fail('Script name "{}" is invalid'.format(script_name))
+            script_name = basename(__file__)
+
+            if script_name == 'hidslcfg':
+                hidslcfg(docopt(hidslcfg.__doc__))
+            elif script_name == 'hidslreset':
+                hidslreset(docopt(hidslreset.__doc__))
+            else:
+                fail('Script name "{}" is invalid'.format(script_name))
