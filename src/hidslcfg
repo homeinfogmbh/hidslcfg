@@ -41,11 +41,6 @@ HOSTNAME_FILE_DST = '/etc/hostname'
 HOSTNAME_INST = '/usr/bin/install -o root -g root -m 644 -T {src} {dst}'
 HOSTNAME_RESET = '/usr/bin/rm -f {}'
 
-LOCATION_FILE_SRC = 'location'
-LOCATION_FILE_DST = '/usr/local/etc/location'
-LOCATION_INST = '/usr/bin/install -o root -g root -m 644 -T {src} {dst}'
-LOCATION_RESET = '/usr/bin/rm -f {}'
-
 DIGSIG_TARGET = 'digital-signage.target'
 DIGSIG_DATA = '/usr/share/digsig'
 DIGSIG_DATA_CLEAN = '/usr/bin/rm -Rf {}/*'.format(DIGSIG_DATA)
@@ -151,13 +146,13 @@ def getdata(tid, cid, user, passwd, verbose=False):
         print()
         fail('Setup aborted by user')
     else:
-        return (vpndata, location)
+        return vpndata
 
 
-def configure(tid, cid, vpndata, location, verbose=False):
+def configure(tid, cid, vpndata, verbose=False):
     """Performs the terminal configuration"""
 
-    with Configurator(tid, cid, vpndata, location) as configurator:
+    with Configurator(tid, cid, vpndata) as configurator:
         if verbose:
             print('Installing OpenVPN configuration')
 
@@ -198,15 +193,6 @@ def configure(tid, cid, vpndata, location, verbose=False):
                  HOSTNAME_FILE_DST, 'failed')
 
         if verbose:
-            print('Installing', LOCATION_FILE_DST)
-
-        try:
-            configurator.configure_location()
-        except CalledProcessError:
-            fail('SUBPROCESS ERROR', 'Installation of',
-                 LOCATION_FILE_DST, 'failed')
-
-        if verbose:
             print('Setting systemd target to digital signage')
 
         try:
@@ -239,7 +225,6 @@ def reset(verbose=False):
 
     for op, cmd in (
             ('reset hostname', HOSTNAME_RESET.format(HOSTNAME_FILE_DST)),
-            ('reset location', LOCATION_RESET.format(LOCATION_FILE_DST)),
             ('remove digital signage data', DIGSIG_DATA_CLEAN),
             ('remove OpenVPN configuration', VPN_CLEAN),
             ('reset systemd.target', SYSTEMD_TARGET.format(CONFIG_TARGET))):
@@ -295,14 +280,13 @@ def hidslcfg(options):
     else:
         # Call API
         try:
-            vpndata, location = getdata(
-                tid, cid, user, passwd, verbose=verbose)
+            vpndata = getdata(tid, cid, user, passwd, verbose=verbose)
         except ConnectionError:
             fail('Cannot connect to webservice '
                  '- check your internet connection')
         else:
             # Configure system
-            configure(tid, cid, vpndata, location, verbose=verbose)
+            configure(tid, cid, vpndata, verbose=verbose)
 
 
 def hidslreset(options):
@@ -375,44 +359,7 @@ class APIClient():
         self.cid = cid
         self.tid = tid
 
-    def __call__(self):
-        """Get configuration data"""
-        return (self.vpndata, self.location)
-
-    @property
-    def valid(self):
-        """Verifies the set credentials"""
-        status_code, text = self.apicall('verify')
-
-        if status_code == 200:
-            return True
-        elif status_code == 401:
-            if text == 'Invalid credentials':
-                raise InvalidCredentials()
-            else:
-                raise Unauthorized()
-        else:
-            raise APIError(text)
-
-    @property
-    def location(self):
-        """Gets the terminal location"""
-        reply = self.apicall('location')
-        return TerminalAddress(reply.text)
-
-    @property
-    def vpndata(self):
-        """Gets the terminal's VPN keys and configuration"""
-        reply = self.apicall('vpn_data')
-        return reply.content
-
-    @property
-    def url(self):
-        """Reutrns the API URL"""
-        return '{proto}://{host}{path}'.format(
-            proto=self.PROTO, host=self.HOST, path=self.PATH)
-
-    def apicall(self, action):
+    def __call__(self, action):
         """Contact the API with the respective
         user name, password and action call
         """
@@ -424,7 +371,7 @@ class APIClient():
             'tid': self.tid,
             'client_version': self.VERSION}
 
-        reply = get(self.url, params=params)
+        reply = get(self._url, params=params)
 
         if reply.status_code == 200:
             return reply
@@ -436,16 +383,30 @@ class APIClient():
         else:
             raise APIError(reply.text)
 
+    @property
+    def _url(self):
+        """Reutrns the API URL"""
+        return '{0}://{1}{2}'.format(self.PROTO, self.HOST, self.PATH)
+
+    @property
+    def location(self):
+        """Gets the terminal location"""
+        return TerminalAddress(self('location').text)
+
+    @property
+    def vpndata(self):
+        """Gets the terminal's VPN keys and configuration"""
+        return self('vpn_data').content
+
 
 class Configurator():
     """Terminal configurator"""
 
-    def __init__(self, tid, cid, vpndata, location, verbose=False):
-        """Sets VPN and location configuration"""
+    def __init__(self, tid, cid, vpndata, verbose=False):
+        """Sets VPN configuration"""
         self.tid = tid
         self.cid = cid
         self.vpndata = vpndata
-        self.location = location
         self.verbose = verbose
         self._tmpdir = None
 
@@ -498,22 +459,6 @@ class Configurator():
 
             cmd = HOSTNAME_INST.format(
                 src=HOSTNAME_FILE_SRC, dst=HOSTNAME_FILE_DST)
-            sudo(cmd, verbose=self.verbose)
-        else:
-            raise OutOfContext('Not within with statement')
-
-    def configure_location(self):
-        """Configures location settings"""
-        if self._tmpdir is not None:
-            chdir(self._tmpdir)
-            location = str(self.location)
-
-            with open(LOCATION_FILE_SRC, 'w') as location_tmp:
-                location_tmp.write(location)
-                location_tmp.write('\n')
-
-            cmd = LOCATION_INST.format(
-                src=LOCATION_FILE_SRC, dst=LOCATION_FILE_DST)
             sudo(cmd, verbose=self.verbose)
         else:
             raise OutOfContext('Not within with statement')
