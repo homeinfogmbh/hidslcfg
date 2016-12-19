@@ -1,8 +1,7 @@
 Cmnd_Alias HIDSL_CLEANUP_OPENVPN = /usr/bin/rm -Rf /etc/openvpn/*
-Cmnd_Alias HIDSL_CLEANUP_DIGSIG = /usr/bin/rm -Rf /usr/share/digsig/*
+Cmnd_Alias HIDSL_CLEANUP_DIGSIG = /usr/bin/rm -Rf /var/cache/digsig/*
 Cmnd_Alias HIDSL_CONFIGURE_OPENVPN = /usr/bin/tar xf openvpn.tar.gz -C /etc/openvpn
 Cmnd_Alias HIDSL_CONFIGURE_HOSTNAME = /usr/bin/install -o root -g root -m 644 -T hostname /etc/hostname
-Cmnd_Alias HIDSL_CONFIGURE_LOCATION = /usr/bin/install -o root -g root -m 644 -T location /usr/local/etc/location
 Cmnd_Alias HIDSL_RESET_HOSTNAME = /usr/bin/rm -f /etc/hostname
 Cmnd_Alias HIDSL_RESET_LOCATION = /usr/bin/rm -f /usr/local/etc/location
 Cmnd_Alias HIDSL_SET_TARGET = /usr/bin/systemctl set-default digital-signage.target
@@ -14,7 +13,6 @@ hidslcfg ALL = NOPASSWD: HIDSL_CLEANUP_OPENVPN, \
                          HIDSL_CLEANUP_DIGSIG, \
                          HIDSL_CONFIGURE_OPENVPN, \
                          HIDSL_CONFIGURE_HOSTNAME, \
-                         HIDSL_CONFIGURE_LOCATION, \
                          HIDSL_RESET_HOSTNAME, \
                          HIDSL_RESET_LOCATION, \
                          HIDSL_SET_TARGET, \
