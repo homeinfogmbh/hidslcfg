@@ -47,7 +47,7 @@ LOCATION_INST = '/usr/bin/install -o root -g root -m 644 -T {src} {dst}'
 LOCATION_RESET = '/usr/bin/rm -f {}'
 
 DIGSIG_TARGET = 'digital-signage.target'
-DIGSIG_DATA = '/var/cache/digsig'
+DIGSIG_DATA = '/usr/share/digsig'
 DIGSIG_DATA_CLEAN = '/usr/bin/rm -Rf {}/*'.format(DIGSIG_DATA)
 
 CONFIG_TARGET = 'hidslcfg.target'
