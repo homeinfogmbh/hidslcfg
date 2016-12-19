@@ -6,3 +6,5 @@ build
 setup.cfg
 dist
 src/hidslinstall.py
+*.tar.xz*
+pkg

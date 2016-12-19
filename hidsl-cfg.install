@@ -18,16 +18,16 @@ pre_install() {
     if ( ! id -u ${HIDSLCFG_USER} > /dev/null 2> /dev/null ); then
         useradd -mU ${HIDSLCFG_USER}
     fi
-
-    _fix_modes
 }
 
 
 post_install() {
     _fix_own
+    _fix_modes
 }
 
 
 post_upgrade() {
     _fix_own
+    _fix_modes
 }
