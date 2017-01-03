@@ -28,13 +28,16 @@ __all__ = [
 SYSTEMD_TARGET = '/usr/bin/systemctl set-default {}'
 PING_HOST = '/usr/bin/ping -W 1 -c 5 {}'
 
+VPN_CLIENT_DIR = '/etc/openvpn/client'
 VPN_ARCHIVE = 'openvpn.tar.gz'
-VPN_INST = '/usr/bin/tar xf {} -C /etc/openvpn'.format(VPN_ARCHIVE)
-VPN_CLEAN = '/usr/bin/rm -Rf /etc/openvpn/*'
 VPN_CFG = 'terminals'
-VPN_RESTART = '/usr/bin/systemctl restart openvpn@{}.service'.format(VPN_CFG)
 VPN_SERVER = '10.8.0.1'
 VPN_GRACETIME = 3
+VPN_INST = '/usr/bin/tar xf {archive} -C {client_dir}'.format(
+    archive=VPN_ARCHIVE, client_dir=VPN_CLIENT_DIR)
+VPN_CLEAN = '/usr/bin/rm -Rf {}'.format(join(VPN_CLIENT_DIR, '*'))
+VPN_SERVICE = 'openvpn-client@{}.service'.format(VPN_CFG)
+VPN_RESTART = '/usr/bin/systemctl restart {}'.format(VPN_SERVICE)
 
 HOSTNAME_FILE_SRC = 'hostname'
 HOSTNAME_FILE_DST = '/etc/hostname'
