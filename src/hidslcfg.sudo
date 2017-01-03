@@ -1,5 +1,5 @@
 hidslcfg ALL = NOPASSWD: \
-	/usr/bin/rm -Rf /etc/openvpn/client/*, \
+	/usr/bin/bash -c '/usr/bin/rm -f /etc/openvpn/client/*', \
 	/usr/bin/rm -Rf /usr/share/digsig/*, \
 	/usr/bin/tar xf openvpn.tar.gz -C /etc/openvpn/client, \
 	/usr/bin/install -o root -g root -m 644 -T hostname /etc/hostname, \

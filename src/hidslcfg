@@ -35,7 +35,8 @@ VPN_SERVER = '10.8.0.1'
 VPN_GRACETIME = 3
 VPN_INST = '/usr/bin/tar xf {archive} -C {client_dir}'.format(
     archive=VPN_ARCHIVE, client_dir=VPN_CLIENT_DIR)
-VPN_CLEAN = '/usr/bin/rm -Rf {}'.format(join(VPN_CLIENT_DIR, '*'))
+VPN_CLEAN = "/usr/bin/bash -c '/usr/bin/rm -f {}'".format(
+    join(VPN_CLIENT_DIR, '*'))
 VPN_SERVICE = 'openvpn-client@{}.service'.format(VPN_CFG)
 VPN_RESTART = '/usr/bin/systemctl restart {}'.format(VPN_SERVICE)
 
