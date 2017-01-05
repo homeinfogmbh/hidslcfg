@@ -4,7 +4,5 @@ hidslcfg ALL = NOPASSWD: \
 	/usr/bin/tar xf openvpn.tar.gz -C /etc/openvpn/client, \
 	/usr/bin/install -o root -g root -m 644 -T hostname /etc/hostname, \
 	/usr/bin/rm -f /etc/hostname, \
-	/usr/bin/systemctl set-default digital-signage.target, \
-	/usr/bin/systemctl set-default hidslcfg.target, \
 	/usr/bin/systemctl restart openvpn-client@terminals.service, \
 	/usr/bin/reboot

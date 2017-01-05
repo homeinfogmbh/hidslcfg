@@ -25,7 +25,6 @@ __all__ = [
     'APIClient',
     'Configurator']
 
-SYSTEMD_TARGET = '/usr/bin/systemctl set-default {}'
 PING_HOST = '/usr/bin/ping -W 1 -c 5 {}'
 
 VPN_CLIENT_DIR = '/etc/openvpn/client'
@@ -42,14 +41,12 @@ VPN_RESTART = '/usr/bin/systemctl restart {}'.format(VPN_SERVICE)
 
 HOSTNAME_FILE_SRC = 'hostname'
 HOSTNAME_FILE_DST = '/etc/hostname'
-HOSTNAME_INST = '/usr/bin/install -o root -g root -m 644 -T {src} {dst}'
-HOSTNAME_RESET = '/usr/bin/rm -f {}'
+HOSTNAME_INST = '/usr/bin/install -o root -g root -m 644 -T {0} {1}'.format(
+    HOSTNAME_FILE_SRC, HOSTNAME_FILE_DST)
+HOSTNAME_RESET = '/usr/bin/rm -f {}'.format(HOSTNAME_FILE_DST)
 
-DIGSIG_TARGET = 'digital-signage.target'
-DIGSIG_DATA = '/usr/share/digsig'
-DIGSIG_DATA_CLEAN = '/usr/bin/rm -Rf {}/*'.format(DIGSIG_DATA)
-
-CONFIG_TARGET = 'hidslcfg.target'
+DIGSIG_DATA_DIR = '/usr/share/digsig'
+DIGSIG_DATA_CLEAN = '/usr/bin/rm -Rf {}'.format(join(DIGSIG_DATA_DIR, '*'))
 
 
 class InvalidCredentials(Exception):
@@ -196,14 +193,6 @@ def configure(tid, cid, vpndata, verbose=False):
             fail('SUBPROCESS ERROR', 'Installation of',
                  HOSTNAME_FILE_DST, 'failed')
 
-        if verbose:
-            print('Setting systemd target to digital signage')
-
-        try:
-            configurator.set_systemd_target()
-        except CalledProcessError:
-            fail('SUBPROCESS ERROR', 'Setting of systemd target failed')
-
         print()
         print('Setup completed successfully')
 
@@ -228,10 +217,9 @@ def reset(verbose=False):
     """Resets the system's configuration"""
 
     for op, cmd in (
-            ('reset hostname', HOSTNAME_RESET.format(HOSTNAME_FILE_DST)),
+            ('reset hostname', HOSTNAME_RESET),
             ('remove digital signage data', DIGSIG_DATA_CLEAN),
-            ('remove OpenVPN configuration', VPN_CLEAN),
-            ('reset systemd.target', SYSTEMD_TARGET.format(CONFIG_TARGET))):
+            ('remove OpenVPN configuration', VPN_CLEAN)):
         try:
             sudo(cmd, verbose=verbose)
         except CalledProcessError as cpe:
@@ -461,16 +449,9 @@ class Configurator():
             with open(HOSTNAME_FILE_SRC, 'w') as hostname_tmp:
                 hostname_tmp.write(hostname)
 
-            cmd = HOSTNAME_INST.format(
-                src=HOSTNAME_FILE_SRC, dst=HOSTNAME_FILE_DST)
-            sudo(cmd, verbose=self.verbose)
+            sudo(HOSTNAME_INST, verbose=self.verbose)
         else:
             raise OutOfContext('Not within with statement')
-
-    def set_systemd_target(self):
-        """Set systemd default target to digital-signage.target"""
-        cmd = SYSTEMD_TARGET.format(DIGSIG_TARGET)
-        sudo(cmd, verbose=self.verbose)
 
 
 if __name__ == '__main__':
