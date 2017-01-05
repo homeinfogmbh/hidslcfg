@@ -1,7 +1,7 @@
 # Maintainer: Richard Neumann aka rne. <r dot neumann at homeinfo fullstop de>
 
 pkgname=('hidsl-cfg' 'hidsl-img')
-pkgver='4.0.0'
+pkgver='4.0.1'
 pkgrel=1
 arch=('any')
 license=('GPL3')
@@ -12,7 +12,7 @@ srcdir='src'
 
 package_hidsl-cfg() {
     pkgdesc="HOMEINFO Digital Sigange Linux configuration script"
-    depends=('python' 'python-docopt' 'python-requests' 'systemd' 'sudo' 'tar')
+    depends=('python' 'python-docopt' 'python-requests' 'systemd' 'sudo' 'tar' 'xorg-xmessage')
     replaces=('hi-setup')
     install=${pkgname}.install
 
@@ -35,7 +35,6 @@ package_hidsl-cfg() {
     install -d -m 755 "${pkgdir}/usr/lib/systemd/system"
     install -m 644 "${srcdir}/hidslcfg.target" "${pkgdir}/usr/lib/systemd/system/"
     install -m 644 "${srcdir}/hidslcfg@.service" "${pkgdir}/usr/lib/systemd/system/"
-    install -m 644 "${srcdir}/unconfigured-warning.service" "${pkgdir}/usr/lib/systemd/system/"
 
     # Install HOME files
     install -d -m 550 "${pkgdir}/home/hidslcfg"

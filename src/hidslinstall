@@ -19,11 +19,24 @@ from logging import INFO, DEBUG, basicConfig, getLogger
 from re import match
 
 
-__all__ = ['PartitioningError', 'FormattingError',
-           'PartType', 'BootMode', 'FileSystem',
-           'BlockDevice', 'Disk', 'Partition', 'PackageList',
-           'Command', 'Pacstrap', 'ArchChroot', 'GrubInstall',
-           'Chdir', 'Fdisk', 'Mkfs', 'Mount']
+__all__ = [
+    'PartitioningError',
+    'FormattingError',
+    'PartType',
+    'BootMode',
+    'FileSystem',
+    'BlockDevice',
+    'Disk',
+    'Partition',
+    'PackageList',
+    'Command',
+    'Pacstrap',
+    'ArchChroot',
+    'GrubInstall',
+    'Chdir',
+    'Fdisk',
+    'Mkfs',
+    'Mount']
 
 
 # ### Exceptions ### #
