@@ -2,7 +2,7 @@
 
 pkgname=('hidsl-cfg' 'hidsl-img')
 pkgver='4.0.1'
-pkgrel=1
+pkgrel=2
 arch=('any')
 license=('GPL3')
 groups=('homeinfo')
@@ -12,7 +12,7 @@ srcdir='src'
 
 package_hidsl-cfg() {
     pkgdesc="HOMEINFO Digital Sigange Linux configuration script"
-    depends=('python' 'python-docopt' 'python-requests' 'tar' 'digital-dignage')
+    depends=('python' 'python-docopt' 'python-requests' 'tar' 'digital-signage')
     replaces=('hi-setup')
     install=${pkgname}.install
 
