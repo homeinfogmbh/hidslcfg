@@ -25,6 +25,7 @@ __all__ = [
     'APIClient',
     'Configurator']
 
+SYSTEMCTL = '/usr/bin/systemctl'
 PING_HOST = '/usr/bin/ping -W 1 -c 5 {}'
 
 VPN_CLIENT_DIR = '/etc/openvpn/client'
@@ -37,7 +38,7 @@ VPN_INST = '/usr/bin/tar xf {archive} -C {client_dir}'.format(
 VPN_CLEAN = "/usr/bin/bash -c '/usr/bin/rm -f {}'".format(
     join(VPN_CLIENT_DIR, '*'))
 VPN_SERVICE = 'openvpn-client@{}.service'.format(VPN_CFG)
-VPN_ACTION = '/usr/bin/systemctl {{}} {}'.format(VPN_SERVICE)
+VPN_ACTION = '{0} {{}} {1}'.format(SYSTEMCTL, VPN_SERVICE)
 
 HOSTNAME_FILE_SRC = 'hostname'
 HOSTNAME_FILE_DST = '/etc/hostname'
@@ -47,6 +48,8 @@ HOSTNAME_RESET = '/usr/bin/rm -f {}'.format(HOSTNAME_FILE_DST)
 
 DIGSIG_DATA_DIR = '/usr/share/digsig'
 DIGSIG_DATA_CLEAN = '/usr/bin/rm -Rf {}'.format(join(DIGSIG_DATA_DIR, '*'))
+
+UNCONFIGURED_SERVICE = '{} {{}} unconfigured-warning.service'.format(SYSTEMCTL)
 
 
 class InvalidCredentials(Exception):
@@ -91,7 +94,7 @@ class OutOfContext(ErrorMessage):
 
 
 def fail(err, *msgs, exit_code=3):
-    """Print message to stderr and exit"""
+    """Prints error messages to stderr and exit"""
 
     print('\033[91m\033[1m', end='', file=stderr)  # Red and bold
     print(err, end='', file=stderr)
@@ -99,6 +102,12 @@ def fail(err, *msgs, exit_code=3):
     print(*msgs, file=stderr)
 
     exit(exit_code)
+
+
+def subproc_fail(*msgs):
+    """Prints subprocess error messages to stderr and exit"""
+
+    fail('SUBPROCESS ERROR', *msgs, exit_code=3)
 
 
 def sudo(cmd, verbose=False):
@@ -160,8 +169,7 @@ def configure(tid, cid, vpndata, verbose=False):
         try:
             configurator.configure_openvpn()
         except CalledProcessError:
-            fail('SUBPROCESS ERROR',
-                 'Installation of OpenVPN configuration failed')
+            subproc_fail('Installation of OpenVPN configuration failed')
 
         if verbose:
             print('Enabling OpenVPN')
@@ -169,7 +177,7 @@ def configure(tid, cid, vpndata, verbose=False):
         try:
             configurator.enable_vpn()
         except CalledProcessError:
-            fail('SUBPROCESS ERROR', 'Enabling of OpenVPN client failed')
+            subproc_fail('Enabling of OpenVPN client failed')
 
         if verbose:
             print('Restarting OpenVPN')
@@ -177,7 +185,7 @@ def configure(tid, cid, vpndata, verbose=False):
         try:
             configurator.restart_vpn()
         except CalledProcessError:
-            fail('SUBPROCESS ERROR', 'Restart of OpenVPN client failed')
+            subproc_fail('Restart of OpenVPN client failed')
 
         if verbose:
             print('Waiting for OpenVPN server to start')
@@ -190,7 +198,7 @@ def configure(tid, cid, vpndata, verbose=False):
         try:
             configurator.test_vpn()
         except CalledProcessError:
-            fail('SUBPROCESS ERROR', 'Cannot contact OpenVPN server')
+            subproc_fail('Cannot contact OpenVPN server')
 
         if verbose:
             print('Installing', HOSTNAME_FILE_DST)
@@ -198,8 +206,15 @@ def configure(tid, cid, vpndata, verbose=False):
         try:
             configurator.configure_hostname()
         except CalledProcessError:
-            fail('SUBPROCESS ERROR', 'Installation of',
-                 HOSTNAME_FILE_DST, 'failed')
+            subproc_fail('Installation of', HOSTNAME_FILE_DST, 'failed')
+
+        if verbose:
+            print('Disabling on-screen warning')
+
+        try:
+            configurator.disable_warning()
+        except CalledProcessError:
+            subproc_fail('Disabling of on-screen warning failed')
 
         print()
         print('Setup completed successfully')
@@ -227,7 +242,9 @@ def reset(verbose=False):
     for op, cmd in (
             ('reset hostname', HOSTNAME_RESET),
             ('remove digital signage data', DIGSIG_DATA_CLEAN),
-            ('disable OpenVPN service', VPN_ACTION.format('disable'))):
+            ('disable OpenVPN service', VPN_ACTION.format('disable')),
+            ('enable on-screen warning', UNCONFIGURED_SERVICE.format(
+                'enable'))):
         try:
             sudo(cmd, verbose=verbose)
         except CalledProcessError as cpe:
@@ -464,6 +481,10 @@ class Configurator():
             sudo(HOSTNAME_INST, verbose=self.verbose)
         else:
             raise OutOfContext('Not within with statement')
+
+    def disable_warning(self):
+        """Disables the on-screen unconfigured warning"""
+        sudo(UNCONFIGURED_SERVICE.format('disable'), verbose=self.verbose)
 
 
 if __name__ == '__main__':

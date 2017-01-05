@@ -1,0 +1,21 @@
+#  unconfigured-warning@.service On-screen missing configuration warning
+#
+# Maintainer: Richard Neumann <r.neumann@homeinfo.de>
+#
+###############################################################################
+
+[Unit]
+Description=On-screen missing configuration warning
+After=xorg-server.service
+Requires=xorg-server.service
+
+[Service]
+User=digsig
+Environment=DISPLAY=:0
+ExecStart=/usr/bin/xmessage "WARNING: Not configured!" -center -fn '-*-*-*-r-*--0-700-0-0-p-*-iso8859-1' -buttons ""
+ExecStartPost=/usr/bin/kiosk
+Restart=always
+
+[Install]
+WantedBy=graphical.target
+
