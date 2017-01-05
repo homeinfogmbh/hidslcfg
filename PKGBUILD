@@ -12,7 +12,7 @@ srcdir='src'
 
 package_hidsl-cfg() {
     pkgdesc="HOMEINFO Digital Sigange Linux configuration script"
-    depends=('python' 'python-docopt' 'python-requests' 'systemd' 'sudo' 'tar' 'xorg-xmessage')
+    depends=('python' 'python-docopt' 'python-requests' 'tar' 'digital-dignage')
     replaces=('hi-setup')
     install=${pkgname}.install
 
