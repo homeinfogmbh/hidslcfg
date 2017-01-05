@@ -37,7 +37,7 @@ VPN_INST = '/usr/bin/tar xf {archive} -C {client_dir}'.format(
 VPN_CLEAN = "/usr/bin/bash -c '/usr/bin/rm -f {}'".format(
     join(VPN_CLIENT_DIR, '*'))
 VPN_SERVICE = 'openvpn-client@{}.service'.format(VPN_CFG)
-VPN_RESTART = '/usr/bin/systemctl restart {}'.format(VPN_SERVICE)
+VPN_ACTION = '/usr/bin/systemctl {{}} {}'.format(VPN_SERVICE)
 
 HOSTNAME_FILE_SRC = 'hostname'
 HOSTNAME_FILE_DST = '/etc/hostname'
@@ -164,12 +164,20 @@ def configure(tid, cid, vpndata, verbose=False):
                  'Installation of OpenVPN configuration failed')
 
         if verbose:
+            print('Enabling OpenVPN')
+
+        try:
+            configurator.enable_vpn()
+        except CalledProcessError:
+            fail('SUBPROCESS ERROR', 'Enabling of OpenVPN client failed')
+
+        if verbose:
             print('Restarting OpenVPN')
 
         try:
             configurator.restart_vpn()
         except CalledProcessError:
-            fail('SUBPROCESS ERROR', 'Restart of OpenVPN server failed')
+            fail('SUBPROCESS ERROR', 'Restart of OpenVPN client failed')
 
         if verbose:
             print('Waiting for OpenVPN server to start')
@@ -219,7 +227,7 @@ def reset(verbose=False):
     for op, cmd in (
             ('reset hostname', HOSTNAME_RESET),
             ('remove digital signage data', DIGSIG_DATA_CLEAN),
-            ('remove OpenVPN configuration', VPN_CLEAN)):
+            ('disable OpenVPN service', VPN_ACTION.format('disable'))):
         try:
             sudo(cmd, verbose=verbose)
         except CalledProcessError as cpe:
@@ -416,7 +424,7 @@ class Configurator():
         self._tmpdir = None
 
     def configure_openvpn(self):
-        """Install OpenVPN configuration"""
+        """Installs the OpenVPN configuration"""
         if self._tmpdir is not None:
             # Clean up OpenVPN config
             with suppress(CalledProcessError):
@@ -428,12 +436,16 @@ class Configurator():
         else:
             raise OutOfContext('Not within with statement')
 
+    def enable_vpn(self):
+        """Enables the OpenVPN service"""
+        sudo(VPN_ACTION.format('enable'), verbose=self.verbose)
+
     def restart_vpn(self):
-        """Set systemd default target to digital-signage.target"""
-        sudo(VPN_RESTART, verbose=self.verbose)
+        """Restarts the OpenVPN service"""
+        sudo(VPN_ACTION.format('restart'), verbose=self.verbose)
 
     def test_vpn(self):
-        """Set systemd default target to digital-signage.target"""
+        """Tests the OpenVPN connection to the OpenVPN server"""
         output = None if self.verbose else DEVNULL
         result = run(
             PING_HOST.format(VPN_SERVER), shell=True,
