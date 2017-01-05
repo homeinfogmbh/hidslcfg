@@ -13,6 +13,7 @@ from time import sleep
 from json import loads
 
 from requests import get
+from requests.exceptions import ConnectionError
 
 
 __all__ = [
@@ -296,14 +297,8 @@ def hidslcfg(options):
         fail('Configuration aborted by user')
     else:
         # Call API
-        try:
-            vpndata = getdata(tid, cid, user, passwd, verbose=verbose)
-        except ConnectionError:
-            fail('Cannot connect to webservice '
-                 '- check your internet connection')
-        else:
-            # Configure system
-            configure(tid, cid, vpndata, verbose=verbose)
+        vpndata = getdata(tid, cid, user, passwd, verbose=verbose)
+        configure(tid, cid, vpndata, verbose=verbose)
 
 
 def hidslreset(options):
@@ -388,17 +383,20 @@ class APIClient():
             'tid': self.tid,
             'client_version': self.VERSION}
 
-        reply = get(self._url, params=params)
-
-        if reply.status_code == 200:
-            return reply
-        elif reply.status_code == 401:
-            if reply.text == 'Invalid credentials':
-                raise InvalidCredentials()
-            else:
-                raise Unauthorized()
+        try:
+            reply = get(self._url, params=params)
+        except ConnectionError:
+            fail('CONNECTION ERROR', 'Check your internet connection')
         else:
-            raise APIError(reply.text)
+            if reply.status_code == 200:
+                return reply
+            elif reply.status_code == 401:
+                if reply.text == 'Invalid credentials':
+                    raise InvalidCredentials()
+                else:
+                    raise Unauthorized()
+            else:
+                raise APIError(reply.text)
 
     @property
     def _url(self):
