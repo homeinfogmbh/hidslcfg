@@ -111,6 +111,25 @@ def subproc_fail(*msgs):
     fail('SUBPROCESS ERROR', *msgs, exit_code=3)
 
 
+def ask(question, default=False, yes=('y', 'yes')):
+    """Ask a question and return True on yes or else False"""
+
+    if default:
+        suffix = ' [Y/n]: '
+    else:
+        suffix = ' [y/N]: '
+
+    try:
+        reply = input(question + suffix)
+    except KeyboardInterrupt:
+        return False
+    else:
+        if not reply:
+            return default
+        else:
+            return reply.lower() in yes
+
+
 def sudo(cmd, verbose=False):
     """Run a command as root using sudo"""
 
@@ -134,9 +153,7 @@ def getdata(tid, cid, user, passwd, verbose=False):
         print(location)
         print()
 
-        answer = input('Is this correct? [y/N]: ')
-
-        if answer.lower() in ('y', 'yes'):
+        if ask('Is this correct?'):
             if verbose:
                 print('Retrieving OpenVPN data')
             else:
@@ -220,15 +237,7 @@ def configure(tid, cid, vpndata, verbose=False):
         print()
         print('Setup completed successfully')
 
-        try:
-            answer = input('Do you want to reboot now? [y/N]: ')
-        except KeyboardInterrupt:
-            print()
-            reboot = False
-        else:
-            reboot = answer.lower() in ['y', 'yes']
-
-        if reboot:
+        if ask('Do you want to reboot now?'):
             run('/usr/bin/sudo -n /usr/bin/reboot', shell=True)
         else:
             print('Okay, not rebooting',
