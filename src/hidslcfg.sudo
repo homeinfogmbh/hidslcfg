@@ -8,4 +8,5 @@ hidslcfg ALL = NOPASSWD: \
 	/usr/bin/systemctl restart openvpn-client@terminals.service, \
 	/usr/bin/systemctl enable unconfigured-warning.service, \
 	/usr/bin/systemctl disable unconfigured-warning.service, \
+	/usr/bin/systemctl disable application.service, \
 	/usr/bin/reboot

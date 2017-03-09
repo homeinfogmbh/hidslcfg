@@ -51,6 +51,7 @@ DIGSIG_DATA_DIR = '/usr/share/digsig'
 DIGSIG_DATA_CLEAN = '/usr/bin/rm -Rf {}'.format(join(DIGSIG_DATA_DIR, '*'))
 
 UNCONFIGURED_SERVICE = '{} {{}} unconfigured-warning.service'.format(SYSTEMCTL)
+APPLICATION_SERVICE = '{} {{}} application.service'.format(SYSTEMCTL)
 
 
 class InvalidCredentials(Exception):
@@ -253,6 +254,7 @@ def reset(verbose=False):
             ('reset hostname', HOSTNAME_RESET),
             ('remove digital signage data', DIGSIG_DATA_CLEAN),
             ('disable OpenVPN service', VPN_ACTION.format('disable')),
+            ('disable application', APPLICATION_SERVICE.format('disable')),
             ('enable on-screen warning', UNCONFIGURED_SERVICE.format(
                 'enable'))):
         try:
