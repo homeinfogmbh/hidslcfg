@@ -1,2 +1,0 @@
-# Allow all incoming traffic on any tun device
-allow in on tun+
