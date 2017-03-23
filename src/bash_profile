@@ -4,3 +4,5 @@ echo -e "Run \033[1mhidslcfg\033[0m to perform the setup"
 echo
 echo -e "For usage instructions run \033[1mhidslcfg --help\033[0m"
 echo
+alias hidslcfg="sudo /usr/bin/hidslcfg"
+alias hidslreset="sudo /usr/bin/hidslreset"

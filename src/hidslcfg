@@ -131,13 +131,11 @@ def ask(question, default=False, yes=('y', 'yes')):
             return reply.lower() in yes
 
 
-def sudo(cmd, verbose=False):
-    """Run a command as root using sudo"""
+def system(cmd, verbose=False):
+    """Invoke system commands"""
 
     output = None if verbose else DEVNULL
-    result = run(
-        '/usr/bin/sudo -n {}'.format(cmd), shell=True,
-        stdin=DEVNULL, stdout=output, stderr=output)
+    result = run(cmd, shell=True, stdin=DEVNULL, stdout=output, stderr=output)
     result.check_returncode()
 
 
@@ -239,7 +237,7 @@ def configure(tid, cid, vpndata, verbose=False):
         print('Setup completed successfully')
 
         if ask('Do you want to reboot now?'):
-            run('/usr/bin/sudo -n /usr/bin/reboot', shell=True)
+            system('/usr/bin/reboot')
         else:
             print('Okay, not rebooting',
                   'You can reboot any time by pressing',
@@ -258,7 +256,7 @@ def reset(verbose=False):
             ('enable on-screen warning', UNCONFIGURED_SERVICE.format(
                 'enable'))):
         try:
-            sudo(cmd, verbose=verbose)
+            system(cmd, verbose=verbose)
         except CalledProcessError as cpe:
             fail('Could not {}'.format(op))
 
@@ -454,29 +452,25 @@ class Configurator():
         if self._tmpdir is not None:
             # Clean up OpenVPN config
             with suppress(CalledProcessError):
-                sudo('/usr/bin/rm /etc/openvpn/*', verbose=self.verbose)
+                system('/usr/bin/rm /etc/openvpn/*', verbose=self.verbose)
 
             # Unpack OpenVPN archive
             chdir(self._tmpdir)
-            sudo(VPN_INST, verbose=self.verbose)
+            system(VPN_INST, verbose=self.verbose)
         else:
             raise OutOfContext('Not within with statement')
 
     def enable_vpn(self):
         """Enables the OpenVPN service"""
-        sudo(VPN_ACTION.format('enable'), verbose=self.verbose)
+        system(VPN_ACTION.format('enable'), verbose=self.verbose)
 
     def restart_vpn(self):
         """Restarts the OpenVPN service"""
-        sudo(VPN_ACTION.format('restart'), verbose=self.verbose)
+        system(VPN_ACTION.format('restart'), verbose=self.verbose)
 
     def test_vpn(self):
         """Tests the OpenVPN connection to the OpenVPN server"""
-        output = None if self.verbose else DEVNULL
-        result = run(
-            PING_HOST.format(VPN_SERVER), shell=True,
-            stdin=DEVNULL, stdout=output, stderr=output)
-        result.check_returncode()
+        system(PING_HOST.format(VPN_SERVER))
 
     def configure_hostname(self):
         """Configures the system's hostname"""
@@ -487,13 +481,13 @@ class Configurator():
             with open(HOSTNAME_FILE_SRC, 'w') as hostname_tmp:
                 hostname_tmp.write(hostname)
 
-            sudo(HOSTNAME_INST, verbose=self.verbose)
+            system(HOSTNAME_INST, verbose=self.verbose)
         else:
             raise OutOfContext('Not within with statement')
 
     def disable_warning(self):
         """Disables the on-screen unconfigured warning"""
-        sudo(UNCONFIGURED_SERVICE.format('disable'), verbose=self.verbose)
+        system(UNCONFIGURED_SERVICE.format('disable'), verbose=self.verbose)
 
 
 if __name__ == '__main__':
@@ -502,8 +496,8 @@ if __name__ == '__main__':
     except ImportError:
         fail('"docopt" not available', 'CLI mode not available.', exit_code=4)
     else:
-        if geteuid() == 0:
-            fail('Refusing to run as root!')
+        if geteuid() != 0:
+            fail('You need to be root to run this script!')
         else:
             script_name = basename(__file__)
 

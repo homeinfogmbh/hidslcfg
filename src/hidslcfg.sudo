@@ -1,12 +1,1 @@
-hidslcfg ALL = NOPASSWD: \
-	/usr/bin/rm -Rf /usr/share/digsig/*, \
-	/usr/bin/tar xf openvpn.tar.gz -C /etc/openvpn/client, \
-	/usr/bin/install -o root -g root -m 644 -T hostname /etc/hostname, \
-	/usr/bin/rm -f /etc/hostname, \
-	/usr/bin/systemctl enable openvpn-client@terminals.service, \
-	/usr/bin/systemctl disable openvpn-client@terminals.service, \
-	/usr/bin/systemctl restart openvpn-client@terminals.service, \
-	/usr/bin/systemctl enable unconfigured-warning.service, \
-	/usr/bin/systemctl disable unconfigured-warning.service, \
-	/usr/bin/systemctl disable application.service, \
-	/usr/bin/reboot
+hidslcfg ALL = NOPASSWD: /usr/bin/hidslcfg, /usr/bin/hidslreset
