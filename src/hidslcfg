@@ -39,11 +39,11 @@ VPN_INST = '/usr/bin/tar xf {archive} -C {client_dir}'.format(
 VPN_CLEAN = "/usr/bin/bash -c '/usr/bin/rm -f {}'".format(
     join(VPN_CLIENT_DIR, '*'))
 VPN_SERVICE = 'openvpn-client@{}.service'.format(VPN_CFG)
-VPN_ACTION = '{0} {{}} {1}'.format(SYSTEMCTL, VPN_SERVICE)
+VPN_ACTION = '{} {{}} {}'.format(SYSTEMCTL, VPN_SERVICE)
 
 HOSTNAME_FILE_SRC = 'hostname'
 HOSTNAME_FILE_DST = '/etc/hostname'
-HOSTNAME_INST = '/usr/bin/install -o root -g root -m 644 -T {0} {1}'.format(
+HOSTNAME_INST = '/usr/bin/install -o root -g root -m 644 -T {} {}'.format(
     HOSTNAME_FILE_SRC, HOSTNAME_FILE_DST)
 HOSTNAME_RESET = '/usr/bin/rm -f {}'.format(HOSTNAME_FILE_DST)
 
