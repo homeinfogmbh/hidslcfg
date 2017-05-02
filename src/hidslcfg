@@ -52,6 +52,14 @@ DIGSIG_DATA_CLEAN = '/usr/bin/rm -Rf {}'.format(join(DIGSIG_DATA_DIR, '*'))
 UNCONFIGURED_SERVICE = '{} {{}} unconfigured-warning.service'.format(SYSTEMCTL)
 APPLICATION_SERVICE = '{} {{}} application.service'.format(SYSTEMCTL)
 
+RESET_OPS = (
+    ('reset hostname', HOSTNAME_RESET),
+    ('remove digital signage data', DIGSIG_DATA_CLEAN),
+    ('disable OpenVPN service', VPN_ACTION.format('disable')),
+    ('Removing OpenVPN configuration', VPN_CLEAN),
+    ('disable application', APPLICATION_SERVICE.format('disable')),
+    ('enable on-screen warning', UNCONFIGURED_SERVICE.format('enable')))
+
 
 class InvalidCredentials(Exception):
     """Indicates invalid credentials"""
@@ -247,13 +255,7 @@ def configure(tid, cid, vpndata, verbose=False):
 def reset(verbose=False):
     """Resets the system's configuration"""
 
-    for op, cmd in (
-            ('reset hostname', HOSTNAME_RESET),
-            ('remove digital signage data', DIGSIG_DATA_CLEAN),
-            ('disable OpenVPN service', VPN_ACTION.format('disable')),
-            ('disable application', APPLICATION_SERVICE.format('disable')),
-            ('enable on-screen warning', UNCONFIGURED_SERVICE.format(
-                'enable'))):
+    for op, cmd in RESET_OPS:
         try:
             system(cmd, verbose=verbose)
         except CalledProcessError as cpe:
@@ -409,7 +411,7 @@ class APIClient():
     @property
     def _url(self):
         """Reutrns the API URL"""
-        return '{0}://{1}{2}'.format(self.PROTO, self.HOST, self.PATH)
+        return '{}://{}{}'.format(self.PROTO, self.HOST, self.PATH)
 
     @property
     def location(self):
