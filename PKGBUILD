@@ -11,7 +11,6 @@ groups=('homeinfo')
 
 
 package() {
-    replaces=('hi-setup')
     install=${pkgname}.install
 
     # Install binaries
@@ -19,10 +18,8 @@ package() {
     install -m 755 "${srcdir}/hidslcfg" "${pkgdir}/usr/bin"
 
     # Create symlink "hidslreset"
-    local CWD=$(pwd)
     cd "${pkgdir}/usr/bin"
     ln -s hidslcfg hidslreset
-    cd ${CWD}
 
     # Install sudoers file
     install -d -m 755 "${pkgdir}/etc"
