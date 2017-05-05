@@ -75,7 +75,7 @@ class Unauthorized(Exception):
 
 
 class ErrorMessage(Exception):
-    """Raisable error message"""
+    """Generic error message"""
 
     def __init__(self, msg):
         """Sets the text"""
@@ -88,14 +88,14 @@ class ErrorMessage(Exception):
 
 
 class APIError(ErrorMessage):
-    """Indicates a user error"""
+    """Indicates an error while using the web API"""
 
     pass
 
 
 class OutOfContext(ErrorMessage):
     """Indicates that an operation that requires being
-    within a with statement was executed outside of it
+    within a with context was executed outside of it
     """
 
     pass
@@ -297,7 +297,7 @@ def hidslcfg(options):
             cid = input('Customer ID: ')
         if tid is None:
             tid = input('Terminal ID: ')
-        if not user:
+        if user is None:
             user = input('User name: ')
 
         passwd = getpass('Password: ')
@@ -305,7 +305,6 @@ def hidslcfg(options):
         print()
         fail('Configuration aborted by user')
     else:
-        # Call API
         vpndata = getdata(tid, cid, user, passwd, verbose=verbose)
         configure(tid, cid, vpndata, verbose=verbose)
 
