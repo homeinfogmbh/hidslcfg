@@ -392,7 +392,7 @@ class APIClient():
             'client_version': self.VERSION}
 
         try:
-            reply = get(self._url, params=params)
+            reply = get(self.url, params=params)
         except ConnectionError:
             fail('CONNECTION ERROR', 'Check your internet connection')
         else:
@@ -407,7 +407,7 @@ class APIClient():
                 raise APIError(reply.text)
 
     @property
-    def _url(self):
+    def url(self):
         """Reutrns the API URL"""
         return '{}://{}{}'.format(self.PROTO, self.HOST, self.PATH)
 
@@ -452,7 +452,7 @@ class Configurator():
             chdir(self._tmpdir)
             system(VPN_INST, verbose=self.verbose)
         else:
-            raise OutOfContext('Not within with statement')
+            raise OutOfContext('Not within with context')
 
     def enable_vpn(self):
         """Enables the OpenVPN service"""
