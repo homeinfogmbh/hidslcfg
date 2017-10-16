@@ -10,8 +10,7 @@ from sys import stderr
 from tempfile import TemporaryDirectory
 from time import sleep
 
-from requests import get, post
-from requests.exceptions import ConnectionError as RequestsConnectionError
+from requests import ConnectionError as RequestsConnectionError, get, post
 
 
 __all__ = [
