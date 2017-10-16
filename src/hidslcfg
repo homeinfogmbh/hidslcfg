@@ -1,25 +1,23 @@
 #! /usr/bin/env python3
-"""Configure or reset a HIDSL device"""
+"""Configure or reset a HIDSL device."""
 
 from getpass import getpass
 from json import loads
 from os import chdir, geteuid
-from os.path import join, basename
-from shutil import rmtree
+from pathlib import Path
 from subprocess import CalledProcessError, DEVNULL, run
 from sys import stderr
-from tempfile import mkdtemp
+from tempfile import TemporaryDirectory
 from time import sleep
 
-from requests import get
-from requests.exceptions import ConnectionError
+from requests import get, post
+from requests.exceptions import ConnectionError as RequestsConnectionError
 
 
 __all__ = [
     'InvalidCredentials',
     'Unauthorized',
     'APIError',
-    'OutOfContext',
     'fail',
     'TerminalAddress',
     'APIClient',
@@ -28,14 +26,14 @@ __all__ = [
 SYSTEMCTL = '/usr/bin/systemctl'
 PING_HOST = '/usr/bin/ping -W 1 -c 5 {}'
 
-VPN_CLIENT_DIR = '/etc/openvpn/client'
+VPN_CLIENT_DIR = Path('/etc/openvpn/client')
 VPN_ARCHIVE = 'openvpn.tar.gz'
 VPN_CFG = 'terminals'
 VPN_SERVER = '10.8.0.1'
 VPN_GRACETIME = 3
 VPN_INST = '/usr/bin/tar xf {archive} -C {client_dir}'.format(
     archive=VPN_ARCHIVE, client_dir=VPN_CLIENT_DIR)
-VPN_CLEAN = '/usr/bin/rm -f {}'.format(join(VPN_CLIENT_DIR, '*'))
+VPN_CLEAN = '/usr/bin/rm -f {}'.format(VPN_CLIENT_DIR.joinpath('*'))
 VPN_SERVICE = 'openvpn-client@{}.service'.format(VPN_CFG)
 VPN_ACTION = '{} {{}} {}'.format(SYSTEMCTL, VPN_SERVICE)
 
@@ -45,8 +43,8 @@ HOSTNAME_INST = '/usr/bin/install -o root -g root -m 644 -T {} {}'.format(
     HOSTNAME_FILE_SRC, HOSTNAME_FILE_DST)
 HOSTNAME_RESET = '/usr/bin/rm -f {}'.format(HOSTNAME_FILE_DST)
 
-DIGSIG_DATA_DIR = '/usr/share/digsig'
-DIGSIG_DATA_CLEAN = '/usr/bin/rm -Rf {}'.format(join(DIGSIG_DATA_DIR, '*'))
+DIGSIG_DATA_DIR = Path('/usr/share/digsig')
+DIGSIG_DATA_CLEAN = '/usr/bin/rm -Rf {}'.format(DIGSIG_DATA_DIR.joinpath('*'))
 
 UNCONFIGURED_SERVICE = '{} {{}} unconfigured-warning.service'.format(SYSTEMCTL)
 APPLICATION_SERVICE = '{} {{}} application.service'.format(SYSTEMCTL)
@@ -61,21 +59,21 @@ RESET_OPS = (
 
 
 class InvalidCredentials(Exception):
-    """Indicates invalid credentials"""
+    """Indicates invalid credentials."""
 
     pass
 
 
 class Unauthorized(Exception):
     """Indicates that the user is not allowed
-    to setup the respective terminal
+    to setup the respective terminal.
     """
 
     pass
 
 
 class ErrorMessage(Exception):
-    """Generic error message"""
+    """Generic error message."""
 
     def __init__(self, msg):
         """Sets the text"""
@@ -88,23 +86,21 @@ class ErrorMessage(Exception):
 
 
 class APIError(ErrorMessage):
-    """Indicates an error while using the web API"""
+    """Indicates an error while using the web API."""
 
     pass
 
 
-class OutOfContext(ErrorMessage):
-    """Indicates that an operation that requires being
-    within a with context was executed outside of it
-    """
+class ValueMismatch(Exception):
+    """Indicates that a pair of values does not match."""
 
     pass
 
 
 def fail(err, *msgs, exit_code=3):
-    """Prints error messages to stderr and exit"""
+    """Prints error messages to stderr and exit."""
 
-    print('\033[91m\033[1m', end='', file=stderr)  # Red and bold
+    print('\033[91m\033[1m', end='', file=stderr)  # Red and bold.
     print(err, end='', file=stderr)
     print('\033[0m', end=' ', file=stderr)
     print(*msgs, file=stderr)
@@ -113,13 +109,13 @@ def fail(err, *msgs, exit_code=3):
 
 
 def subproc_fail(*msgs):
-    """Prints subprocess error messages to stderr and exit"""
+    """Prints subprocess error messages to stderr and exit."""
 
     fail('SUBPROCESS ERROR', *msgs, exit_code=3)
 
 
 def ask(question, default=False, yes=('y', 'yes')):
-    """Ask a question and return True on yes or else False"""
+    """Ask a question and return True on yes or else False."""
 
     if default:
         suffix = ' [Y/n]: '
@@ -128,154 +124,156 @@ def ask(question, default=False, yes=('y', 'yes')):
 
     try:
         reply = input(question + suffix)
-    except KeyboardInterrupt:
+    except (EOFError, KeyboardInterrupt):
         return False
     else:
         if not reply:
             return default
+
+        return reply.lower() in yes
+
+
+def confirm_location(location, verbose=False):
+    """Prompt the user to confirm the given location."""
+
+    print('Determined terminal location:')
+    print()
+    print(location)
+    print()
+
+    if ask('Is this correct?'):
+        if verbose:
+            print('Retrieving OpenVPN data.')
         else:
-            return reply.lower() in yes
+            print('Please wait...')
+    else:
+        fail('Setup aborted by user.')
+
+
+def read_serial_number():
+    """Reads the serial number."""
+
+    print('Enter serial number of the device.')
+    print('Press [Ctrl]+[D] to skip this step.')
+    serial_number = input('Serial number: ')
+
+    try:
+        serial_number_confirmation = input('Confirm serial number: ')
+    except EOFError:
+        print()
+        serial_number_confirmation = None
+
+    if serial_number == serial_number_confirmation:
+        return serial_number
+
+    raise ValueMismatch()
 
 
 def system(cmd, verbose=False):
-    """Invoke system commands"""
+    """Invoke system commands."""
 
     output = None if verbose else DEVNULL
-    result = run(cmd, shell=True, stdin=DEVNULL, stdout=output, stderr=output)
-    result.check_returncode()
-
-
-def getdata(tid, cid, user, passwd, verbose=False):
-    """Get data from web API"""
-
-    client = APIClient(user, passwd, cid, tid)
-
-    try:
-        location = client.location
-
-        print('Determined terminal location:')
-        print()
-        print(location)
-        print()
-
-        if ask('Is this correct?'):
-            if verbose:
-                print('Retrieving OpenVPN data')
-            else:
-                print('Please wait...')
-
-            vpndata = client.vpndata
-        else:
-            fail('Setup aborted by user')
-    except InvalidCredentials:
-        fail('INVALID CREDENTIALS',
-             'Your user name and / or password are incorrect')
-    except Unauthorized:
-        fail('UNAUTHORIZED',
-             'You are not authorized to set up this terminal')
-    except APIError as api_err:
-        fail('WEB API ERROR', api_err)
-    except KeyboardInterrupt:
-        print()
-        fail('Setup aborted by user')
-    else:
-        return vpndata
+    completed_process = run(
+        cmd, shell=True, stdin=DEVNULL, stdout=output, stderr=output)
+    completed_process.check_returncode()
+    return completed_process
 
 
 def configure(tid, cid, vpndata, verbose=False):
-    """Performs the terminal configuration"""
+    """Performs the terminal configuration."""
 
     with Configurator(tid, cid, vpndata) as configurator:
         if verbose:
-            print('Installing OpenVPN configuration')
+            print('Installing OpenVPN configuration.')
 
         try:
             configurator.configure_openvpn()
         except CalledProcessError:
-            subproc_fail('Installation of OpenVPN configuration failed')
+            subproc_fail('Installation of OpenVPN configuration failed.')
 
         if verbose:
-            print('Enabling OpenVPN')
+            print('Enabling OpenVPN.')
 
         try:
             configurator.enable_vpn()
         except CalledProcessError:
-            subproc_fail('Enabling of OpenVPN client failed')
+            subproc_fail('Enabling of OpenVPN client failed.')
 
         if verbose:
-            print('Restarting OpenVPN')
+            print('Restarting OpenVPN.')
 
         try:
             configurator.restart_vpn()
         except CalledProcessError:
-            subproc_fail('Restart of OpenVPN client failed')
+            subproc_fail('Restart of OpenVPN client failed.')
 
         if verbose:
-            print('Waiting for OpenVPN server to start')
+            print('Waiting for OpenVPN server to start.')
 
         sleep(VPN_GRACETIME)
 
         if verbose:
-            print('Checking OpenVPN connection')
+            print('Checking OpenVPN connection.')
 
         try:
             configurator.test_vpn()
         except CalledProcessError:
-            subproc_fail('Cannot contact OpenVPN server')
+            subproc_fail('Cannot contact OpenVPN server.')
 
         if verbose:
-            print('Installing', HOSTNAME_FILE_DST)
+            print('Installing {}.'.format(HOSTNAME_FILE_DST))
 
         try:
             configurator.configure_hostname()
         except CalledProcessError:
-            subproc_fail('Installation of', HOSTNAME_FILE_DST, 'failed')
+            subproc_fail('Installation of', HOSTNAME_FILE_DST, 'failed.')
 
         if verbose:
-            print('Disabling on-screen warning')
+            print('Disabling on-screen warning.')
 
         try:
             configurator.disable_warning()
         except CalledProcessError:
-            subproc_fail('Disabling of on-screen warning failed')
+            subproc_fail('Disabling of on-screen warning failed.')
 
         print()
-        print('Setup completed successfully')
+        print('Setup completed successfully.')
 
         if ask('Do you want to reboot now?'):
             system('/usr/bin/reboot')
         else:
-            print('Okay, not rebooting',
+            print('Okay, not rebooting.',
                   'You can reboot any time by pressing',
                   '[CTRL]+[ALT]+[DEL]', sep='\n')
             exit(0)
 
 
 def reset(verbose=False):
-    """Resets the system's configuration"""
+    """Resets the system's configuration."""
 
-    for op, cmd in RESET_OPS:
+    for operation, cmd in RESET_OPS:
         try:
             system(cmd, verbose=verbose)
-        except CalledProcessError as cpe:
-            fail('Could not {}'.format(op))
+        except CalledProcessError:
+            fail('Could not {}.'.format(operation))
 
 
 def hidslcfg(options):
-    """HOMEINFO Digital Signage Linux configurator
+    """HOMEINFO Digital Signage Linux configurator.
 
     Maintainer: Richard Neumann <r.neumann@homeinfo.de>
 
     Usage:
-        hidslcfg <ident> [--user=<user_name>] [--verbose]
+        hidslcfg <ident> [--user=<user_name>] [--no-serial-number] [--verbose]
         hidslcfg [options]
 
     Options:
-        --tid=<terminal_id>  Specifies the physical terminal identifier
-        --cid=<customer_id>  Specifies the customer identifier
-        --user=<user_name>   Specifies the setup user's name
-        --verbose            Be gassy
-        -h --help            Show this page
+        --tid=<terminal_id>     Specifies the physical terminal identifier.
+        --cid=<customer_id>     Specifies the customer identifier.
+        --user=<user_name>      Specifies the setup user's name.
+        --no-serial-number      Do not prompt to set system's serial number.
+        --verbose               Be gassy.
+        -h --help               Show this page.
     """
     verbose = options['--verbose']
     ident = options['<ident>']
@@ -291,6 +289,7 @@ def hidslcfg(options):
                  'Identifier must be like <tid>.<cid>')
 
     user = options['--user']
+    query_serial_number = not options['--no-serial-number']
 
     try:
         if cid is None:
@@ -303,14 +302,33 @@ def hidslcfg(options):
         passwd = getpass('Password: ')
     except KeyboardInterrupt:
         print()
-        fail('Configuration aborted by user')
-    else:
-        vpndata = getdata(tid, cid, user, passwd, verbose=verbose)
-        configure(tid, cid, vpndata, verbose=verbose)
+        fail('Configuration aborted by user.')
+
+    serial_number = None
+
+    if query_serial_number:
+        try:
+            serial_number = read_serial_number()
+        except KeyboardInterrupt:
+            print()
+            fail('Setup aborted by user.')
+        except EOFError:
+            print()
+            print('Skipping setting of serial number.',
+                  'Try "--no-serial-number" next time.', sep='\n')
+        except ValueMismatch:
+            fail('Serial numbers do not match.')
+
+    with APIClient(user, passwd, cid, tid) as api_client:
+        if serial_number is not None:
+            api_client.set_serial_number(serial_number)
+
+        confirm_location(api_client.location, verbose=verbose)
+        configure(tid, cid, api_client.vpndata, verbose=verbose)
 
 
 def hidslreset(options):
-    """HOMEINFO Digital Signage Linux resetter
+    """HOMEINFO Digital Signage Linux resetter.
 
     Maintainer: Richard Neumann <r.neumann@homeinfo.de>
 
@@ -318,8 +336,8 @@ def hidslreset(options):
         hidslreset [options]
 
     Options:
-        --verbose            Be gassy
-        -h --help            Show this page
+        --verbose               Be gassy.
+        -h --help               Show this page.
     """
     verbose = options['--verbose']
 
@@ -327,11 +345,11 @@ def hidslreset(options):
         reset(verbose=verbose)
     except KeyboardInterrupt:
         print()
-        fail('Reset aborted by user')
+        fail('Reset aborted by user.')
 
 
-class TerminalAddress():
-    """Terminal address data container"""
+class TerminalAddress:
+    """Terminal address data container."""
 
     TEMPLATE = (
         'Street:        {street}\n'
@@ -341,7 +359,7 @@ class TerminalAddress():
         'Annotation:    {annotation}')
 
     def __init__(self, s):
-        """Generate terminal address from a string"""
+        """Generate terminal address from a string."""
         try:
             location = loads(s)
         except (TypeError, ValueError):
@@ -355,7 +373,7 @@ class TerminalAddress():
         self.annotation = location.get('annotation', '-')
 
     def __str__(self):
-        """Converts the address into a human readable form"""
+        """Converts the address into a human readable form."""
         return self.TEMPLATE.format(
             street=self.street,
             house_number=self.house_number,
@@ -364,8 +382,8 @@ class TerminalAddress():
             annotation=self.annotation)
 
 
-class APIClient():
-    """Class to retrieve data from the web API"""
+class APIClient:
+    """Class to retrieve data from the web API."""
 
     PROTO = 'https'
     HOST = 'tls.homeinfo.de'
@@ -373,17 +391,31 @@ class APIClient():
     VERSION = '3.0'
 
     def __init__(self, user, passwd, cid, tid):
-        """Initialize with credentials"""
+        """Initialize with credentials."""
         self.user = user
         self.passwd = passwd
         self.cid = cid
         self.tid = tid
 
-    def __call__(self, action):
-        """Contact the API with the respective
-        user name, password and action call
-        """
-        params = {
+    def __enter__(self):
+        return self
+
+    def __exit__(self, typ, value, traceback):
+        if isinstance(value, InvalidCredentials):
+            fail('INVALID CREDENTIALS',
+                 'Your user name and / or password are incorrect.')
+        elif isinstance(value, Unauthorized):
+            fail('UNAUTHORIZED',
+                 'You are not authorized to set up this terminal.')
+        elif isinstance(value, APIError):
+            fail('WEB API ERROR', value)
+        elif isinstance(value, KeyboardInterrupt):
+            print()
+            fail('Setup aborted by user.')
+
+    def params(self, action):
+        """Returns the HTTP parameters dictionary."""
+        return {
             'user_name': self.user,
             'passwd': self.passwd,
             'action': action,
@@ -391,96 +423,114 @@ class APIClient():
             'tid': self.tid,
             'client_version': self.VERSION}
 
+    @property
+    def url(self):
+        """Returns the API URL."""
+        return '{}://{}{}'.format(self.PROTO, self.HOST, self.PATH)
+
+    @property
+    def location(self):
+        """Returns the terminal location."""
+        return TerminalAddress(self.get('location').text)
+
+    @property
+    def vpndata(self):
+        """Returns the terminal's VPN keys and configuration."""
+        return self.get('vpn_data').content
+
+    def get(self, action):
+        """GET from the API with the respective
+        user name, password and action call.
+        """
         try:
-            reply = get(self.url, params=params)
-        except ConnectionError:
-            fail('CONNECTION ERROR', 'Check your internet connection')
+            reply = get(self.url, params=self.params(action))
+        except RequestsConnectionError:
+            fail('CONNECTION ERROR', 'Check your internet connection.')
         else:
             if reply.status_code == 200:
                 return reply
             elif reply.status_code == 401:
                 if reply.text == 'Invalid credentials':
                     raise InvalidCredentials()
-                else:
-                    raise Unauthorized()
-            else:
-                raise APIError(reply.text)
 
-    @property
-    def url(self):
-        """Reutrns the API URL"""
-        return '{}://{}{}'.format(self.PROTO, self.HOST, self.PATH)
+                raise Unauthorized()
 
-    @property
-    def location(self):
-        """Gets the terminal location"""
-        return TerminalAddress(self('location').text)
+            raise APIError(reply.text)
 
-    @property
-    def vpndata(self):
-        """Gets the terminal's VPN keys and configuration"""
-        return self('vpn_data').content
+    def post(self, action, data):
+        """POST to the API with the respective
+        user name, password and action call.
+        """
+        try:
+            reply = post(self.url, data=data, params=self.params(action))
+        except RequestsConnectionError:
+            fail('CONNECTION ERROR', 'Check your internet connection.')
+        else:
+            if reply.status_code == 200:
+                return reply
+            elif reply.status_code == 401:
+                if reply.text == 'Invalid credentials':
+                    raise InvalidCredentials()
+
+                raise Unauthorized()
+
+            raise APIError(reply.text)
+
+    def set_serial_number(self, serial_number):
+        """Sets the respective serial number."""
+        return self.post('serial_number', serial_number.encode())
 
 
-class Configurator():
-    """Terminal configurator"""
+class Configurator(TemporaryDirectory):
+    """Terminal configurator."""
 
     def __init__(self, tid, cid, vpndata, verbose=False):
-        """Sets VPN configuration"""
+        """Sets VPN configuration."""
+        super().__init__()
         self.tid = tid
         self.cid = cid
         self.vpndata = vpndata
         self.verbose = verbose
-        self._tmpdir = None
 
     def __enter__(self):
-        self._tmpdir = mkdtemp()
-        vpndata_path = join(self._tmpdir, VPN_ARCHIVE)
+        """Writes the VPN data to the respective temporary directory."""
+        super().__enter__()
+        vpndata_path = Path(self.name).joinpath(VPN_ARCHIVE)
 
-        with open(vpndata_path, 'wb') as vpndata_file:
+        with vpndata_path.open('wb') as vpndata_file:
             vpndata_file.write(self.vpndata)
 
         return self
 
-    def __exit__(self, *_):
-        rmtree(self._tmpdir)
-        self._tmpdir = None
-
     def configure_openvpn(self):
-        """Installs the OpenVPN configuration"""
-        if self._tmpdir is not None:
-            chdir(self._tmpdir)
-            system(VPN_INST, verbose=self.verbose)
-        else:
-            raise OutOfContext('Not within with context')
+        """Installs the OpenVPN configuration."""
+        chdir(self.name)
+        system(VPN_INST, verbose=self.verbose)
 
     def enable_vpn(self):
-        """Enables the OpenVPN service"""
+        """Enables the OpenVPN service."""
         system(VPN_ACTION.format('enable'), verbose=self.verbose)
 
     def restart_vpn(self):
-        """Restarts the OpenVPN service"""
+        """Restarts the OpenVPN service."""
         system(VPN_ACTION.format('restart'), verbose=self.verbose)
 
     def test_vpn(self):
-        """Tests the OpenVPN connection to the OpenVPN server"""
-        system(PING_HOST.format(VPN_SERVER))
+        """Tests the OpenVPN connection to the OpenVPN server."""
+        system(PING_HOST.format(VPN_SERVER), verbose=self.verbose)
 
     def configure_hostname(self):
-        """Configures the system's hostname"""
-        if self._tmpdir is not None:
-            chdir(self._tmpdir)
-            hostname = '{tid}.{cid}'.format(tid=self.tid, cid=self.cid)
+        """Configures the system's hostname."""
+        chdir(self.name)
+        hostname = '{tid}.{cid}'.format(tid=self.tid, cid=self.cid)
 
-            with open(HOSTNAME_FILE_SRC, 'w') as hostname_tmp:
-                hostname_tmp.write(hostname)
+        with open(HOSTNAME_FILE_SRC, 'w') as hostname_tmp:
+            hostname_tmp.write(hostname)
 
-            system(HOSTNAME_INST, verbose=self.verbose)
-        else:
-            raise OutOfContext('Not within with statement')
+        system(HOSTNAME_INST, verbose=self.verbose)
 
     def disable_warning(self):
-        """Disables the on-screen unconfigured warning"""
+        """Disables the on-screen unconfigured warning."""
         system(UNCONFIGURED_SERVICE.format('disable'), verbose=self.verbose)
 
 
@@ -493,11 +543,11 @@ if __name__ == '__main__':
         if geteuid() != 0:
             fail('You need to be root to run this script!')
         else:
-            script_name = basename(__file__)
+            SCRIPT_NAME = Path(__file__).name
 
-            if script_name == 'hidslcfg':
+            if SCRIPT_NAME == 'hidslcfg':
                 hidslcfg(docopt(hidslcfg.__doc__))
-            elif script_name == 'hidslreset':
+            elif SCRIPT_NAME == 'hidslreset':
                 hidslreset(docopt(hidslreset.__doc__))
             else:
-                fail('Script name "{}" is invalid'.format(script_name))
+                fail('Script name "{}" is invalid.'.format(SCRIPT_NAME))
