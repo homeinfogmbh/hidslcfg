@@ -263,8 +263,8 @@ def hidslcfg(options):
     Maintainer: Richard Neumann <r.neumann@homeinfo.de>
 
     Usage:
-        hidslcfg <ident> [--user=<user_name>] [--no-serial-number] [--verbose]
-        hidslcfg [options]
+        hidslcfg <ident> [options]
+        hidslcfg --tid=<terminal_id> --cid=<customer_id> [options]
 
     Options:
         --tid=<terminal_id>     Specifies the physical terminal identifier.
