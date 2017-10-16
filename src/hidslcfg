@@ -6,7 +6,7 @@ from json import loads
 from os import chdir, geteuid
 from pathlib import Path
 from subprocess import DEVNULL, CalledProcessError, run
-from sys import stderr
+from sys import stderr, exit as exit_
 from tempfile import TemporaryDirectory
 from time import sleep
 
@@ -103,8 +103,7 @@ def fail(err, *msgs, exit_code=3):
     print(err, end='', file=stderr)
     print('\033[0m', end=' ', file=stderr)
     print(*msgs, file=stderr)
-
-    exit(exit_code)
+    exit_(exit_code)
 
 
 def subproc_fail(*msgs):
@@ -116,10 +115,7 @@ def subproc_fail(*msgs):
 def ask(question, default=False, yes=('y', 'yes')):
     """Ask a question and return True on yes or else False."""
 
-    if default:
-        suffix = ' [Y/n]: '
-    else:
-        suffix = ' [y/N]: '
+    suffix = ' [Y/n]: ' if default else ' [y/N]: '
 
     try:
         reply = input(question + suffix)
@@ -244,7 +240,7 @@ def configure(tid, cid, vpndata, verbose=False):
             print('Okay, not rebooting.',
                   'You can reboot any time by pressing',
                   '[CTRL]+[ALT]+[DEL]', sep='\n')
-            exit(0)
+            exit_(0)
 
 
 def reset(verbose=False):
@@ -264,7 +260,7 @@ def hidslcfg(options):
 
     Usage:
         hidslcfg <ident> [options]
-        hidslcfg --tid=<terminal_id> --cid=<customer_id> [options]
+        hidslcfg [--tid=<terminal_id>] [--cid=<customer_id>] [options]
 
     Options:
         --tid=<terminal_id>     Specifies the physical terminal identifier.
@@ -313,8 +309,7 @@ def hidslcfg(options):
             fail('Setup aborted by user.')
         except EOFError:
             print()
-            print('Skipping setting of serial number.',
-                  'Try "--no-serial-number" next time.', sep='\n')
+            print('Skipping setting of serial number.')
         except ValueMismatch:
             fail('Serial numbers do not match.')
 
