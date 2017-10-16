@@ -385,8 +385,8 @@ class APIClient:
     """Class to retrieve data from the web API."""
 
     PROTO = 'https'
-    HOST = 'tls.homeinfo.de'
-    PATH = '/termgr/setup'
+    HOST = 'termgr.homeinfo.de'
+    PATH = '/setup'
     VERSION = '3.0'
 
     def __init__(self, user, passwd, cid, tid):
