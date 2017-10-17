@@ -468,7 +468,6 @@ class APIClient:
     PROTO = 'https'
     HOST = 'termgr.homeinfo.de'
     PATH = '/setup'
-    VERSION = '5.0'
 
     def __init__(self, user, passwd, cid, tid):
         """Initialize with credentials."""
@@ -500,8 +499,7 @@ class APIClient:
             'passwd': self.passwd,
             'action': action,
             'cid': self.cid,
-            'tid': self.tid,
-            'api_version': self.VERSION}
+            'tid': self.tid}
 
     @property
     def url(self):
@@ -511,7 +509,7 @@ class APIClient:
     @property
     def terminal_information(self):
         """Returns the terminal location."""
-        return loads(self.get('location').text)
+        return loads(self.get('terminal_information').text)
 
     @property
     def vpndata(self):
