@@ -25,6 +25,7 @@ __all__ = [
     'Configurator']
 
 DATETIME_FORMATS = ('%Y-%m-%dT%H:%M:%S', '%Y-%m-%dT%H:%M:%S.%f')
+BOLD = '\033[1m{}\033[0m'
 
 SYSTEMCTL = '/usr/bin/systemctl'
 PING_HOST = '/usr/bin/ping -W 1 -c 5 {}'
@@ -213,14 +214,17 @@ def make_table_rows(key_value_pairs, header=True, spacing=' {} '):
         Table.BOLD.value * keys_len, Table.BOLD.value * value_len)
 
     for row, (key, value) in enumerate(items, start=1):
-        yield Table.ROW.value.format(
-            key.ljust(keys_len), value.ljust(value_len))
+        key = key.ljust(keys_len)
+        value = value.ljust(value_len)
 
         if header and row == 1:
+            yield Table.ROW.value.format(BOLD.format(key), BOLD.format(value))
             yield Table.BOLD_LINE.value.format(
                 Table.BOLD.value * keys_len,
                 Table.BOLD.value * value_len)
         else:
+            yield Table.ROW.value.format(key, value)
+
             if row < len(items):
                 yield Table.THIN_LINE.value.format(
                     Table.THIN.value * keys_len,
@@ -241,6 +245,7 @@ def make_table(key_value_pairs, header=True, spacing=' {} '):
 def order_terminal_information(dictionary):
     """Orders the terminal information."""
 
+    yield ('Option', 'Value')   # Header
     yield ('TID', dictionary['tid'])
 
     try:
