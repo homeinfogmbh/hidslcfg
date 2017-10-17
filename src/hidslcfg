@@ -273,11 +273,9 @@ def order_terminal_information(dictionary):
         with suppress(KeyError):
             yield ('Annotation', location['annotation'])
 
-    with suppress(KeyError):
-        yield ('Scheduled', dictionary['scheduled'] or 'Not scheduled.')
-
-    with suppress(KeyError):
-        yield ('Deployed', dictionary['deployed'] or 'Not deployed.')
+    yield ('Scheduled', dictionary.get('scheduled', 'Not scheduled.'))
+    yield ('Deployed', dictionary.get('deployed', 'Not deployed.'))
+    yield ('Serial number', dictionary.get('serial_number'))
 
 
 def system(cmd, verbose=False):
