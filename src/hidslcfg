@@ -1,6 +1,9 @@
 #! /usr/bin/env python3
 """Configure or reset a HIDSL device."""
 
+from contextlib import suppress
+from datetime import datetime
+from enum import Enum
 from getpass import getpass
 from json import loads
 from os import chdir, geteuid
@@ -18,9 +21,10 @@ __all__ = [
     'Unauthorized',
     'APIError',
     'fail',
-    'TerminalAddress',
     'APIClient',
     'Configurator']
+
+DATETIME_FORMATS = ('%Y-%m-%dT%H:%M:%S', '%Y-%m-%dT%H:%M:%S.%f')
 
 SYSTEMCTL = '/usr/bin/systemctl'
 PING_HOST = '/usr/bin/ping -W 1 -c 5 {}'
@@ -96,6 +100,18 @@ class ValueMismatch(Exception):
     pass
 
 
+class Table(Enum):
+    """Table elements."""
+
+    THIN = '─'
+    BOLD = '═'
+    HEADER = '╔{}╦{}╗'
+    BOLD_LINE = '╠{}╬{}╣'
+    ROW = '║{}║{}║'
+    THIN_LINE = '╟{}╫{}╢'
+    FOOTER = '╚{}╩{}╝'
+
+
 def fail(err, *msgs, exit_code=3):
     """Prints error messages to stderr and exit."""
 
@@ -128,12 +144,12 @@ def ask(question, default=False, yes=('y', 'yes')):
         return reply.lower() in yes
 
 
-def confirm_location(location, verbose=False):
+def confirm_terminal(terminal_information, verbose=False):
     """Prompt the user to confirm the given location."""
 
-    print('Determined terminal location:')
+    print('You are about to configure the following terminal:')
     print()
-    print(location)
+    print(make_table(order_terminal_information(terminal_information)))
     print()
 
     if ask('Is this correct?'):
@@ -151,17 +167,117 @@ def read_serial_number():
     print('Enter serial number of the device.')
     print('Press [Ctrl]+[D] to skip this step.')
     serial_number = input('Serial number: ')
+    serial_number = serial_number.strip()
 
     try:
         serial_number_confirmation = input('Confirm serial number: ')
     except EOFError:
         print()
         serial_number_confirmation = None
+    else:
+        serial_number_confirmation = serial_number_confirmation.strip()
 
-    if serial_number == serial_number_confirmation:
-        return serial_number
+    if serial_number and serial_number_confirmation:
+        if serial_number == serial_number_confirmation:
+            return serial_number
 
-    raise ValueMismatch()
+        raise ValueMismatch()
+
+    return None
+
+
+def strpdatetime(string):
+    """Parses the datetime from a string."""
+
+    if string is not None:
+        for datetime_format in DATETIME_FORMATS:
+            with suppress(ValueError):
+                return datetime.strptime(string, datetime_format)
+
+
+def make_table_rows(key_value_pairs, header=True, spacing=' {} '):
+    """Generates a UTF-8 table."""
+
+    items = []
+    keys_len = 0
+    value_len = 0
+
+    for key, value in key_value_pairs:
+        key = spacing.format(key)
+        value = spacing.format(value)
+        keys_len = max(keys_len, len(key))
+        value_len = max(value_len, len(value))
+        items.append((key, value))
+
+    yield Table.HEADER.value.format(
+        Table.BOLD.value * keys_len, Table.BOLD.value * value_len)
+
+    for row, (key, value) in enumerate(items, start=1):
+        yield Table.ROW.value.format(
+            key.ljust(keys_len), value.ljust(value_len))
+
+        if header and row == 1:
+            yield Table.BOLD_LINE.value.format(
+                Table.BOLD.value * keys_len,
+                Table.BOLD.value * value_len)
+        else:
+            if row < len(items):
+                yield Table.THIN_LINE.value.format(
+                    Table.THIN.value * keys_len,
+                    Table.THIN.value * value_len)
+            else:
+                yield Table.FOOTER.value.format(
+                    Table.BOLD.value * keys_len,
+                    Table.BOLD.value * value_len)
+
+
+def make_table(key_value_pairs, header=True, spacing=' {} '):
+    """Generates a UTF-8 table."""
+
+    return '\n'.join(make_table_rows(
+        key_value_pairs, header=header, spacing=spacing))
+
+
+def order_terminal_information(dictionary):
+    """Orders the terminal information."""
+
+    yield ('TID', dictionary['tid'])
+
+    try:
+        customer_id = dictionary['customer']['id']
+        customer_name = dictionary['customer']['name']
+    except KeyError:
+        yield ('Customer', dictionary['customer'])
+    else:
+        yield ('Customer', '{} ({})'.format(customer_id, customer_name))
+
+    try:
+        location = dictionary['location']
+    except KeyError:
+        yield ('Location', '!!!Not configured!!!')
+    else:
+        address = location['address']
+
+        with suppress(KeyError):
+            yield ('Street', address['street'])
+
+        with suppress(KeyError):
+            yield ('House number', address['house_number'])
+
+        with suppress(KeyError):
+            yield ('ZIP code', address['zip_code'])
+
+        with suppress(KeyError):
+            yield ('City', address['city'])
+
+        with suppress(KeyError):
+            yield ('Annotation', location['annotation'])
+
+    with suppress(KeyError):
+        yield ('Scheduled', dictionary['scheduled'] or 'Not scheduled.')
+
+    with suppress(KeyError):
+        yield ('Deployed', dictionary['deployed'] or 'Not deployed.')
 
 
 def system(cmd, verbose=False):
@@ -313,10 +429,11 @@ def hidslcfg(options):
             fail('Serial numbers do not match.')
 
     with APIClient(user, passwd, cid, tid) as api_client:
+        confirm_terminal(api_client.terminal_information, verbose=verbose)
+
         if serial_number is not None:
             api_client.set_serial_number(serial_number)
 
-        confirm_location(api_client.location, verbose=verbose)
         configure(tid, cid, api_client.vpndata, verbose=verbose)
 
     exit_(0)
@@ -345,47 +462,13 @@ def hidslreset(options):
     exit_(0)
 
 
-class TerminalAddress:
-    """Terminal address data container."""
-
-    TEMPLATE = (
-        'Street:        {street}\n'
-        'House number:  {house_number}\n'
-        'ZIP code:      {zip_code}\n'
-        'City:          {city}\n'
-        'Annotation:    {annotation}')
-
-    def __init__(self, s):
-        """Generate terminal address from a string."""
-        try:
-            location = loads(s)
-        except (TypeError, ValueError):
-            print('Unexpected API reply')
-            location = {}
-
-        self.street = location.get('street', '(unknown)')
-        self.house_number = location.get('house_number', '(unknown)')
-        self.zip_code = location.get('zip_code', '(unknown)')
-        self.city = location.get('city', '(unknown)')
-        self.annotation = location.get('annotation', '-')
-
-    def __str__(self):
-        """Converts the address into a human readable form."""
-        return self.TEMPLATE.format(
-            street=self.street,
-            house_number=self.house_number,
-            zip_code=self.zip_code,
-            city=self.city,
-            annotation=self.annotation)
-
-
 class APIClient:
     """Class to retrieve data from the web API."""
 
     PROTO = 'https'
     HOST = 'termgr.homeinfo.de'
     PATH = '/setup'
-    VERSION = '3.0'
+    VERSION = '5.0'
 
     def __init__(self, user, passwd, cid, tid):
         """Initialize with credentials."""
@@ -418,7 +501,7 @@ class APIClient:
             'action': action,
             'cid': self.cid,
             'tid': self.tid,
-            'client_version': self.VERSION}
+            'api_version': self.VERSION}
 
     @property
     def url(self):
@@ -426,9 +509,9 @@ class APIClient:
         return '{}://{}{}'.format(self.PROTO, self.HOST, self.PATH)
 
     @property
-    def location(self):
+    def terminal_information(self):
         """Returns the terminal location."""
-        return TerminalAddress(self.get('location').text)
+        return loads(self.get('location').text)
 
     @property
     def vpndata(self):
