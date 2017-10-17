@@ -435,6 +435,8 @@ def hidslcfg(options):
         confirm_terminal(api_client.terminal_information, verbose=verbose)
 
         if serial_number is not None:
+            print('Setting serial number of {}.{} to "{}".'.format(
+                tid, cid, serial_number))
             api_client.set_serial_number(serial_number)
 
         configure(tid, cid, api_client.vpndata, verbose=verbose)
