@@ -13,8 +13,6 @@ replaces=('hidsl-cfg')
 
 
 package() {
-    install=${pkgname}.install
-
     # Install binaries.
     install -d -m 755 "${pkgdir}/usr/bin"
     install -m 755 "${srcdir}/hidslcfg" "${pkgdir}/usr/bin"
