@@ -150,7 +150,11 @@ def confirm_terminal(terminal_information, serial_number=None, verbose=False):
     if serial_number is not None:
         for index, (key, value) in enumerate(terminal_information):
             if key == 'Serial number':
-                value = ' → '.join((str(value), serial_number))
+                if value is None:
+                    value = serial_number
+                else:
+                    value = ' → '.join((str(value), serial_number))
+
                 terminal_information[index] = (key, value)
 
     print(BOLD.format('You are about to configure the following terminal:'))
