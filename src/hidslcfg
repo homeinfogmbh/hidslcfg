@@ -20,6 +20,7 @@ __all__ = [
     'InvalidCredentials',
     'Unauthorized',
     'APIError',
+    'ValueMismatch',
     'fail',
     'APIClient',
     'Configurator']
@@ -76,23 +77,17 @@ class Unauthorized(Exception):
     pass
 
 
-class ErrorMessage(Exception):
-    """Generic error message."""
+class APIError(Exception):
+    """Indicates an error while using the web API."""
 
-    def __init__(self, msg):
+    def __init__(self, message):
         """Sets the text"""
         super().__init__()
-        self._msg = msg
+        self.message = message
 
     def __str__(self):
         """Returns the message"""
-        return self._msg
-
-
-class APIError(ErrorMessage):
-    """Indicates an error while using the web API."""
-
-    pass
+        return self.message
 
 
 class ValueMismatch(Exception):
@@ -145,12 +140,20 @@ def ask(question, default=False, yes=('y', 'yes')):
         return reply.lower() in yes
 
 
-def confirm_terminal(terminal_information, verbose=False):
+def confirm_terminal(terminal_information, serial_number=None, verbose=False):
     """Prompt the user to confirm the given location."""
 
-    print('You are about to configure the following terminal:')
+    terminal_information = list(order_terminal_information(
+        terminal_information))
+
+    for index, (key, value) in enumerate(terminal_information):
+        if key == 'Serial number' and serial_number is not None:
+            terminal_information[index] = ' → '.join(
+                (str(value), serial_number))
+
+    print(BOLD.format('You are about to configure the following terminal:'))
     print()
-    print(make_table(order_terminal_information(terminal_information)))
+    print(make_table(terminal_information))
     print()
 
     if ask('Is this correct?'):
@@ -432,7 +435,9 @@ def hidslcfg(options):
             fail('Serial numbers do not match.')
 
     with APIClient(user, passwd, cid, tid) as api_client:
-        confirm_terminal(api_client.terminal_information, verbose=verbose)
+        confirm_terminal(
+            api_client.terminal_information, serial_number=serial_number,
+            verbose=verbose)
 
         if serial_number is not None:
             print('Setting serial number of {}.{} to "{}".'.format(
