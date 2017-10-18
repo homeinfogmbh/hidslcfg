@@ -39,5 +39,4 @@ package() {
     install -d -m 755 "${pkgdir}/usr/share/libalpm/hooks"
     install -m 644 "${srcdir}/hidslcfg-chown-home.hook" "${pkgdir}/usr/share/libalpm/hooks/"
     install -m 644 "${srcdir}/hidslcfg-useradd.hook" "${pkgdir}/usr/share/libalpm/hooks/"
-
 }
