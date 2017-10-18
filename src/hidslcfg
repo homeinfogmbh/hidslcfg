@@ -121,11 +121,11 @@ def ask(question, default=False, yes=('y', 'yes')):
         reply = input(question + suffix)
     except (EOFError, KeyboardInterrupt):
         return False
-    else:
-        if not reply:
-            return default
 
-        return reply.lower() in yes
+    if not reply:
+        return default
+
+    return reply.lower() in yes
 
 
 def confirm_location(location, verbose=False):
@@ -395,6 +395,7 @@ class APIClient:
         return self
 
     def __exit__(self, typ, value, traceback):
+        """Handles possible errors."""
         if isinstance(value, InvalidCredentials):
             fail('INVALID CREDENTIALS',
                  'Your user name and / or password are incorrect.')
@@ -440,16 +441,16 @@ class APIClient:
             reply = get(self.url, params=self.params(action))
         except RequestsConnectionError:
             fail('CONNECTION ERROR', 'Check your internet connection.')
-        else:
-            if reply.status_code == 200:
-                return reply
-            elif reply.status_code == 401:
-                if reply.text == 'Invalid credentials':
-                    raise InvalidCredentials()
 
-                raise Unauthorized()
+        if reply.status_code == 200:
+            return reply
+        elif reply.status_code == 401:
+            if reply.text == 'Invalid credentials':
+                raise InvalidCredentials()
 
-            raise APIError(reply.text)
+            raise Unauthorized()
+
+        raise APIError(reply.text)
 
     def post(self, action, data):
         """POST to the API with the respective
@@ -459,16 +460,16 @@ class APIClient:
             reply = post(self.url, data=data, params=self.params(action))
         except RequestsConnectionError:
             fail('CONNECTION ERROR', 'Check your internet connection.')
-        else:
-            if reply.status_code == 200:
-                return reply
-            elif reply.status_code == 401:
-                if reply.text == 'Invalid credentials':
-                    raise InvalidCredentials()
 
-                raise Unauthorized()
+        if reply.status_code == 200:
+            return reply
+        elif reply.status_code == 401:
+            if reply.text == 'Invalid credentials':
+                raise InvalidCredentials()
 
-            raise APIError(reply.text)
+            raise Unauthorized()
+
+        raise APIError(reply.text)
 
     def set_serial_number(self, serial_number):
         """Sets the respective serial number."""
@@ -533,15 +534,15 @@ if __name__ == '__main__':
         from docopt import docopt
     except ImportError:
         fail('"docopt" not available', 'CLI mode not available.', exit_code=4)
-    else:
-        if geteuid() != 0:
-            fail('You need to be root to run this script!')
-        else:
-            SCRIPT_NAME = Path(__file__).name
 
-            if SCRIPT_NAME == 'hidslcfg':
-                hidslcfg(docopt(hidslcfg.__doc__))
-            elif SCRIPT_NAME == 'hidslreset':
-                hidslreset(docopt(hidslreset.__doc__))
-            else:
-                fail('Script name "{}" is invalid.'.format(SCRIPT_NAME))
+    if geteuid() != 0:
+        fail('You need to be root to run this script!')
+
+    SCRIPT_NAME = Path(__file__).name
+
+    if SCRIPT_NAME == 'hidslcfg':
+        hidslcfg(docopt(hidslcfg.__doc__))
+    elif SCRIPT_NAME == 'hidslreset':
+        hidslreset(docopt(hidslreset.__doc__))
+    else:
+        fail('Script name "{}" is invalid.'.format(SCRIPT_NAME))
