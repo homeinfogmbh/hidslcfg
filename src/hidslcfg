@@ -506,6 +506,7 @@ class APIClient:
         return self
 
     def __exit__(self, typ, value, traceback):
+        """Handles possible errors."""
         if isinstance(value, InvalidCredentials):
             raise ProgramError(
                 'INVALID CREDENTIALS',
