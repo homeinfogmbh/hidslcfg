@@ -6,7 +6,7 @@ from datetime import datetime
 from enum import Enum
 from getpass import getpass
 from json import loads, dumps
-from os import chdir, geteuid
+from os import chdir, geteuid, getcwd
 from pathlib import Path
 from subprocess import DEVNULL, CalledProcessError, run
 from sys import stderr, exit as exit_
@@ -197,6 +197,8 @@ def strpdatetime(string):
         for datetime_format in DATETIME_FORMATS:
             with suppress(ValueError):
                 return datetime.strptime(string, datetime_format)
+
+    return None
 
 
 def make_table_rows(key_value_pairs, header=True, spacing=' {} '):
@@ -599,16 +601,37 @@ class Configurator(TemporaryDirectory):
         self.cid = cid
         self.vpndata = vpndata
         self.verbose = verbose
+        self.origin = None
 
     def __enter__(self):
         """Writes the VPN data to the respective temporary directory."""
         super().__enter__()
+        self.origin = getcwd()
+        chdir(self.name)
+        self._init_vpn_data()
+        self._init_hostname()
+        return self
+
+    def __exit__(self, typ, value, traceback):
+        """Navigates back to original folder
+        and removes the temporary directory.
+        """
+        chdir(self.origin)
+        return super().__exit__(typ, value, traceback)
+
+    def _init_vpn_data(self):
+        """Initializes the VPN data file."""
         vpndata_path = Path(self.name).joinpath(VPN_ARCHIVE)
 
         with vpndata_path.open('wb') as vpndata_file:
             vpndata_file.write(self.vpndata)
 
-        return self
+    def _init_hostname(self):
+        """Initializes the host name file."""
+        hostname = '{tid}.{cid}'.format(tid=self.tid, cid=self.cid)
+
+        with open(HOSTNAME_FILE_SRC, 'w') as hostname_tmp:
+            hostname_tmp.write(hostname)
 
     def configure_openvpn(self):
         """Installs the OpenVPN configuration."""
@@ -628,13 +651,7 @@ class Configurator(TemporaryDirectory):
 
     def configure_hostname(self):
         """Configures the system's hostname."""
-        chdir(self.name)
-        hostname = '{tid}.{cid}'.format(tid=self.tid, cid=self.cid)
-
-        with open(HOSTNAME_FILE_SRC, 'w') as hostname_tmp:
-            hostname_tmp.write(hostname)
-
-        system(HOSTNAME_INST, verbose=self.verbose)
+        return system(HOSTNAME_INST, verbose=self.verbose)
 
     def disable_warning(self):
         """Disables the on-screen unconfigured warning."""
