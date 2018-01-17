@@ -1,7 +1,7 @@
 # Maintainer: Richard Neumann aka rne. <r dot neumann at homeinfo fullstop de>
 
 pkgname='hidslcfg'
-pkgver='7.1.0'
+pkgver='7.1.1'
 pkgrel=1
 arch=('any')
 pkgdesc="HOMEINFO Digital Sigange Linux configuration scripts"
@@ -37,6 +37,6 @@ package() {
 
     # Install ALPM hooks.
     install -d -m 755 "${pkgdir}/usr/share/libalpm/hooks"
-    install -m 644 "${srcdir}/hidslcfg-chown-home.hook" "${pkgdir}/usr/share/libalpm/hooks/"
-    install -m 644 "${srcdir}/hidslcfg-useradd.hook" "${pkgdir}/usr/share/libalpm/hooks/"
+    install -m 644 "${srcdir}/hidslcfg-01-useradd.hook" "${pkgdir}/usr/share/libalpm/hooks/"
+    install -m 644 "${srcdir}/hidslcfg-02-chown-home.hook" "${pkgdir}/usr/share/libalpm/hooks/"
 }
