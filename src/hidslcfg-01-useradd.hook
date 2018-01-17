@@ -6,4 +6,4 @@ Target = hidslcfg
 [Action]
 Description = Adding hidslcfg user
 When = PostTransaction
-Exec = /usr/bin/useradd -mUd /home/hidslcfg hidslcfg
+Exec = /usr/bin/useradd -MUd /home/hidslcfg hidslcfg
