@@ -170,24 +170,13 @@ def read_serial_number():
 
     print('Enter serial number of the device.')
     print('Press [Ctrl]+[D] to skip this step.')
-    serial_number = input('Serial number: ')
-    serial_number = serial_number.strip()
+    serial_number = input('Serial number: ').strip()
+    serial_number_confirmation = input('Confirm serial number: ').strip()
 
-    try:
-        serial_number_confirmation = input('Confirm serial number: ')
-    except EOFError:
-        print()
-        serial_number_confirmation = None
-    else:
-        serial_number_confirmation = serial_number_confirmation.strip()
+    if serial_number == serial_number_confirmation:
+        return serial_number
 
-    if serial_number and serial_number_confirmation:
-        if serial_number == serial_number_confirmation:
-            return serial_number
-
-        raise ValueMismatch()
-
-    return None
+    raise ValueMismatch()
 
 
 def strpdatetime(string):
