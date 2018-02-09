@@ -150,6 +150,7 @@ def confirm_terminal(terminal_information, serial_number=None, verbose=False):
                     value = ' → '.join((str(value), serial_number))
 
                 terminal_information[index] = (key, value)
+                break
 
     print(BOLD.format('You are about to configure the following terminal:'))
     print()
