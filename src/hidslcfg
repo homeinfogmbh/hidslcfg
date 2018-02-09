@@ -147,7 +147,7 @@ def confirm_terminal(terminal_information, serial_number=None, verbose=False):
                 if value is None:
                     value = serial_number or None
                 else:
-                    value = '{} → {}'.format(value, serial_number or None))
+                    value = '{} → {}'.format(value, serial_number or None)
 
                 terminal_information[index] = (key, value)
                 break
