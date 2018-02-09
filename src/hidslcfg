@@ -255,11 +255,15 @@ def order_terminal_information(dictionary):
 
     try:
         cid = dictionary['customer']['cid']
-        customer_name = dictionary['customer']['name']
     except KeyError:
         yield ('Customer', dictionary['customer'])
     else:
-        yield ('Customer', '{} ({})'.format(customer_name, cid))
+        try:
+            company = dictionary['customer']['company']['name']
+        except KeyError:
+            yield ('Customer', cid)
+        else:
+            yield ('Customer', '{} ({})'.format(company, cid))
 
     try:
         location = dictionary['location']
