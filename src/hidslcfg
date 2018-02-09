@@ -147,7 +147,7 @@ def confirm_terminal(terminal_information, serial_number=None, verbose=False):
                 if value is None:
                     value = serial_number
                 else:
-                    value = ' → '.join((str(value), serial_number))
+                    value = ' → '.join((str(value or None), serial_number))
 
                 terminal_information[index] = (key, value)
                 break
@@ -424,8 +424,12 @@ def hidslcfg(options):
             verbose=verbose)
 
         if serial_number is not None:
-            print('Setting serial number of {}.{} to "{}".'.format(
-                tid, cid, serial_number))
+            if serial_number:
+                print('Setting serial number of {}.{} to "{}".'.format(
+                    tid, cid, serial_number))
+            else:
+                print('Deleting serial number of {}.{}.'.format(tid, cid))
+
             api_client.set_serial_number(serial_number)
 
         configure(tid, cid, api_client.vpndata, verbose=verbose)
