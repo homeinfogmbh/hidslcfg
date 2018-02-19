@@ -37,23 +37,24 @@ VPN_ARCHIVE = 'openvpn.tar.gz'
 VPN_CFG = 'terminals'
 VPN_SERVER = '10.8.0.1'
 VPN_GRACETIME = 3
-VPN_INST = '/usr/bin/tar xf {archive} -C {client_dir}'.format(
-    archive=VPN_ARCHIVE, client_dir=VPN_CLIENT_DIR)
-VPN_CLEAN = '/usr/bin/rm -f {}'.format(VPN_CLIENT_DIR.joinpath('*'))
-VPN_SERVICE = 'openvpn-client@{}.service'.format(VPN_CFG)
-VPN_ACTION = '{} {{}} {}'.format(SYSTEMCTL, VPN_SERVICE)
+VPN_INST = f'/usr/bin/tar xf {VPN_ARCHIVE} -C {VPN_CLIENT_DIR}'
+VPN_CLIENT_GLOB = VPN_CLIENT_DIR.joinpath('*')
+VPN_CLEAN = f'/usr/bin/rm -f {VPN_CLIENT_GLOB}'
+VPN_SERVICE = f'openvpn-client@{VPN_CFG}.service'
+VPN_ACTION = f'{SYSTEMCTL} {{}} {VPN_SERVICE}'
 
 HOSTNAME_FILE_SRC = 'hostname'
 HOSTNAME_FILE_DST = '/etc/hostname'
-HOSTNAME_INST = '/usr/bin/install -o root -g root -m 644 -T {} {}'.format(
-    HOSTNAME_FILE_SRC, HOSTNAME_FILE_DST)
-HOSTNAME_RESET = '/usr/bin/rm -f {}'.format(HOSTNAME_FILE_DST)
+HOSTNAME_INST = f'/usr/bin/install -o root -g root -m 644 -T \
+{HOSTNAME_FILE_SRC} {HOSTNAME_FILE_DST}'
+HOSTNAME_RESET = f'/usr/bin/rm -f {HOSTNAME_FILE_DST}'
 
 DIGSIG_DATA_DIR = Path('/usr/share/digsig')
-DIGSIG_DATA_CLEAN = '/usr/bin/rm -Rf {}'.format(DIGSIG_DATA_DIR.joinpath('*'))
+DIGSIG_DATA_GLOB = DIGSIG_DATA_DIR.joinpath('*')
+DIGSIG_DATA_CLEAN = f'/usr/bin/rm -Rf {DIGSIG_DATA_GLOB}'
 
-UNCONFIGURED_SERVICE = '{} {{}} unconfigured-warning.service'.format(SYSTEMCTL)
-APPLICATION_SERVICE = '{} {{}} application.service'.format(SYSTEMCTL)
+UNCONFIGURED_SERVICE = f'{SYSTEMCTL} {{}} unconfigured-warning.service'
+APPLICATION_SERVICE = f'{SYSTEMCTL} {{}} application.service'
 
 RESET_OPS = (
     ('reset hostname', HOSTNAME_RESET),
@@ -147,7 +148,7 @@ def confirm_terminal(terminal_information, serial_number=None, verbose=False):
                 if value is None:
                     value = serial_number or None
                 else:
-                    value = '{} → {}'.format(value, serial_number or None)
+                    value = f'{value} → {serial_number or None}'
 
                 terminal_information[index] = (key, value)
                 break
@@ -253,7 +254,7 @@ def order_terminal_information(dictionary):
         except KeyError:
             yield ('Customer', cid)
         else:
-            yield ('Customer', '{} ({})'.format(company, cid))
+            yield ('Customer', f'{company} ({cid})')
 
     try:
         location = dictionary['location']
@@ -326,7 +327,7 @@ def configure(tid, cid, vpndata, verbose=False):
             configurator.test_vpn()
 
         if verbose:
-            print('Installing {}.'.format(HOSTNAME_FILE_DST))
+            print(f'Installing {HOSTNAME_FILE_DST}.')
 
         with ErrorHandler('Installation of', HOSTNAME_FILE_DST, 'failed.'):
             configurator.configure_hostname()
@@ -355,7 +356,7 @@ def reset(verbose=False):
         try:
             system(cmd, verbose=verbose)
         except CalledProcessError:
-            raise ProgramError('Could not {}.'.format(operation))
+            raise ProgramError(f'Could not {operation}.')
 
 
 def hidslcfg(options):
@@ -425,10 +426,10 @@ def hidslcfg(options):
 
         if serial_number is not None:
             if serial_number:
-                print('Setting serial number of {}.{} to "{}".'.format(
-                    tid, cid, serial_number))
+                print(f'Setting serial number of {tid}.{cid} to '
+                      '"{serial_number}".')
             else:
-                print('Deleting serial number of {}.{}.'.format(tid, cid))
+                print(f'Deleting serial number of {tid}.{cid}.')
 
             api_client.set_serial_number(serial_number)
 
@@ -473,7 +474,7 @@ def main():
     elif script_name == 'hidslreset':
         return hidslreset(docopt(hidslreset.__doc__))
     else:
-        raise ProgramError('Script name "{}" is invalid.'.format(script_name))
+        raise ProgramError(f'Script name "{script_name}" is invalid.')
 
 
 class Table(Enum):
@@ -566,7 +567,7 @@ class APIClient:
 
     def get_url(self, action):
         """Returns the API URL."""
-        return '{}://{}{}/{}'.format(self.PROTO, self.HOST, self.PATH, action)
+        return f'{self.PROTO}://{self.HOST}{self.PATH}/{action}'
 
     def set_serial_number(self, serial_number):
         """Sets the respective serial number."""
@@ -626,10 +627,8 @@ class Configurator(TemporaryDirectory):
 
     def _init_hostname(self):
         """Initializes the host name file."""
-        hostname = '{tid}.{cid}'.format(tid=self.tid, cid=self.cid)
-
-        with open(HOSTNAME_FILE_SRC, 'w') as hostname_tmp:
-            hostname_tmp.write(hostname)
+        with open(HOSTNAME_FILE_SRC, 'w') as hostname:
+            hostname.write(f'{self.tid}.{self.cid}')
 
     def configure_openvpn(self):
         """Installs the OpenVPN configuration."""
