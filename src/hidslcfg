@@ -401,6 +401,9 @@ def hidslcfg(options):
             user = input('User name: ')
 
         passwd = getpass('Password: ')
+    except EOFError:
+        print()
+        raise ProgramError('Missing mandatory data.')
     except KeyboardInterrupt:
         print()
         raise ProgramError('Configuration aborted by user.')
