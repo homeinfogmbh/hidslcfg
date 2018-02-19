@@ -342,7 +342,7 @@ def configure(tid, cid, vpndata, verbose=False):
         print('Setup completed successfully.')
 
         if ask('Do you want to reboot now?'):
-            system('/usr/bin/reboot')
+            system('/usr/bin/systemctl isolate reboot.target')
         else:
             print('Okay, not rebooting.',
                   'You can reboot any time by pressing',
