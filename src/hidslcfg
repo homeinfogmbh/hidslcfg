@@ -430,7 +430,7 @@ def hidslcfg(options):
         if serial_number is not None:
             if serial_number:
                 print(f'Setting serial number of {tid}.{cid} to '
-                      '"{serial_number}".')
+                      f'"{serial_number}".')
             else:
                 print(f'Deleting serial number of {tid}.{cid}.')
 
