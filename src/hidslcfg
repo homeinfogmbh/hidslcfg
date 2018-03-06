@@ -14,7 +14,7 @@ from tempfile import TemporaryDirectory
 from time import sleep
 
 from docopt import docopt
-import requests
+from requests import ConnectionError, post
 
 
 __all__ = [
@@ -534,8 +534,8 @@ class APIClient:
         post_data = dumps(post_data).encode()
 
         try:
-            reply = requests.post(self.get_url(action), data=post_data)
-        except requests.ConnectionError:
+            reply = post(self.get_url(action), data=post_data)
+        except ConnectionError:
             raise ProgramError(
                 'CONNECTION ERROR', 'Check your internet connection.')
 

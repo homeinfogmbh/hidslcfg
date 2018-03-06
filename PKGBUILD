@@ -1,15 +1,13 @@
 # Maintainer: Richard Neumann aka rne. <r dot neumann at homeinfo fullstop de>
 
 pkgname='hidslcfg'
-pkgver='7.2.9'
+pkgver='7.3.0'
 pkgrel=1
 arch=('any')
 pkgdesc="HOMEINFO Digital Sigange Linux configuration scripts"
 depends=('python' 'python-docopt' 'python-requests' 'tar' 'digital-signage')
 license=('GPL3')
 groups=('homeinfo')
-provides=('hidsl-cfg')
-replaces=('hidsl-cfg')
 
 
 package() {
