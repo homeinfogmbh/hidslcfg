@@ -60,7 +60,7 @@ def hostname(hostname_):
 def reboot():
     """Reboots the system."""
 
-    return systemctl('isolate', 'reboot.target')
+    return systemctl('reboot')
 
 
 def rmsubtree(path):
