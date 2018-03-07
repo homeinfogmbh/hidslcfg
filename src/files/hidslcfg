@@ -19,6 +19,7 @@ Options:
     --help, -h                  Show this page.
 """
 from getpass import getpass
+from os import geteuid
 
 from docopt import docopt
 
@@ -50,10 +51,10 @@ def get_gracetime(options):
         raise ProgramError('Invalid value for grace time.')
 
 
-def main(options):
-    """Runs the HIDSL configurations."""
+def get_credentials(options):
+    """Returns the respective setup credentials."""
 
-    OPTIONS['verbose'] = options['--verbose']
+    user = options['--user']
     ident = options['<ident>']
 
     if ident is None:
@@ -65,10 +66,6 @@ def main(options):
         except ValueError:
             raise ProgramError(
                 'INVALID IDENT', 'Identifier must be like <tid>.<cid>')
-
-    user = options['--user']
-    serial_number = get_serial_number(options)
-    gracetime = get_gracetime(options)
 
     try:
         if cid is None:
@@ -85,6 +82,20 @@ def main(options):
     except KeyboardInterrupt:
         print()
         raise ProgramError('Configuration aborted by user.')
+
+    return (cid, tid, user, passwd)
+
+
+def main(options):
+    """Runs the HIDSL configurations."""
+
+    if geteuid() != 0:
+        raise ProgramError('You need to be root to run this script!')
+
+    OPTIONS['verbose'] = options['--verbose']
+    serial_number = get_serial_number(options)
+    gracetime = get_gracetime(options)
+    cid, tid, user, passwd = get_credentials(options)
 
     with Client(user, passwd, cid, tid) as client:
         confirm_terminal(client.terminal, serial_number=serial_number)
