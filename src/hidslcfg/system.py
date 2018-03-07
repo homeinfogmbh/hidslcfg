@@ -1,5 +1,6 @@
 """Operating system commands."""
 
+from contextlib import suppress
 from pathlib import Path
 from subprocess import DEVNULL, CalledProcessError, run
 from sys import exit as exit_, stderr
@@ -49,7 +50,8 @@ def hostname(hostname_):
     """Sets the respective host name or deletes the host name file."""
 
     if hostname_ is None:
-        HOSTNAME.unlink()
+        with suppress(FileNotFoundError):
+            HOSTNAME.unlink()
     else:
         with HOSTNAME.open('w') as file:
             file.write(hostname_)
