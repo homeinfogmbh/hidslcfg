@@ -14,7 +14,10 @@ from os import geteuid
 
 from docopt import docopt
 
-from hidslcfg import OPTIONS, reset
+from hidslcfg.exceptions import ProgramError
+from hidslcfg.globals import OPTIONS
+from hidslcfg.reset import reset
+from hidslcfg.system import ProgramErrorHandler
 
 
 def main(options):
@@ -35,4 +38,3 @@ def main(options):
 if __name__ == '__main__':
     with ProgramErrorHandler():
         main(docopt(__doc__))
-

@@ -4,10 +4,8 @@ from enum import Enum
 from os import linesep
 
 from hidslcfg.exceptions import ValueMismatch, ProgramError
-from hidslcfg.globals import OPTIONS
 
-
-__all__ = ['ask', 'bold', 'get_serial_number', 'Table']
+__all__ = ['ask', 'bold', 'read_serial_number', 'Table']
 
 
 YES_VALUES = ('y', 'yes')
@@ -63,17 +61,13 @@ def _read_serial_number():
     return serial_number
 
 
-def get_serial_number():
+def read_serial_number():
     """Reads the serial number if configured to do so."""
 
     try:
-        return OPTIONS['serial_number']
-    except KeyError:
-        if OPTIONS['read_serial_number']:
-            try:
-                return _read_serial_number()
-            except ValueMismatch:
-                raise ProgramError('Serial numbers do not match.')
+        return _read_serial_number()
+    except ValueMismatch:
+        raise ProgramError('Serial numbers do not match.')
 
     return None
 

@@ -45,7 +45,7 @@ def confirm_terminal(dictionary, serial_number=None):
         raise ProgramError('Setup aborted by user.')
 
 
-def configure(tid, cid, vpn_data):
+def configure(tid, cid, vpn_data, gracetime=3):
     """Performs the terminal configuration."""
 
     verbose = OPTIONS['verbose']
@@ -70,7 +70,7 @@ def configure(tid, cid, vpn_data):
     if verbose:
         print('Waiting for OpenVPN server to start.')
 
-    sleep(OPTIONS['gracetime'])
+    sleep(gracetime)
 
     if verbose:
         print('Checking OpenVPN connection.')

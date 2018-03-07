@@ -13,16 +13,45 @@ Options:
     --user=<user_name>, -u      Specifies the setup user's name.
     --no-serial-number, -n      Do not prompt to set system's serial number.
     --grace-time=<seconds>, -g  Specifies the grace time to wit for the OpenVPN
-                                server to respond.
+                                server to respond [default: 3].
     --verbose, -v               Be gassy.
     -h --help                   Show this page.
 """
-from hidslcfg import confirm_terminal, configure, Client
+from getpass import getpass
 
 from docopt import docopt
 
+from hidslcfg.api import Client
+from hidslcfg.configure import confirm_terminal, configure
+from hidslcfg.exceptions import ProgramError
+from hidslcfg.globals import OPTIONS
+from hidslcfg.system import ProgramErrorHandler
+from hidslcfg.termio import read_serial_number
+
+
+def get_serial_number(options):
+    """Returns the respective serial number."""
+
+    serial_number = options['--serial-number']
+
+    if serial_number is None and not options['--no-serial-number']:
+        return read_serial_number()
+
+    return serial_number
+
+
+def get_gracetime(options):
+    """Reads the respective grace time from the options."""
+
+    try:
+        return int(options['--grace-time'])
+    except ValueError:
+        raise ProgramError('Invalid value for grace time.')
+
 
 def main(options):
+    """Runs the HIDSL configurations."""
+
     OPTIONS['verbose'] = options['--verbose']
     ident = options['<ident>']
 
@@ -37,15 +66,8 @@ def main(options):
                 'INVALID IDENT', 'Identifier must be like <tid>.<cid>')
 
     user = options['--user']
-    query_serial_number = not options['--no-serial-number']
-    gracetime = options['--grace-time']
-
-    if gracetime is not None:
-        try:
-            OPTIONS['gracetime'] = int(gracetime)
-        except ValueError:
-            raise ProgramError('Invalid value for grace time: {}.'.format(
-                gracetime))
+    serial_number = get_serial_number(options)
+    gracetime = get_gracetime(options)
 
     try:
         if cid is None:
@@ -63,8 +85,6 @@ def main(options):
         print()
         raise ProgramError('Configuration aborted by user.')
 
-    serial_number = None
-
     with Client(user, passwd, cid, tid) as client:
         confirm_terminal(client.terminal, serial_number=serial_number)
 
@@ -77,7 +97,7 @@ def main(options):
 
             client.set_serial_number(serial_number)
 
-        configure(tid, cid, client.vpndata)
+        configure(tid, cid, client.vpndata, gracetime=gracetime)
 
 
 if __name__ == '__main__':

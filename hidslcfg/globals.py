@@ -13,4 +13,4 @@ __all__ = [
 UNCONFIGURED_WARNING_SERVICE = 'unconfigured-warning.service'
 APPLICATION_SERVICE = 'application.service'
 DIGSIG_DATA_DIR = Path('/usr/share/digsig')
-OPTIONS = {'verbose': False, 'gracetime': 3}
+OPTIONS = {'verbose': False}
