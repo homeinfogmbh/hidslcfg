@@ -67,8 +67,9 @@ def rmsubtree(path):
     for inode in path.iterdir():
         if inode.is_dir():
             rmsubtree(inode)
-
-        inode.unlink()
+            inode.rmdir()
+        else:
+            inode.unlink()
 
 
 class CalledProcessErrorHandler:
