@@ -8,14 +8,15 @@ Usage:
     hidslcfg [--tid=<terminal_id>] [--cid=<customer_id>] [options]
 
 Options:
-    --tid=<terminal_id>, -T     Specifies the physical terminal identifier.
-    --cid=<customer_id>, -C     Specifies the customer identifier.
+    --tid=<terminal_id>, -t     Specifies the physical terminal ID.
+    --cid=<customer_id>, -c     Specifies the customer identifier.
     --user=<user_name>, -u      Specifies the setup user's name.
-    --no-serial-number, -n      Do not prompt to set system's serial number.
-    --grace-time=<seconds>, -g  Specifies the grace time to wit for the OpenVPN
-                                server to respond [default: 3].
+    --serial-number=<sn>, -s    Specifies the device's serial number.
+    --no-serial-number, -n      Do not prompt for a serial number.
+    --grace-time=<seconds>, -g  Specifies the grace time to wait for the
+                                OpenVPN connection [default: 3].
     --verbose, -v               Be gassy.
-    -h --help                   Show this page.
+    --help, -h                  Show this page.
 """
 from getpass import getpass
 
