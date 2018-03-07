@@ -18,19 +18,19 @@ package() {
     # Install sudoers file.
     install -d -m 755 "${pkgdir}/etc"
     install -d -m 750 "${pkgdir}/etc/sudoers.d"
-    install -m 640 -T "${srcdir}/hidslcfg.sudo" "${pkgdir}/etc/sudoers.d/hidslcfg"
+    install -m 640 -T "${srcdir}/files/hidslcfg.sudo" "${pkgdir}/etc/sudoers.d/hidslcfg"
 
     # Install systemd units.
     install -d -m 755 "${pkgdir}/usr/lib/systemd/system"
-    install -m 644 "${srcdir}/hidslcfg.target" "${pkgdir}/usr/lib/systemd/system/"
-    install -m 644 "${srcdir}/hidslcfg@.service" "${pkgdir}/usr/lib/systemd/system/"
+    install -m 644 "${srcdir}/files/hidslcfg.target" "${pkgdir}/usr/lib/systemd/system/"
+    install -m 644 "${srcdir}/files/hidslcfg@.service" "${pkgdir}/usr/lib/systemd/system/"
 
     # Install HOME files.
     install -d -m 550 "${pkgdir}/home/hidslcfg"
-    install -m 440 -T "${srcdir}/bash_profile" "${pkgdir}/home/hidslcfg/.bash_profile"
+    install -m 440 -T "${srcdir}/files/bash_profile" "${pkgdir}/home/hidslcfg/.bash_profile"
 
     # Install ALPM hooks.
     install -d -m 755 "${pkgdir}/usr/share/libalpm/hooks"
-    install -m 644 "${srcdir}/hidslcfg-01-useradd.hook" "${pkgdir}/usr/share/libalpm/hooks/"
-    install -m 644 "${srcdir}/hidslcfg-02-chown-home.hook" "${pkgdir}/usr/share/libalpm/hooks/"
+    install -m 644 "${srcdir}/files/hidslcfg-01-useradd.hook" "${pkgdir}/usr/share/libalpm/hooks/"
+    install -m 644 "${srcdir}/files/hidslcfg-02-chown-home.hook" "${pkgdir}/usr/share/libalpm/hooks/"
 }
