@@ -1,7 +1,7 @@
 # Maintainer: Richard Neumann aka rne. <r dot neumann at homeinfo fullstop de>
 
 pkgname='hidslcfg'
-pkgver='7.3.0'
+pkgver='8.0.0'
 pkgrel=1
 arch=('any')
 pkgdesc="HOMEINFO Digital Sigange Linux configuration scripts"
@@ -11,13 +11,9 @@ groups=('homeinfo')
 
 
 package() {
-    # Install binaries.
-    install -d -m 755 "${pkgdir}/usr/bin"
-    install -m 755 "${srcdir}/hidslcfg" "${pkgdir}/usr/bin"
-
-    # Create symlink "hidslreset".
-    cd "${pkgdir}/usr/bin"
-    ln -s hidslcfg hidslreset
+    # Install python stuff.
+    # This also installs the scripts.
+    python setup.py install --root="${pkgdir}" --optimize=1
 
     # Install sudoers file.
     install -d -m 755 "${pkgdir}/etc"
