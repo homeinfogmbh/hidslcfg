@@ -29,7 +29,7 @@ def system(*args):
 
     output = None if OPTIONS['verbose'] else DEVNULL
     cmd = [str(arg) for arg in args]
-    completed_process = run(cmd, stdin=DEVNULL, stdout=output, stderr=output)
+    completed_process = run(cmd, stdout=output, stderr=output)
     completed_process.check_returncode()
     return completed_process
 
