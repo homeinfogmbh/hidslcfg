@@ -69,8 +69,6 @@ def read_serial_number():
     except ValueMismatch:
         raise ProgramError('Serial numbers do not match.')
 
-    return None
-
 
 class Table(Enum):
     """Table elements."""
