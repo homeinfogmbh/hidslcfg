@@ -1,0 +1,9 @@
+[Trigger]
+Type = Package
+Operation = Install
+Target = hidslcfg
+
+[Action]
+Description = Creating hidslcfg user...
+When = PostTransaction
+Exec = /usr/bin/useradd -mUd /home/hidslcfg -u 820 -c "HOMEINFO Digital Sigange Linux Configuration" hidslcfg
