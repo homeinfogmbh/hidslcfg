@@ -35,5 +35,5 @@ package() {
 
     # Install ALPM hooks.
     install -d -m 755 "${pkgdir}/usr/share/libalpm/hooks"
-    install -m 644 "${srcdir}/zz-hidslcfg-chown-home.hook" "${pkgdir}/usr/share/libalpm/hooks/"
+    install -m 644 "${srcdir}/files/zz-hidslcfg-chown-home.hook" "${pkgdir}/usr/share/libalpm/hooks/"
 }
