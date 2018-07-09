@@ -70,8 +70,10 @@ def get_credentials(options):
     try:
         if cid is None:
             cid = input('Customer ID: ')
+
         if tid is None:
             tid = input('Terminal ID: ')
+
         if user is None:
             user = input('User name: ')
 
