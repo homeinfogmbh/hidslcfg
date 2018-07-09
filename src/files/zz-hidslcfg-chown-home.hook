@@ -1,0 +1,10 @@
+[Trigger]
+Type = File
+Operation = Install
+Operation = Upgrade
+Target = home/hidslcfg/
+
+[Action]
+Description = Fixing ownership of hidslcfg's home...
+When = PostTransaction
+Exec = /usr/bin/chown -R hidslcfg.hidslcfg /home/hidslcfg
