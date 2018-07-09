@@ -1,9 +1,0 @@
-[Trigger]
-Type = Package
-Operation = Install
-Target = hidslcfg
-
-[Action]
-Description = Adding hidslcfg user...
-When = PostTransaction
-Exec = /usr/bin/useradd -MUd /home/hidslcfg hidslcfg
