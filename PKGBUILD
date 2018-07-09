@@ -31,5 +31,5 @@ package() {
 
     # Install sysusers configuration.
     install -d -m 755 "${pkgdir}/usr/lib/sysusers.d"
-    install -m 644 "${srcdir}/hidslcfg.conf" "${pkgdir}/usr/lib/sysusers.d/"
+    install -m 644 "${srcdir}/files/hidslcfg.conf" "${pkgdir}/usr/lib/sysusers.d/"
 }
