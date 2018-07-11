@@ -1,13 +1,14 @@
 # Maintainer: Richard Neumann aka rne. <r dot neumann at homeinfo fullstop de>
 
 pkgname='hidslcfg'
-pkgver='9.0.0'
+pkgver='9.0.1'
 pkgrel=1
 arch=('any')
 pkgdesc="HOMEINFO Digital Sigange Linux configuration scripts"
 depends=('python' 'python-docopt' 'python-requests' 'tar' 'digital-signage')
 license=('GPL3')
 groups=('homeinfo' 'hidsl')
+install='hidslcfg.install'
 
 
 package() {
@@ -28,9 +29,4 @@ package() {
     # Install HOME files.
     install -d -m 550 "${pkgdir}/home/hidslcfg"
     install -m 440 -T "${srcdir}/files/bash_profile" "${pkgdir}/home/hidslcfg/.bash_profile"
-
-    # Install ALPM hooks.
-    install -d -m 755 "${pkgdir}/usr/share/libalpm/hooks"
-    install -m 644 "${srcdir}/files/hidslcfg-add-user.hook" "${pkgdir}/usr/share/libalpm/hooks/"
-    install -m 644 "${srcdir}/files/hidslcfg-chown-home.hook" "${pkgdir}/usr/share/libalpm/hooks/"
 }
