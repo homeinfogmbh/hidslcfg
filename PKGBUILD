@@ -1,7 +1,7 @@
 # Maintainer: Richard Neumann aka rne. <r dot neumann at homeinfo fullstop de>
 
 pkgname='hidslcfg'
-pkgver='9.0.1'
+pkgver='9.1.0'
 pkgrel=1
 arch=('any')
 pkgdesc="HOMEINFO Digital Sigange Linux configuration scripts"

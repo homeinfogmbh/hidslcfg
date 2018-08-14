@@ -71,7 +71,7 @@ class Client:
     def post_data(self):
         """Returns the HTTP parameters dictionary."""
         return {
-            'user_name': self.user,
+            'userName': self.user,
             'passwd': self.passwd,
             'cid': self.cid,
             'tid': self.tid}

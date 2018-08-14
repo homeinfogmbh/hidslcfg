@@ -127,10 +127,10 @@ def rows(dictionary):
             yield ('Street', address['street'])
 
         with suppress(KeyError):
-            yield ('House number', address['house_number'])
+            yield ('House number', address['houseNumber'])
 
         with suppress(KeyError):
-            yield ('ZIP code', address['zip_code'])
+            yield ('ZIP code', address['zipCode'])
 
         with suppress(KeyError):
             yield ('City', address['city'])
@@ -140,4 +140,4 @@ def rows(dictionary):
 
     yield ('Scheduled', dictionary.get('scheduled', 'Not scheduled.'))
     yield ('Deployed', dictionary.get('deployed', 'Not deployed.'))
-    yield ('Serial number', dictionary.get('serial_number'))
+    yield ('Serial number', dictionary.get('serialNumber'))
