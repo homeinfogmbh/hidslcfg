@@ -105,7 +105,7 @@ def rows(dictionary):
     yield ('TID', dictionary['tid'])
 
     try:
-        cid = dictionary['customer']['cid']
+        cid = dictionary['customer']['id']
     except KeyError:
         yield ('Customer', dictionary['customer'])
     else:
