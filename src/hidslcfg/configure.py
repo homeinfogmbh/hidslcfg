@@ -117,12 +117,10 @@ def rows(dictionary):
             yield ('Customer', f'{company} ({cid})')
 
     try:
-        location = dictionary['location']
+        address = dictionary['address']
     except KeyError:
         yield ('Location', '!!!Not configured!!!')
     else:
-        address = location['address']
-
         with suppress(KeyError):
             yield ('Street', address['street'])
 
@@ -135,8 +133,8 @@ def rows(dictionary):
         with suppress(KeyError):
             yield ('City', address['city'])
 
-        with suppress(KeyError):
-            yield ('Annotation', location['annotation'])
+    with suppress(KeyError):
+        yield ('Annotation', dictionary['annotation'])
 
     yield ('Scheduled', dictionary.get('scheduled', 'Not scheduled.'))
     yield ('Deployed', dictionary.get('deployed', 'Not deployed.'))
