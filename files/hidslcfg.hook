@@ -7,4 +7,4 @@ Target = hidslcfg
 [Action]
 Description = Updating ownership of configuration user directories...
 When = PostTransaction
-Exec = /usr/bin/chown -R hidslcfg.hidslcfg /var/hidslcfg
+Exec = /usr/bin/chown -R hidslcfg.hidslcfg /var/lib/hidslcfg
