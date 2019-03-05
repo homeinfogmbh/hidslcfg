@@ -2,10 +2,13 @@
 
 from json import loads, dumps
 
-from requests import ConnectionError, post
+from requests import ConnectionError, post  # pylint: disable=W0622
 
-from hidslcfg.exceptions import ProgramError, InvalidCredentials, \
-    Unauthorized, APIError
+from hidslcfg.exceptions import APIError
+from hidslcfg.exceptions import InvalidCredentials
+from hidslcfg.exceptions import ProgramError
+from hidslcfg.exceptions import Unauthorized
+
 
 __all__ = ['Client']
 
@@ -59,7 +62,8 @@ class Client:
 
         if reply.status_code == 200:
             return reply
-        elif reply.status_code == 401:
+
+        if reply.status_code == 401:
             if reply.text == 'Invalid credentials':
                 raise InvalidCredentials()
 

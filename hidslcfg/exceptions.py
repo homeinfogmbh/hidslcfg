@@ -11,8 +11,6 @@ __all__ = [
 class ValueMismatch(Exception):
     """Indicates that a pair of values does not match."""
 
-    pass
-
 
 class ProgramError(Exception):
     """Indicates an error in the program."""
@@ -38,18 +36,12 @@ class ProgramError(Exception):
 class InvalidCredentials(Exception):
     """Indicates invalid credentials."""
 
-    pass
-
 
 class Unauthorized(Exception):
     """Indicates that the user is not allowed
     to setup the respective terminal.
     """
 
-    pass
-
 
 class APIError(Exception):
     """Indicates an error while using the web API."""
-
-    pass

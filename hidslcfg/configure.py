@@ -4,11 +4,15 @@ from contextlib import suppress
 from time import sleep
 
 from hidslcfg.exceptions import ProgramError
-from hidslcfg.globals import UNCONFIGURED_WARNING_SERVICE, OPTIONS
+from hidslcfg.globals import OPTIONS
 from hidslcfg.openvpn import SERVER, unit, install
-from hidslcfg.system import systemctl, ping, hostname, reboot, \
-    CalledProcessErrorHandler
+from hidslcfg.system import hostname
+from hidslcfg.system import ping
+from hidslcfg.system import reboot
+from hidslcfg.system import systemctl
+from hidslcfg.system import CalledProcessErrorHandler
 from hidslcfg.termio import ask, bold, Table
+
 
 __all__ = ['confirm_terminal', 'configure']
 
@@ -82,12 +86,6 @@ def configure(tid, cid, vpn_data, gracetime=3):
         print('Configuring host name.')
 
     hostname(f'{tid}.{cid}')
-
-    if verbose:
-        print('Disabling on-screen warning.')
-
-    with CalledProcessErrorHandler('Disabling of on-screen warning failed.'):
-        systemctl('disable', UNCONFIGURED_WARNING_SERVICE)
 
     print()
     print('Setup completed successfully.')

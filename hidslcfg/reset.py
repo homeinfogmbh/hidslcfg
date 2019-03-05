@@ -5,10 +5,10 @@ from functools import partial
 from subprocess import CalledProcessError
 
 from hidslcfg.exceptions import ProgramError
-from hidslcfg.globals import UNCONFIGURED_WARNING_SERVICE, \
-    APPLICATION_SERVICE, DIGSIG_DATA_DIR
+from hidslcfg.globals import APPLICATION_SERVICE, DIGSIG_DATA_DIR
 from hidslcfg.openvpn import unit, clean
 from hidslcfg.system import systemctl, hostname, rmsubtree
+
 
 __all__ = ['reset']
 
@@ -25,10 +25,7 @@ RESET_OPERATIONS = (
     ResetOperation('Removing OpenVPN configuration', clean),
     ResetOperation(
         'disable application',
-        partial(systemctl, 'disable', APPLICATION_SERVICE)),
-    ResetOperation(
-        'enable on-screen warning',
-        partial(systemctl, 'enable', UNCONFIGURED_WARNING_SERVICE)))
+        partial(systemctl, 'disable', APPLICATION_SERVICE)))
 
 
 def reset():

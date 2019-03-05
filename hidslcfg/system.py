@@ -8,6 +8,7 @@ from sys import exit as exit_, stderr
 from hidslcfg.globals import OPTIONS
 from hidslcfg.exceptions import ProgramError
 
+
 __all__ = [
     'system',
     'systemctl',

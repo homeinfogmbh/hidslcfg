@@ -5,6 +5,7 @@ from os import linesep
 
 from hidslcfg.exceptions import ValueMismatch, ProgramError
 
+
 __all__ = ['ask', 'bold', 'read_serial_number', 'Table']
 
 

@@ -3,14 +3,9 @@
 from pathlib import Path
 
 
-__all__ = [
-    'UNCONFIGURED_WARNING_SERVICE',
-    'APPLICATION_SERVICE',
-    'DIGSIG_DATA_DIR',
-    'OPTIONS']
+__all__ = ['APPLICATION_SERVICE', 'DIGSIG_DATA_DIR', 'OPTIONS']
 
 
-UNCONFIGURED_WARNING_SERVICE = 'unconfigured-warning.service'
 APPLICATION_SERVICE = 'application.service'
 DIGSIG_DATA_DIR = Path('/usr/share/digsig')
 OPTIONS = {'verbose': False}
