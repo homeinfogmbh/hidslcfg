@@ -67,7 +67,7 @@ class Client:
 
     def login(self):
         """Performs a HIS login."""
-        json = {'userName': self.user, 'passwd': self.passwd}
+        json = {'account': self.user, 'passwd': self.passwd}
         return self._post(LOGIN_URL, json=json)
 
     @property
