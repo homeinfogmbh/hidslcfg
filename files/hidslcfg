@@ -23,7 +23,7 @@ def get_args():
     parser.add_argument('id', type=int, metavar='id', help='the system ID')
     parser.add_argument('-u', '--user', metavar='user', help='user name')
     parser.add_argument(
-        '-s', '--serial-number', metavar='sn',
+        '-s', '--serial-number', metavar='sn', dest='sn',
         help="the system's serial number")
     parser.add_argument(
         '-g', '--grace-time', type=int, default=3, metavar='secs',
@@ -54,7 +54,7 @@ def main():
 
             client.set_serial_number(args.sn)
 
-        configure(args.id, client.vpndata, gracetime=args.gracetime)
+        configure(args.id, client.vpndata, gracetime=args.grace_time)
 
 
 if __name__ == '__main__':
