@@ -1,12 +1,13 @@
 """Terminal input and output."""
 
 from enum import Enum
+from getpass import getpass
 from os import linesep
 
-from hidslcfg.exceptions import ValueMismatch, ProgramError
+from hidslcfg.exceptions import ProgramError
 
 
-__all__ = ['ask', 'bold', 'read_serial_number', 'Table']
+__all__ = ['ask', 'bold', 'read_credentials', 'Table']
 
 
 YES_VALUES = ('y', 'yes')
@@ -39,36 +40,22 @@ def bold(string):
     return f'\033[1m{string}\033[0m'
 
 
-def _read_serial_number():
-    """Reads the serial number."""
-
-    print('Enter serial number of the device.')
-    print('Press [Ctrl]+[D] to skip this step.')
+def read_credentials(user):
+    """Reads the user name."""
 
     try:
-        serial_number = input('Serial number: ').strip()
-        serial_number_confirmation = input('Confirm serial number: ').strip()
-    except KeyboardInterrupt:
-        print()
-        raise ProgramError('Setup aborted by user.')
+        if user is None:
+            user = input('User name: ')
+
+        passwd = getpass('Password: ')
     except EOFError:
         print()
-        print('Skipping setting of serial number.')
-        return None
+        raise ProgramError('Missing mandatory data.')
+    except KeyboardInterrupt:
+        print()
+        raise ProgramError('Configuration aborted by user.')
 
-    if serial_number != serial_number_confirmation:
-        raise ValueMismatch()
-
-    return serial_number
-
-
-def read_serial_number():
-    """Reads the serial number if configured to do so."""
-
-    try:
-        return _read_serial_number()
-    except ValueMismatch:
-        raise ProgramError('Serial numbers do not match.')
+    return (user, passwd)
 
 
 class Table(Enum):

@@ -1,11 +1,12 @@
 """Operating system commands."""
 
 from contextlib import suppress
+from logging import DEBUG
 from pathlib import Path
 from subprocess import DEVNULL, CalledProcessError, run
-from sys import exit as exit_, stderr
+from sys import exit    # pylint: disable=W0622
 
-from hidslcfg.globals import OPTIONS
+from hidslcfg.globals import LOGGER
 from hidslcfg.exceptions import ProgramError
 
 
@@ -28,8 +29,12 @@ HOSTNAME = Path('/etc/hostname')
 def system(*args):
     """Invoke system commands."""
 
-    output = None if OPTIONS['verbose'] else DEVNULL
-    cmd = [str(arg) for arg in args]
+    if LOGGER.getEffectiveLevel() > DEBUG:
+        output = DEVNULL
+    else:
+        output = None
+
+    cmd = tuple(str(arg) for arg in args)
     completed_process = run(cmd, stdout=output, stderr=output)
     completed_process.check_returncode()
     return completed_process
@@ -99,5 +104,5 @@ class ProgramErrorHandler:
 
     def __exit__(self, _, value, __):
         if isinstance(value, ProgramError):
-            print(value, file=stderr, flush=True)
-            exit_(value.exit_code)
+            LOGGER.error(value)
+            exit(value.exit_code)

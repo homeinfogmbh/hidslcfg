@@ -1,139 +1,110 @@
 """System configuration."""
 
-from contextlib import suppress
 from time import sleep
 
 from hidslcfg.exceptions import ProgramError
-from hidslcfg.globals import OPTIONS
+from hidslcfg.globals import LOGGER
 from hidslcfg.openvpn import SERVER, unit, install
 from hidslcfg.system import hostname
 from hidslcfg.system import ping
 from hidslcfg.system import reboot
 from hidslcfg.system import systemctl
 from hidslcfg.system import CalledProcessErrorHandler
-from hidslcfg.termio import ask, bold, Table
+from hidslcfg.termio import ask, Table
 
 
-__all__ = ['confirm_terminal', 'configure']
+__all__ = ['confirm', 'configure']
 
 
-NO_REBOOT_MSG = '''Okay, not rebooting.'
-You can reboot any time by pressing
-[CTRL]+[ALT]+[DEL]'''
-
-
-def update_sn(dictionary, serial_number):
+def update_sn(system, serial_number):
     """Updates the serial number hint to indicate changed serial number."""
 
     if serial_number is not None:
         new_sn = serial_number or None
-        current_sn = dictionary.get('serial_number')
+        current_sn = system.get('serial_number')
 
         if current_sn is not None:
             new_sn = f'{current_sn} → {new_sn}'
 
-        dictionary['serial_number'] = new_sn
+        system['serial_number'] = new_sn
 
-    return dictionary
+    return system
 
 
-def confirm_terminal(dictionary, serial_number=None):
+def warn_deployed(deployment):
+    """Warns about possible deployment."""
+
+    if not deployment:
+        return
+
+    address = deployment.get('address', {})
+    street = address.get('street')
+    house_number = address.get('house_number')
+    zip_code = address.get('zip_code')
+    city = address.get('city')
+    LOGGER.warning('System is already deployed.')
+    LOGGER.debug('%s %s, %s %s', street, house_number, zip_code, city)
+
+
+def confirm(system, serial_number=None):
     """Prompt the user to confirm the given location."""
 
-    print(bold('You are about to configure the following terminal:'))
-    print()
-    print(Table.generate(rows(update_sn(dictionary, serial_number))))
-    print()
+    LOGGER.info('You are about to configure the following system:')
+    print(flush=True)
+    print(Table.generate(rows(update_sn(system, serial_number))))
+    print(flush=True)
+    warn_deployed(system.get('deployment'))
 
     if not ask('Is this correct?'):
         raise ProgramError('Setup aborted by user.')
 
 
-def configure(tid, cid, vpn_data, gracetime=3):
-    """Performs the terminal configuration."""
+def configure(system, vpn_data, gracetime=3):
+    """Performs the system configuration."""
 
-    verbose = OPTIONS['verbose']
-
-    if verbose:
-        print('Installing OpenVPN configuration.')
-
+    LOGGER.debug('Installing OpenVPN configuration.')
     install(vpn_data)
-
-    if verbose:
-        print('Enabling OpenVPN.')
+    LOGGER.debug('Enabling OpenVPN.')
 
     with CalledProcessErrorHandler('Enabling of OpenVPN client failed.'):
         systemctl('enable', unit())
 
-    if verbose:
-        print('Restarting OpenVPN.')
+    LOGGER.debug('Restarting OpenVPN.')
 
     with CalledProcessErrorHandler('Restart of OpenVPN client failed.'):
         systemctl('restart', unit())
 
-    if verbose:
-        print('Waiting for OpenVPN server to start.')
-
+    LOGGER.debug('Waiting for OpenVPN server to start.')
     sleep(gracetime)
-
-    if verbose:
-        print('Checking OpenVPN connection.')
+    LOGGER.debug('Checking OpenVPN connection.')
 
     with CalledProcessErrorHandler('Cannot contact OpenVPN server.'):
         ping(SERVER)
 
-    if verbose:
-        print('Configuring host name.')
-
-    hostname(f'{tid}.{cid}')
-
-    print()
-    print('Setup completed successfully.')
+    LOGGER.debug('Configuring host name.')
+    hostname(str(system))
+    LOGGER.info('Setup completed successfully.')
 
     if ask('Do you want to reboot now?'):
         reboot()
     else:
-        print(NO_REBOOT_MSG)
+        LOGGER.info('Okay, not rebooting.')
 
 
-def rows(dictionary):
-    """Yields table rows containing terminal information."""
+def rows(system):
+    """Yields table rows containing system information."""
 
     yield ('Option', 'Value')   # Header.
-    yield ('TID', dictionary['tid'])
+    yield ('System ID', system['id'])
+    yield ('Creation date', system['created'])
+    yield ('Operating system', system['operating_system'])
 
-    try:
-        cid = dictionary['customer']['id']
-    except KeyError:
-        yield ('Customer', dictionary['customer'])
-    else:
-        try:
-            company = dictionary['customer']['company']['name']
-        except KeyError:
-            yield ('Customer', cid)
-        else:
-            yield ('Customer', f'{company} ({cid})')
+    serial_number = system.get('serial_number')
 
-    try:
-        address = dictionary['address']
-    except KeyError:
-        yield ('Location', '!!!Not configured!!!')
-    else:
-        with suppress(KeyError):
-            yield ('Street', address['street'])
+    if serial_number:
+        yield ('Previous S/N', serial_number)
 
-        with suppress(KeyError):
-            yield ('House number', address['houseNumber'])
+    model = system.get('model')
 
-        with suppress(KeyError):
-            yield ('ZIP code', address['zipCode'])
-
-        with suppress(KeyError):
-            yield ('City', address['city'])
-
-    with suppress(KeyError):
-        yield ('Annotation', dictionary['annotation'])
-
-    yield ('Scheduled', dictionary.get('scheduled', 'Not scheduled.'))
-    yield ('Deployed', dictionary.get('deployed', 'Not deployed.'))
-    yield ('Serial number', dictionary.get('serialNumber'))
+    if model:
+        yield ('Model', model)

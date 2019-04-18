@@ -1,15 +1,10 @@
 """Exceptions used by hidslcfg."""
 
 __all__ = [
-    'ValueMismatch',
     'ProgramError',
     'InvalidCredentials',
     'Unauthorized',
     'APIError']
-
-
-class ValueMismatch(Exception):
-    """Indicates that a pair of values does not match."""
 
 
 class ProgramError(Exception):

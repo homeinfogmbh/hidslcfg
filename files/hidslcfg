@@ -1,119 +1,62 @@
 #! /usr/bin/env python3
-"""HOMEINFO Digital Signage Linux configurator.
+"""HOMEINFO Digital Signage Linux configurator."""
 
-Maintainer: Richard Neumann <r.neumann@homeinfo.de>
-
-Usage:
-    hidslcfg <ident> [options]
-    hidslcfg [--tid=<terminal_id>] [--cid=<customer_id>] [options]
-
-Options:
-    --tid=<terminal_id>, -t     Specifies the physical terminal ID.
-    --cid=<customer_id>, -c     Specifies the customer identifier.
-    --user=<user_name>, -u      Specifies the setup user's name.
-    --serial-number=<sn>, -s    Specifies the device's serial number.
-    --no-serial-number, -n      Do not prompt for a serial number.
-    --grace-time=<seconds>, -g  Specifies the grace time to wait for the
-                                OpenVPN connection [default: 3].
-    --verbose, -v               Be gassy.
-    --help, -h                  Show this page.
-"""
-from getpass import getpass
+from argparse import ArgumentParser
+from logging import DEBUG, INFO, basicConfig
 from os import geteuid
 
-from docopt import docopt
-
 from hidslcfg.api import Client
-from hidslcfg.configure import confirm_terminal, configure
+from hidslcfg.configure import confirm, configure
 from hidslcfg.exceptions import ProgramError
-from hidslcfg.globals import OPTIONS
+from hidslcfg.globals import LOG_FORMAT, LOGGER
 from hidslcfg.system import ProgramErrorHandler
-from hidslcfg.termio import read_serial_number
+from hidslcfg.termio import read_credentials
 
 
-def get_serial_number(options):
-    """Returns the respective serial number."""
-
-    serial_number = options['--serial-number']
-
-    if serial_number is None and not options['--no-serial-number']:
-        return read_serial_number()
-
-    return serial_number
+DESCRIPTION = 'HOMEINFO Digital Signage Linux configurator.'
 
 
-def get_gracetime(options):
-    """Reads the respective grace time from the options."""
+def get_args():
+    """Parses the arguments."""
 
-    try:
-        return int(options['--grace-time'])
-    except ValueError:
-        raise ProgramError('Invalid value for grace time.')
-
-
-def get_credentials(options):
-    """Returns the respective setup credentials."""
-
-    user = options['--user']
-    ident = options['<ident>']
-
-    if ident is None:
-        tid = options['--tid']
-        cid = options['--cid']
-    else:
-        try:
-            tid, cid = ident.split('.')
-        except ValueError:
-            raise ProgramError(
-                'INVALID IDENT', 'Identifier must be like <tid>.<cid>')
-
-    try:
-        if cid is None:
-            cid = input('Customer ID: ')
-
-        if tid is None:
-            tid = input('Terminal ID: ')
-
-        if user is None:
-            user = input('User name: ')
-
-        passwd = getpass('Password: ')
-    except EOFError:
-        print()
-        raise ProgramError('Missing mandatory data.')
-    except KeyboardInterrupt:
-        print()
-        raise ProgramError('Configuration aborted by user.')
-
-    return (cid, tid, user, passwd)
+    parser = ArgumentParser(description=DESCRIPTION)
+    parser.add_argument('id', type=int, metavar='id', help='the system ID')
+    parser.add_argument('-u', '--user', metavar='user', help='user name')
+    parser.add_argument(
+        '-s', '--serial-number', metavar='sn',
+        help="the system's serial number")
+    parser.add_argument(
+        '-g', '--grace-time', type=int, default=3, metavar='secs',
+        help='seconds to wait for the OpenVPN server')
+    parser.add_argument(
+        '-v', '--verbose', action='store_true', help='be gassy')
+    return parser.parse_args()
 
 
-def main(options):
+def main():
     """Runs the HIDSL configurations."""
 
     if geteuid() != 0:
         raise ProgramError('You need to be root to run this script!')
 
-    OPTIONS['verbose'] = options['--verbose']
-    serial_number = get_serial_number(options)
-    gracetime = get_gracetime(options)
-    cid, tid, user, passwd = get_credentials(options)
+    args = get_args()
+    basicConfig(level=DEBUG if args.verbose else INFO, format=LOG_FORMAT)
+    user, passwd = read_credentials(args.user)
 
-    with Client(user, passwd, cid, tid) as client:
-        confirm_terminal(client.terminal, serial_number=serial_number)
+    with Client(user, passwd, args.id) as client:
+        confirm(client.info, serial_number=args.sn)
 
-        if serial_number is not None:
-            if serial_number:
-                print(f'Setting serial number of {tid}.{cid} to '
-                      f'"{serial_number}".')
+        if args.sn is not None:
+            if args.sn:
+                LOGGER.info('Setting S/N of %i to "%s".', args.id, args.sn)
             else:
-                print(f'Deleting serial number of {tid}.{cid}.')
+                LOGGER.info('Deleting S/N of %i.', args.id)
 
-            client.set_serial_number(serial_number)
+            client.set_serial_number(args.sn)
 
-        configure(tid, cid, client.vpndata, gracetime=gracetime)
+        configure(args.id, client.vpndata, gracetime=args.gracetime)
 
 
 if __name__ == '__main__':
     with ProgramErrorHandler():
-        main(docopt(__doc__))
+        main()

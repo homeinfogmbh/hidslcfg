@@ -1,8 +1,8 @@
 """Web API client."""
 
-from json import loads, dumps
+from urllib.parse import urljoin
 
-from requests import ConnectionError, post  # pylint: disable=W0622
+from requests import Session
 
 from hidslcfg.exceptions import APIError
 from hidslcfg.exceptions import InvalidCredentials
@@ -13,19 +13,25 @@ from hidslcfg.exceptions import Unauthorized
 __all__ = ['Client']
 
 
+SETUP_URL_BASE = 'https://termgr.homeinfo.de/setup/'
+LOGIN_URL = 'https://his.homeinfo.de/session'
+
+
+def get_url(endpoint):
+    """Returns a URL for the respective endpoint."""
+
+    return urljoin(SETUP_URL_BASE, endpoint)
+
+
 class Client:
     """Class to retrieve data from the web API."""
 
-    PROTO = 'https'
-    HOST = 'termgr.homeinfo.de'
-    PATH = '/setup'
-
-    def __init__(self, user, passwd, cid, tid):
+    def __init__(self, user, passwd, system):
         """Initialize with credentials."""
         self.user = user
         self.passwd = passwd
-        self.cid = cid
-        self.tid = tid
+        self.system = system
+        self.session = Session()
 
     def __enter__(self):
         return self
@@ -46,54 +52,39 @@ class Client:
             print()
             raise ProgramError('Setup aborted by user.')
 
-    def __call__(self, action, **kwargs):
-        """POST to the API with the respective
-        user name, password and action call.
-        """
-        post_data = self.post_data
-        post_data.update(kwargs)
-        post_data = dumps(post_data).encode()
-
+    def _post(self, url, json):
+        """Performs a POST request."""
         try:
-            reply = post(self.get_url(action), data=post_data)
+            response = self.session.post(url, json=json)
         except ConnectionError:
-            raise ProgramError(
-                'CONNECTION ERROR', 'Check your internet connection.')
+            raise APIError('Cannot connect. Check your internet connection.')
 
-        if reply.status_code == 200:
-            return reply
+        if response.status_code != 200:
+            raise APIError(response.text)
 
-        if reply.status_code == 401:
-            if reply.text == 'Invalid credentials':
-                raise InvalidCredentials()
+        return response
 
-            raise Unauthorized()
-
-        raise APIError(reply.text)
+    def login(self):
+        """Performs a HIS login."""
+        json = {'userName': self.user, 'passwd': self.passwd}
+        return self._post(LOGIN_URL, json=json)
 
     @property
-    def post_data(self):
-        """Returns the HTTP parameters dictionary."""
-        return {
-            'userName': self.user,
-            'passwd': self.passwd,
-            'cid': self.cid,
-            'tid': self.tid}
-
-    @property
-    def terminal(self):
+    def info(self):
         """Returns the terminal information."""
-        return loads(self('terminal_information').text)
+        url = get_url('info')
+        json = {'system': self.system}
+        return self._post(url, json).json()
 
     @property
     def vpndata(self):
         """Returns the terminal's VPN keys and configuration as bytes."""
-        return self('vpn_data').content
-
-    def get_url(self, action):
-        """Returns the API URL."""
-        return f'{self.PROTO}://{self.HOST}{self.PATH}/{action}'
+        url = get_url('openvpn')
+        json = {'system': self.system}
+        return self._post(url, json).content
 
     def set_serial_number(self, serial_number):
         """Sets the respective serial number."""
-        return self('serial_number', serial_number=serial_number)
+        url = get_url('sn')
+        json = {'system': self.system, 'sn': serial_number}
+        return self._post(url, json).text
