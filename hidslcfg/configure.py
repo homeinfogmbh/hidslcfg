@@ -97,7 +97,7 @@ def rows(system):
     yield ('Option', 'Value')   # Header.
     yield ('System ID', system['id'])
     yield ('Creation date', system['created'])
-    yield ('Operating system', system['operating_system'])
+    yield ('Operating system', system['operatingSystem'])
 
     serial_number = system.get('serial_number')
 
