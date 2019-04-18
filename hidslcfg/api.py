@@ -34,6 +34,7 @@ class Client:
         self.session = Session()
 
     def __enter__(self):
+        self.login()
         return self
 
     def __exit__(self, typ, value, traceback):
