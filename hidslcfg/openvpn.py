@@ -32,6 +32,8 @@ def clean():
 def install(vpn_data):
     """Installs the respective VPN configuration."""
 
+    clean()     # Clean on config beforehand.
+
     with BytesIO(vpn_data) as vpn_archive:
         with TarFile('r', fileobj=vpn_archive) as tar_file:
             tar_file.extractall(path=CLIENT_DIR)
