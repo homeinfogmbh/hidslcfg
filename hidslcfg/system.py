@@ -1,6 +1,5 @@
 """Operating system commands."""
 
-from contextlib import suppress
 from logging import DEBUG
 from pathlib import Path
 from subprocess import DEVNULL, CalledProcessError, run
@@ -21,9 +20,9 @@ __all__ = [
     'ProgramErrorHandler']
 
 
-SYSTEMCTL = Path('/usr/bin/systemctl')
+HOSTNAMECTL = Path('/usr/bin/hostnamectl')
 PING = Path('/usr/bin/ping')
-HOSTNAME = Path('/etc/hostname')
+SYSTEMCTL = Path('/usr/bin/systemctl')
 
 
 def system(*args):
@@ -40,12 +39,6 @@ def system(*args):
     return completed_process
 
 
-def systemctl(*args):
-    """Invokes systemctl."""
-
-    return system(SYSTEMCTL, *args)
-
-
 def ping(host, timeout=1, count=5):
     """Pings the respective host."""
 
@@ -55,12 +48,13 @@ def ping(host, timeout=1, count=5):
 def hostname(hostname_):
     """Sets the respective host name or deletes the host name file."""
 
-    if hostname_ is None:
-        with suppress(FileNotFoundError):
-            HOSTNAME.unlink()
-    else:
-        with HOSTNAME.open('w') as file:
-            file.write(hostname_)
+    return system(HOSTNAMECTL, 'set-hostname', hostname_)
+
+
+def systemctl(*args):
+    """Invokes systemctl."""
+
+    return system(SYSTEMCTL, *args)
 
 
 def reboot():

@@ -9,7 +9,7 @@ setup(
     author_email='info@homeinfo.de',
     maintainer='Richard Neumann',
     maintainer_email='r.neumann@homeinfo.de',
-    requires=['docopt', 'requests'],
+    requires=['requests'],
     packages=['hidslcfg'],
     scripts=['files/hidslcfg', 'files/hidslreset'],
     description='HOMEINFO Digital Signage Linux configurator.')
