@@ -45,16 +45,9 @@ def main():
 
     with Client(user, passwd, args.id) as client:
         confirm(client.info, serial_number=args.sn)
-
-        if args.sn is not None:
-            if args.sn:
-                LOGGER.info('Setting S/N of %i to "%s".', args.id, args.sn)
-            else:
-                LOGGER.info('Deleting S/N of %i.', args.id)
-
-            client.set_serial_number(args.sn)
-
         configure(args.id, client.vpndata, gracetime=args.grace_time)
+        LOGGER.info('Marking system as configured.')
+        client.finalize(serial_number=args.sn)
 
 
 if __name__ == '__main__':

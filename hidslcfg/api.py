@@ -84,8 +84,12 @@ class Client:
         json = {'system': self.system}
         return self._post(url, json).content
 
-    def set_serial_number(self, serial_number):
+    def finalize(self, serial_number=None):
         """Sets the respective serial number."""
-        url = get_url('sn')
-        json = {'system': self.system, 'sn': serial_number}
+        url = get_url('finalize')
+        json = {'system': self.system}
+
+        if serial_number is not None:
+            json['sn'] = serial_number
+
         return self._post(url, json).text

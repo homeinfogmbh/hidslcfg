@@ -104,5 +104,6 @@ class ProgramErrorHandler:
 
     def __exit__(self, _, value, __):
         if isinstance(value, ProgramError):
-            LOGGER.error(value)
+            LOGGER.error(value.error)
+            LOGGER.debug(value.message)
             exit(value.exit_code)
