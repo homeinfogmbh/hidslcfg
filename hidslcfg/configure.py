@@ -54,12 +54,15 @@ def confirm(system, serial_number=None, force=False):
     print(Table.generate(rows(update_sn(system, serial_number))))
     print(flush=True)
     warn_deployed(system.get('deployment'))
+    configured = system.get('configured')
 
-    if system.get('configured') is not None:
+    if configured:
+        message = f'System has already been configured on {configured}.'
+
         if not force:
-            raise ProgramError('System is already configured.')
+            raise ProgramError(message)
 
-        LOGGER.warning('System #%i is already configured.')
+        LOGGER.warning(message)
 
     if not ask('Is this correct?'):
         raise ProgramError('Setup aborted by user.')
