@@ -46,7 +46,7 @@ def warn_deployed(deployment):
     LOGGER.debug('%s %s, %s %s', street, house_number, zip_code, city)
 
 
-def confirm(system, serial_number=None):
+def confirm(system, serial_number=None, force=False):
     """Prompt the user to confirm the given location."""
 
     LOGGER.info('You are about to configure the following system:')
@@ -54,6 +54,12 @@ def confirm(system, serial_number=None):
     print(Table.generate(rows(update_sn(system, serial_number))))
     print(flush=True)
     warn_deployed(system.get('deployment'))
+
+    if system.get('configured') is not None:
+        if not force:
+            raise ProgramError('System is already configured.')
+
+        LOGGER.warning('System #%i is already configured.')
 
     if not ask('Is this correct?'):
         raise ProgramError('Setup aborted by user.')
@@ -98,11 +104,15 @@ def rows(system):
     yield ('System ID', system['id'])
     yield ('Creation date', system['created'])
     yield ('Operating system', system['operatingSystem'])
+    configured = system.get('configured')
+
+    if configured:
+        yield ('Configured', configured)
 
     serial_number = system.get('serial_number')
 
     if serial_number:
-        yield ('Previous S/N', serial_number)
+        yield ('Serial number', serial_number)
 
     model = system.get('model')
 

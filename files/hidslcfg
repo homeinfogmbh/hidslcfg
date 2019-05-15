@@ -29,6 +29,9 @@ def get_args():
         '-g', '--grace-time', type=int, default=3, metavar='secs',
         help='seconds to wait for the OpenVPN server')
     parser.add_argument(
+        '-f', '--force', action='store_true',
+        help='force setup of already configured systems')
+    parser.add_argument(
         '-v', '--verbose', action='store_true', help='be gassy')
     return parser.parse_args()
 
@@ -44,7 +47,7 @@ def main():
     user, passwd = read_credentials(args.user)
 
     with Client(user, passwd, args.id) as client:
-        confirm(client.info, serial_number=args.sn)
+        confirm(client.info, serial_number=args.sn, force=args.force)
         configure(args.id, client.vpndata, gracetime=args.grace_time)
         LOGGER.info('Marking system as configured.')
         client.finalize(serial_number=args.sn)
