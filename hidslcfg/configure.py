@@ -3,7 +3,7 @@
 from time import sleep
 
 from hidslcfg.exceptions import ProgramError
-from hidslcfg.globals import LOGGER
+from hidslcfg.globals import LOGGER, UNCONFIGURED_WARNING_SERVICE
 from hidslcfg.openvpn import SERVER, unit, install
 from hidslcfg.system import hostname
 from hidslcfg.system import ping
@@ -92,7 +92,10 @@ def configure(system, vpn_data, gracetime=3):
 
     LOGGER.debug('Configuring host name.')
     hostname(str(system))
+    LOGGER.debug('Disabling unconfigured warning.')
+    systemctl('disable', UNCONFIGURED_WARNING_SERVICE)
     LOGGER.info('Setup completed successfully.')
+
 
     if ask('Do you want to reboot now?'):
         reboot()
