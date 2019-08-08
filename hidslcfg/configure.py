@@ -1,5 +1,6 @@
 """System configuration."""
 
+from json import dumps
 from time import sleep
 
 from hidslcfg.exceptions import ProgramError
@@ -37,13 +38,8 @@ def warn_deployed(deployment):
     if not deployment:
         return
 
-    address = deployment.get('address', {})
-    street = address.get('street')
-    house_number = address.get('house_number')
-    zip_code = address.get('zip_code')
-    city = address.get('city')
     LOGGER.warning('System is already deployed.')
-    LOGGER.debug('%s %s, %s %s', street, house_number, zip_code, city)
+    LOGGER.debug('deployment = %s;', dumps(deployment, indent=2))
 
 
 def confirm(system, serial_number=None, force=False):
@@ -95,7 +91,6 @@ def configure(system, vpn_data, gracetime=3):
     LOGGER.debug('Disabling unconfigured warning.')
     systemctl('disable', UNCONFIGURED_WARNING_SERVICE)
     LOGGER.info('Setup completed successfully.')
-
 
     if ask('Do you want to reboot now?'):
         reboot()
