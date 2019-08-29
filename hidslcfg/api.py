@@ -43,13 +43,16 @@ class Client:
             raise ProgramError(
                 'INVALID CREDENTIALS',
                 'Your user name and / or password are incorrect.')
-        elif isinstance(value, Unauthorized):
+
+        if isinstance(value, Unauthorized):
             raise ProgramError(
                 'UNAUTHORIZED',
                 'You are not authorized to set up this terminal.')
-        elif isinstance(value, APIError):
+
+        if isinstance(value, APIError):
             raise ProgramError('WEB API ERROR', value)
-        elif isinstance(value, KeyboardInterrupt):
+
+        if isinstance(value, KeyboardInterrupt):
             print()
             raise ProgramError('Setup aborted by user.')
 

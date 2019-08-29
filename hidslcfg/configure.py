@@ -1,6 +1,5 @@
 """System configuration."""
 
-from json import dumps
 from time import sleep
 
 from hidslcfg.exceptions import ProgramError
@@ -35,11 +34,8 @@ def update_sn(system, serial_number):
 def warn_deployed(deployment):
     """Warns about possible deployment."""
 
-    if not deployment:
-        return
-
-    LOGGER.warning('System is already deployed.')
-    LOGGER.debug('deployment = %s;', dumps(deployment, indent=2))
+    if deployment:
+        LOGGER.warning('System is already deployed on #%i.', deployment)
 
 
 def confirm(system, serial_number=None, force=False):
