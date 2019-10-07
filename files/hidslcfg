@@ -9,8 +9,8 @@ from hidslcfg.api import Client
 from hidslcfg.configure import confirm, configure
 from hidslcfg.exceptions import ProgramError
 from hidslcfg.globals import LOG_FORMAT, LOGGER
-from hidslcfg.system import ProgramErrorHandler
-from hidslcfg.termio import read_credentials
+from hidslcfg.system import ProgramErrorHandler, reboot
+from hidslcfg.termio import ask, read_credentials
 
 
 DESCRIPTION = 'HOMEINFO Digital Signage Linux configurator.'
@@ -51,6 +51,11 @@ def main():
         configure(args.id, client.vpndata, gracetime=args.grace_time)
         LOGGER.info('Marking system as configured.')
         client.finalize(serial_number=args.sn)
+
+    if ask('Do you want to reboot now?'):
+        reboot()
+    else:
+        LOGGER.info('Okay, not rebooting.')
 
 
 if __name__ == '__main__':
