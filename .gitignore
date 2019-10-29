@@ -9,3 +9,5 @@ src/hidslinstall.py
 *.tar.xz*
 pkg
 .buildconfig
+*.anjuta
+.anjuta*
