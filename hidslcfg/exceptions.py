@@ -1,9 +1,28 @@
 """Exceptions used by hidslcfg."""
 
+from contextlib import suppress
 from os import linesep
 
 
-__all__ = ['ProgramError', 'InvalidCredentials', 'Unauthorized', 'APIError']
+__all__ = ['APIError', 'ProgramError']
+
+
+class APIError(Exception):
+    """Indicates an error while using the web API."""
+
+    def __init__(self, text=None, json=None):
+        """Sets the raw error message text and / or JSON."""
+        super().__init__()
+        self.text = text
+        self.json = json
+
+    def __str__(self):
+        """Returns the respective message text."""
+        if self.json:
+            with suppress(TypeError, KeyError):
+                return self.json['message']
+
+        return self.text
 
 
 class ProgramError(Exception):
@@ -20,17 +39,3 @@ class ProgramError(Exception):
     def __str__(self):
         """Returns the respective message text."""
         return self.sep.join(str(message) for message in self.messages)
-
-
-class InvalidCredentials(Exception):
-    """Indicates invalid credentials."""
-
-
-class Unauthorized(Exception):
-    """Indicates that the user is not allowed
-    to setup the respective terminal.
-    """
-
-
-class APIError(Exception):
-    """Indicates an error while using the web API."""

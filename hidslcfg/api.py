@@ -5,9 +5,7 @@ from urllib.parse import urljoin
 from requests import Session
 
 from hidslcfg.exceptions import APIError
-from hidslcfg.exceptions import InvalidCredentials
 from hidslcfg.exceptions import ProgramError
-from hidslcfg.exceptions import Unauthorized
 
 
 __all__ = ['Client']
@@ -38,18 +36,8 @@ class Client:
 
     def __exit__(self, typ, value, traceback):
         """Handles possible errors."""
-        if isinstance(value, InvalidCredentials):
-            raise ProgramError(
-                'INVALID CREDENTIALS',
-                'Your user name and / or password are incorrect.')
-
-        if isinstance(value, Unauthorized):
-            raise ProgramError(
-                'UNAUTHORIZED',
-                'You are not authorized to set up this terminal.')
-
         if isinstance(value, APIError):
-            raise ProgramError('WEB API ERROR', value)
+            raise ProgramError('WEB API ERROR', str(value))
 
         if isinstance(value, KeyboardInterrupt):
             print()
@@ -63,7 +51,7 @@ class Client:
             raise APIError('Cannot connect. Check your internet connection.')
 
         if response.status_code != 200:
-            raise APIError(response.text)
+            raise APIError(text=response.text, json=response.json())
 
         return response
 
