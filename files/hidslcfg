@@ -47,6 +47,7 @@ def main():
     user, passwd = read_credentials(args.user)
 
     with Client(user, passwd, args.id) as client:
+        client.login()
         confirm(client.info, serial_number=args.sn, force=args.force)
         configure(args.id, client.vpndata, gracetime=args.grace_time)
         LOGGER.info('Marking system as configured.')

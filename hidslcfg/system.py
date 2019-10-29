@@ -17,7 +17,8 @@ __all__ = [
     'reboot',
     'rmsubtree',
     'CalledProcessErrorHandler',
-    'ProgramErrorHandler']
+    'ProgramErrorHandler'
+]
 
 
 HOSTNAMECTL = Path('/usr/bin/hostnamectl')
@@ -99,5 +100,5 @@ class ProgramErrorHandler:
     def __exit__(self, _, value, __):
         if isinstance(value, ProgramError):
             LOGGER.fatal(value.error)
-            LOGGER.error(value.message)
+            LOGGER.error(value)
             exit(value.exit_code)

@@ -10,11 +10,11 @@ from hidslcfg.exceptions import ProgramError
 __all__ = ['ask', 'bold', 'read_credentials', 'Table']
 
 
-YES_VALUES = ('y', 'yes')
+YES_VALUES = {'y', 'yes'}
 DEFAULT_SPACING = ' {} '
 
 
-def ask(question, default=False, yes=YES_VALUES):
+def ask(question, default=False):
     """Ask a question and return True on yes or else False."""
 
     suffix = ' [Y/n]: ' if default else ' [y/N]: '
@@ -31,7 +31,7 @@ def ask(question, default=False, yes=YES_VALUES):
     if not reply:
         return default
 
-    return reply.lower() in yes
+    return reply.lower() in YES_VALUES
 
 
 def bold(string):

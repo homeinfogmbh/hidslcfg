@@ -3,11 +3,7 @@
 from os import linesep
 
 
-__all__ = [
-    'ProgramError',
-    'InvalidCredentials',
-    'Unauthorized',
-    'APIError']
+__all__ = ['ProgramError', 'InvalidCredentials', 'Unauthorized', 'APIError']
 
 
 class ProgramError(Exception):
@@ -21,8 +17,7 @@ class ProgramError(Exception):
         self.sep = sep
         self.exit_code = exit_code
 
-    @property
-    def message(self):
+    def __str__(self):
         """Returns the respective message text."""
         return self.sep.join(str(message) for message in self.messages)
 

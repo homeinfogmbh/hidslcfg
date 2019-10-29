@@ -10,7 +10,8 @@ __all__ = [
     'DIGSIG_DATA_DIR',
     'LOGGER',
     'LOG_FORMAT',
-    'UNCONFIGURED_WARNING_SERVICE']
+    'UNCONFIGURED_WARNING_SERVICE'
+]
 
 
 APPLICATION_SERVICE = 'application.service'
