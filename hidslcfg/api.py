@@ -11,8 +11,8 @@ from hidslcfg.exceptions import ProgramError
 __all__ = ['Client']
 
 
-SETUP_URL_BASE = 'https://termgr.homeinfo.de/setup/'
 LOGIN_URL = 'https://his.homeinfo.de/session'
+SETUP_URL_BASE = 'https://termgr.homeinfo.de/setup/'
 
 
 def get_url(endpoint):
@@ -29,13 +29,16 @@ class Client:
         self.user = user
         self.passwd = passwd
         self.system = system
-        self.session = Session()
+        self.session = None
 
     def __enter__(self):
+        self.session = Session()
         return self
 
     def __exit__(self, typ, value, traceback):
         """Handles possible errors."""
+        self.session = None
+
         if isinstance(value, APIError):
             raise ProgramError('WEB API ERROR', str(value))
 
@@ -43,7 +46,7 @@ class Client:
             print()
             raise ProgramError('Setup aborted by user.')
 
-    def _post(self, url, json):
+    def post(self, url, json):
         """Performs a POST request."""
         try:
             response = self.session.post(url, json=json)
@@ -58,21 +61,21 @@ class Client:
     def login(self):
         """Performs a HIS login."""
         json = {'account': self.user, 'passwd': self.passwd}
-        return self._post(LOGIN_URL, json=json)
+        return self.post(LOGIN_URL, json=json)
 
     @property
     def info(self):
         """Returns the terminal information."""
         url = get_url('info')
         json = {'system': self.system}
-        return self._post(url, json).json()
+        return self.post(url, json).json()
 
     @property
     def vpndata(self):
         """Returns the terminal's VPN keys and configuration as bytes."""
         url = get_url('openvpn')
         json = {'system': self.system}
-        return self._post(url, json).content
+        return self.post(url, json).content
 
     def finalize(self, serial_number=None):
         """Sets the respective serial number."""
@@ -82,4 +85,4 @@ class Client:
         if serial_number is not None:
             json['sn'] = serial_number
 
-        return self._post(url, json).text
+        return self.post(url, json).text

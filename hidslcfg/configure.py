@@ -20,21 +20,13 @@ def update_sn(system, serial_number):
 
     if serial_number is not None:
         new_sn = serial_number or None
-        current_sn = system.get('serial_number')
 
-        if current_sn is not None:
+        if (current_sn := system.get('serial_number')) is not None:
             new_sn = f'{current_sn} → {new_sn}'
 
         system['serial_number'] = new_sn
 
     return system
-
-
-def warn_deployed(deployment):
-    """Warns about possible deployment."""
-
-    if deployment:
-        LOGGER.warning('System is already deployed on #%i.', deployment)
 
 
 def confirm(system, serial_number=None, force=False):
@@ -44,10 +36,11 @@ def confirm(system, serial_number=None, force=False):
     print(flush=True)
     print(Table.generate(rows(update_sn(system, serial_number))))
     print(flush=True)
-    warn_deployed(system.get('deployment'))
-    configured = system.get('configured')
 
-    if configured:
+    if deployment := system.get('deployment'):
+        LOGGER.warning('System is already deployed on #%i.', deployment)
+
+    if configured := system.get('configured'):
         message = f'System has already been configured on {configured}.'
 
         if not force:
@@ -95,17 +88,12 @@ def rows(system):
     yield ('System ID', system['id'])
     yield ('Creation date', system['created'])
     yield ('Operating system', system['operatingSystem'])
-    configured = system.get('configured')
 
-    if configured:
+    if configured := system.get('configured'):
         yield ('Configured', configured)
 
-    serial_number = system.get('serial_number')
-
-    if serial_number:
+    if serial_number := system.get('serial_number'):
         yield ('Serial number', serial_number)
 
-    model = system.get('model')
-
-    if model:
+    if model := system.get('model'):
         yield ('Model', model)

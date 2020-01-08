@@ -31,7 +31,7 @@ def ask(question, default=False):
     if not reply:
         return default
 
-    return reply.lower() in YES_VALUES
+    return reply.strip().lower() in YES_VALUES
 
 
 def bold(string):
@@ -72,7 +72,6 @@ class Table(Enum):
     @classmethod
     def make_rows(cls, key_value_pairs, header=True, spacing=DEFAULT_SPACING):
         """Generates rows for a UTF-8 table."""
-
         items = []
         keys_len = 0
         value_len = 0
@@ -108,6 +107,5 @@ class Table(Enum):
     @classmethod
     def generate(cls, key_value_pairs, header=True, spacing=DEFAULT_SPACING):
         """Generates a UTF-8 table."""
-
-        return linesep.join(cls.make_rows(
-            key_value_pairs, header=header, spacing=spacing))
+        rows = cls.make_rows(key_value_pairs, header=header, spacing=spacing)
+        return linesep.join(rows)
