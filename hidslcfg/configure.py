@@ -92,7 +92,7 @@ def rows(system):
     if configured := system.get('configured'):
         yield ('Configured', configured)
 
-    if serial_number := system.get('serial_number'):
+    if serial_number := system.get('serialNumber'):
         yield ('Serial number', serial_number)
 
     if model := system.get('model'):
