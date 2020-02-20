@@ -51,7 +51,7 @@ class Client:
         try:
             response = self.session.post(url, json=json)
         except ConnectionError:
-            raise APIError('Cannot connect. Check your internet connection.')
+            raise APIError('Connection error. Check your internet connection.')
 
         if response.status_code != 200:
             raise APIError(text=response.text, json=response.json())
