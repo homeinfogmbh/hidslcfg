@@ -1,6 +1,7 @@
 """Exceptions used by hidslcfg."""
 
 from contextlib import suppress
+from json import JSONDecodeError
 from os import linesep
 
 
@@ -23,6 +24,16 @@ class APIError(Exception):
                 return self.json['message']
 
         return self.text
+
+    @classmethod
+    def from_response(cls, response):
+        """Returns an API error from a response."""
+        try:
+            json = response.json()
+        except JSONDecodeError:
+            json = None
+
+        return cls(text=response.text, json=json)
 
 
 class ProgramError(Exception):

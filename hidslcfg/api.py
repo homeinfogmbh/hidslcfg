@@ -54,7 +54,7 @@ class Client:
             raise APIError('Connection error. Check your internet connection.')
 
         if response.status_code != 200:
-            raise APIError(text=response.text, json=response.json())
+            raise APIError.from_response(response)
 
         return response
 
@@ -80,7 +80,7 @@ class Client:
     @property
     def wireguard(self):
         """Returns the terminal's WireGuard configuration."""
-        return self.post_endpoint('wireguard').content
+        return self.post_endpoint('wireguard').json()
 
     def finalize(self, **json):
         """Sets the respective serial number."""
