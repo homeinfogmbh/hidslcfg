@@ -115,4 +115,4 @@ class SystemdUnit(ConfigParser):    # pylint: disable=R0901
         if optionstr is None:
             return None
 
-        return optionstr.stip()
+        return optionstr.strip()
