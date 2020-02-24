@@ -8,8 +8,9 @@ from hidslcfg.exceptions import ProgramError
 from hidslcfg.globals import APPLICATION_SERVICE
 from hidslcfg.globals import DIGSIG_DATA_DIR
 from hidslcfg.globals import UNCONFIGURED_WARNING_SERVICE
-from hidslcfg.openvpn import unit, clean
+from hidslcfg.openvpn import DEFAULT_SERVICE, clean
 from hidslcfg.system import systemctl, hostname, rmsubtree
+from hidslcfg.wireguard import remove
 
 
 __all__ = ['reset']
@@ -23,8 +24,10 @@ RESET_OPERATIONS = (
     ResetOperation(
         'remove digital signage data', partial(rmsubtree, DIGSIG_DATA_DIR)),
     ResetOperation(
-        'disable OpenVPN service', partial(systemctl, 'disable', unit())),
+        'disable OpenVPN service',
+        partial(systemctl, 'disable', DEFAULT_SERVICE)),
     ResetOperation('Removing OpenVPN configuration', clean),
+    ResetOperation('remove WireGuard configuration', remove),
     ResetOperation(
         'disable application',
         partial(systemctl, 'disable', APPLICATION_SERVICE)),

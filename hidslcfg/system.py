@@ -1,5 +1,6 @@
 """Operating system commands."""
 
+from configparser import ConfigParser
 from logging import DEBUG
 from pathlib import Path
 from subprocess import DEVNULL, CalledProcessError, run
@@ -17,7 +18,8 @@ __all__ = [
     'reboot',
     'rmsubtree',
     'CalledProcessErrorHandler',
-    'ProgramErrorHandler'
+    'ProgramErrorHandler',
+    'SystemdUnit'
 ]
 
 
@@ -35,7 +37,7 @@ def system(*args):
         output = None
 
     cmd = tuple(str(arg) for arg in args)
-    completed_process = run(cmd, stdout=output, stderr=output)
+    completed_process = run(cmd, check=True, stdout=output, stderr=output)
     completed_process.check_returncode()
     return completed_process
 
@@ -98,7 +100,19 @@ class ProgramErrorHandler:
         return self
 
     def __exit__(self, _, value, __):
+        """Log program errors and exit accordingly."""
         if isinstance(value, ProgramError):
             LOGGER.fatal(value.error)
             LOGGER.error(value)
             exit(value.exit_code)
+
+
+class SystemdUnit(ConfigParser):    # pylint: disable=R0901
+    """A systemd unit."""
+
+    def optionxform(self, optionstr):
+        """Returns the option as stripped value."""
+        if optionstr is None:
+            return None
+
+        return optionstr.stip()

@@ -1,14 +1,9 @@
-"""System configuration."""
-
-from time import sleep
+"""Basic system configuration."""
 
 from hidslcfg.exceptions import ProgramError
 from hidslcfg.globals import LOGGER, UNCONFIGURED_WARNING_SERVICE
-from hidslcfg.openvpn import SERVER, unit, install
 from hidslcfg.system import hostname
-from hidslcfg.system import ping
 from hidslcfg.system import systemctl
-from hidslcfg.system import CalledProcessErrorHandler
 from hidslcfg.termio import ask, Table
 
 
@@ -52,27 +47,8 @@ def confirm(system, serial_number=None, force=False):
         raise ProgramError('Setup aborted by user.')
 
 
-def configure(system, vpn_data, gracetime=3):
+def configure(system):
     """Performs the system configuration."""
-
-    LOGGER.debug('Installing OpenVPN configuration.')
-    install(vpn_data)
-    LOGGER.debug('Enabling OpenVPN.')
-
-    with CalledProcessErrorHandler('Enabling of OpenVPN client failed.'):
-        systemctl('enable', unit())
-
-    LOGGER.debug('Restarting OpenVPN.')
-
-    with CalledProcessErrorHandler('Restart of OpenVPN client failed.'):
-        systemctl('restart', unit())
-
-    LOGGER.debug('Waiting for OpenVPN server to start.')
-    sleep(gracetime)
-    LOGGER.debug('Checking OpenVPN connection.')
-
-    with CalledProcessErrorHandler('Cannot contact OpenVPN server.'):
-        ping(SERVER)
 
     LOGGER.debug('Configuring host name.')
     hostname(str(system))

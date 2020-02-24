@@ -71,18 +71,21 @@ class Client:
         return self.post(url, json).json()
 
     @property
-    def vpndata(self):
+    def openvpn(self):
         """Returns the terminal's VPN keys and configuration as bytes."""
         url = get_url('openvpn')
         json = {'system': self.system}
         return self.post(url, json).content
 
-    def finalize(self, serial_number=None):
+    @property
+    def wireguard(self):
+        """Returns the terminal's WireGuard configuration."""
+        url = get_url('wireguard')
+        json = {'system': self.system}
+        return self.post(url, json).content
+
+    def finalize(self, **json):
         """Sets the respective serial number."""
         url = get_url('finalize')
-        json = {'system': self.system}
-
-        if serial_number is not None:
-            json['sn'] = serial_number
-
+        json['system'] = self.system
         return self.post(url, json).text
