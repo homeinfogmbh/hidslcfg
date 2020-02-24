@@ -5,7 +5,7 @@ from ipaddress import ip_network
 from ipaddress import _BaseAddress as Address
 from ipaddress import _BaseNetwork as Network
 from time import sleep
-from typing import List
+from typing import List, NamedTuple
 
 from wgtools import keypair
 
@@ -29,9 +29,28 @@ NETDEV_UNIT_FILE = SYSTEMD_NETWORK_DIR.joinpath(f'{DEVNAME}.netdev')
 NETWORK_UNIT_FILE = SYSTEMD_NETWORK_DIR.joinpath(f'{DEVNAME}.network')
 
 
+class Endpoint(NamedTuple):
+    """A WireGuard endpoint."""
+
+    address: Address
+    port: int
+
+    @classmethod
+    def from_string(cls, string):
+        """Parses an endpoint from a string."""
+        address, port = string.split(':')
+        address = ip_address(address)
+        port = int(port)
+        return cls(address, port)
+
+    def __str__(self):
+        """Returns a string representation of the endpoint."""
+        return f'{self.address}:{self.port}'
+
+
 def create_netdev_unit(
         private: str, server_pubkey: str, allowed_ips: List[Network],
-        psk: str = None):
+        endpoint: Endpoint, psk: str = None):
     """Creates a network device."""
 
     unit = SystemdUnit()
@@ -40,7 +59,6 @@ def create_netdev_unit(
     unit['NetDev']['Kind'] = 'wireguard'
     unit['NetDev']['Description'] = DESCRIPTION
     unit.add_section('WireGuard')
-    unit['WireGuard']['ListenPort'] = str(PORT)
     unit['WireGuard']['PrivateKey'] = private
     unit.add_section('WireGuardPeer')
     unit['WireGuardPeer']['PublicKey'] = server_pubkey
@@ -50,14 +68,16 @@ def create_netdev_unit(
 
     unit['WireGuardPeer']['AllowedIPs'] = ', '.join(
         str(ip) for ip in allowed_ips)
+    unit['WireGuardPeer']['Endpoint'] = str(endpoint)
     return unit
 
 
 def create_netdev(private: str, server_pubkey: str, allowed_ips: List[Network],
-                  psk: str = None):
+                  endpoint: Endpoint, psk: str = None):
     """Creates a network device."""
 
-    unit = create_netdev_unit(private, server_pubkey, allowed_ips, psk=psk)
+    unit = create_netdev_unit(
+        private, server_pubkey, allowed_ips, endpoint, psk=psk)
 
     with NETDEV_UNIT_FILE.open('w') as netdev_unit_file:
         unit.write(netdev_unit_file)
@@ -97,12 +117,12 @@ def create_units(wireguard: dict, private: str):
     if not ipaddress:
         raise ProgramError('Missing IP address for WireGuard.')
 
-    server_pubkey = wireguard.get('serverPubkey')
+    server_pubkey = wireguard.get('server_pubkey')
 
     if not server_pubkey:
         raise ProgramError('Missing server pubkey for WireGuard.')
 
-    allowed_ips = wireguard.get('allowedIPs')
+    allowed_ips = wireguard.get('allowed_ips')
 
     if not allowed_ips:
         raise ProgramError('Missing allowed IPs for WireGuard.')
@@ -111,6 +131,12 @@ def create_units(wireguard: dict, private: str):
     # function properly without the CIDR suffixes.
     allowed_ips = [ip_network(ip) for ip in allowed_ips]
 
+    endpoint = wireguard.get('endpoint')
+
+    if not endpoint:
+        raise ProgramError('Missing endpoint for WireGuard.')
+
+    endpoint = Endpoint.from_string(endpoint)
     psk = wireguard.get('psk')
     gateway = wireguard.get('gateway')
 
@@ -128,7 +154,7 @@ def create_units(wireguard: dict, private: str):
     if pubkey := wireguard.get('pubkey'):
         LOGGER.warning('WireGuard already configured for pubkey %s.', pubkey)
 
-    create_netdev(private, server_pubkey, allowed_ips, psk=psk)
+    create_netdev(private, server_pubkey, allowed_ips, endpoint, psk=psk)
     create_network(ipaddress, gateway, destination)
 
 

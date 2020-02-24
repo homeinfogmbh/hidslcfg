@@ -63,29 +63,26 @@ class Client:
         json = {'account': self.user, 'passwd': self.passwd}
         return self.post(LOGIN_URL, json=json)
 
+    def post_endpoint(self, endpoint):
+        """Makes a POST request to the respective endpoint."""
+        return self.post(get_url(endpoint), {'system': self.system})
+
     @property
     def info(self):
         """Returns the terminal information."""
-        url = get_url('info')
-        json = {'system': self.system}
-        return self.post(url, json).json()
+        return self.post_endpoint('info').json()
 
     @property
     def openvpn(self):
         """Returns the terminal's VPN keys and configuration as bytes."""
-        url = get_url('openvpn')
-        json = {'system': self.system}
-        return self.post(url, json).content
+        return self.post_endpoint('openvpn').content
 
     @property
     def wireguard(self):
         """Returns the terminal's WireGuard configuration."""
-        url = get_url('wireguard')
-        json = {'system': self.system}
-        return self.post(url, json).content
+        return self.post_endpoint('wireguard').content
 
     def finalize(self, **json):
         """Sets the respective serial number."""
-        url = get_url('finalize')
         json['system'] = self.system
-        return self.post(url, json).text
+        return self.post(get_url('finalize'), json).text
