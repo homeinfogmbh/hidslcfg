@@ -56,8 +56,9 @@ def main():
         configure_system(args.id)
         configure_openvpn(client.openvpn, gracetime=args.grace_time)
         pubkey = configure_wireguard(client.wireguard)
-        LOGGER.info('Marking system as configured.')
+        LOGGER.debug('Finalizing system.')
         client.finalize(sn=args.sn, wg_pubkey=pubkey)
+        LOGGER.info('Setup completed successfully.')
 
     if ask('Do you want to reboot now?'):
         reboot()

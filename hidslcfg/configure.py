@@ -54,7 +54,6 @@ def configure(system):
     hostname(str(system))
     LOGGER.debug('Disabling unconfigured warning.')
     systemctl('disable', UNCONFIGURED_WARNING_SERVICE)
-    LOGGER.info('Setup completed successfully.')
 
 
 def rows(system):
