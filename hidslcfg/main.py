@@ -55,8 +55,7 @@ def main():
         confirm(client.info, serial_number=args.sn, force=args.force)
         configure_system(args.id)
         configure_openvpn(client.openvpn, gracetime=args.grace_time)
-        pubkey = configure_wireguard(
-            client.wireguard, gracetime=args.grace_time)
+        pubkey = configure_wireguard(client.wireguard)
         LOGGER.info('Marking system as configured.')
         client.finalize(sn=args.sn, wg_pubkey=pubkey)
 

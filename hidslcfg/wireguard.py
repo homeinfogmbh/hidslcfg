@@ -19,7 +19,7 @@ from hidslcfg.system import CalledProcessErrorHandler
 from hidslcfg.system import SystemdUnit
 
 
-__all__ = ['configure', 'remove']
+__all__ = ['configure', 'check', 'remove']
 
 
 DEVNAME = 'terminals'
@@ -158,16 +158,22 @@ def create_units(wireguard: dict, private: str):
     create_network(ipaddress, gateway, destination)
 
 
-def configure(wireguard, gracetime=3):
+def configure(wireguard):
     """Configures the WireGuard connection."""
 
     LOGGER.debug('Creating public / private key pair.')
     pubkey, private = keypair()
     LOGGER.debug('Installing WireGuard configuration.')
     create_units(wireguard, private)
+    return pubkey
+
+
+def check(wireguard, gracetime: int = 3):
+    """Checks the connection to the WireGuard server."""
+
     LOGGER.debug('Restarting %s.', SYSTEMD_NETWORKD)
 
-    with CalledProcessErrorHandler('Restart of OpenVPN client failed.'):
+    with CalledProcessErrorHandler('Restart of %s failed.', SYSTEMD_NETWORKD):
         systemctl('restart', SYSTEMD_NETWORKD)
 
     LOGGER.debug('Waiting for WireGuard to establish connection.')
@@ -180,8 +186,6 @@ def configure(wireguard, gracetime=3):
             ping(server)
     else:
         LOGGER.warning('No server address set. Cannot check connection.')
-
-    return pubkey
 
 
 def remove():
