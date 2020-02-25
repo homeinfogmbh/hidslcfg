@@ -93,7 +93,10 @@ def create_network_unit(ipaddress: str, routes: List[dict]):
         unit.add_section('Route')
         unit['Route']['Gateway'] = route['gateway']
         unit['Route']['Destination'] = route['destination']
-        unit['Route']['GatewayOnlink'] = route.get('gateway_onlink', False)
+
+        if route.get('gateway_onlink'):
+            unit['Route']['GatewayOnlink'] = 'true'
+
         yield unit
 
 
