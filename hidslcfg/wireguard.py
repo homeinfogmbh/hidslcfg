@@ -1,6 +1,8 @@
 """Configures a WireGuard interface."""
 
 from os import chown
+from pwd import getpwnam
+from grp import getgrnam
 from time import sleep
 
 from wgtools import keypair
@@ -73,7 +75,9 @@ def write_netdev(wireguard: dict, private: str):
     with NETDEV_UNIT_FILE.open('w') as netdev_unit_file:
         unit.write(netdev_unit_file)
 
-    chown(NETDEV_UNIT_FILE, NETDEV_OWNER, NETDEV_GROUP)
+    uid = getpwnam(NETDEV_OWNER).pw_uid
+    gid = getgrnam(NETDEV_GROUP).gr_gid
+    chown(NETDEV_UNIT_FILE, uid, gid)
     NETDEV_UNIT_FILE.chmod(NETDEV_MODE)
 
 
