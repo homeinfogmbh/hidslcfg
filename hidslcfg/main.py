@@ -36,6 +36,9 @@ def get_args():
         '-f', '--force', action='store_true',
         help='force setup of already configured systems')
     parser.add_argument(
+        '-n', '--no-openvpn', action='store_true',
+        help='do not configure OpenVPN')
+    parser.add_argument(
         '-v', '--verbose', action='store_true', help='be gassy')
     return parser.parse_args()
 
@@ -54,7 +57,10 @@ def main():
         client.login()
         confirm(client.info, serial_number=args.sn, force=args.force)
         configure_system(args.id)
-        configure_openvpn(client.openvpn, gracetime=args.grace_time)
+
+        if not args.no_openvpn:
+            configure_openvpn(client.openvpn, gracetime=args.grace_time)
+
         pubkey = configure_wireguard(client.wireguard)
         LOGGER.debug('Finalizing system.')
         client.finalize(sn=args.sn, wg_pubkey=pubkey)
