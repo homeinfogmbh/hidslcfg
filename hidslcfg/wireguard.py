@@ -1,7 +1,7 @@
 """Configures a WireGuard interface."""
 
 from time import sleep
-from typing import List, NamedTuple
+from typing import List
 
 from wgtools import keypair
 
@@ -24,27 +24,9 @@ NETDEV_UNIT_FILE = SYSTEMD_NETWORK_DIR.joinpath(f'{DEVNAME}.netdev')
 NETWORK_UNIT_FILE = SYSTEMD_NETWORK_DIR.joinpath(f'{DEVNAME}.network')
 
 
-class Endpoint(NamedTuple):
-    """A WireGuard endpoint."""
-
-    address: str
-    port: int
-
-    @classmethod
-    def from_string(cls, string):
-        """Parses an endpoint from a string."""
-        address, port = string.split(':')
-        port = int(port)
-        return cls(address, port)
-
-    def __str__(self):
-        """Returns a string representation of the endpoint."""
-        return f'{self.address}:{self.port}'
-
-
 def create_netdev_unit(
         private: str, server_pubkey: str, allowed_ips: List[str],
-        endpoint: Endpoint, psk: str = None):
+        endpoint: str, psk: str = None):
     """Creates a network device."""
 
     unit = SystemdUnit()
@@ -60,14 +42,13 @@ def create_netdev_unit(
     if psk:
         unit['WireGuardPeer']['PresharedKey'] = psk
 
-    unit['WireGuardPeer']['AllowedIPs'] = ', '.join(
-        str(ip) for ip in allowed_ips)
-    unit['WireGuardPeer']['Endpoint'] = str(endpoint)
+    unit['WireGuardPeer']['AllowedIPs'] = ', '.join(allowed_ips)
+    unit['WireGuardPeer']['Endpoint'] = endpoint
     return unit
 
 
 def create_netdev(private: str, server_pubkey: str, allowed_ips: List[str],
-                  endpoint: Endpoint, psk: str = None):
+                  endpoint: str, psk: str = None):
     """Creates a network device."""
 
     unit = create_netdev_unit(
@@ -120,7 +101,6 @@ def create_units(wireguard: dict, private: str):
     if not endpoint:
         raise ProgramError('Missing endpoint for WireGuard.')
 
-    endpoint = Endpoint.from_string(endpoint)
     psk = wireguard.get('psk')
     ipaddress = wireguard.get('ipaddress')
 
