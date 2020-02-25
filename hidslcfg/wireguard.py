@@ -20,7 +20,6 @@ __all__ = ['configure', 'check', 'remove']
 
 DEVNAME = 'terminals'
 DESCRIPTION = 'Terminal maintenance VPN.'
-PORT = 51820
 NETDEV_UNIT_FILE = SYSTEMD_NETWORK_DIR.joinpath(f'{DEVNAME}.netdev')
 NETWORK_UNIT_FILE = SYSTEMD_NETWORK_DIR.joinpath(f'{DEVNAME}.network')
 
