@@ -1,9 +1,5 @@
 """Configures a WireGuard interface."""
 
-from ipaddress import ip_address
-from ipaddress import ip_network
-from ipaddress import _BaseAddress as Address
-from ipaddress import _BaseNetwork as Network
 from time import sleep
 from typing import List, NamedTuple
 
@@ -32,14 +28,13 @@ NETWORK_UNIT_FILE = SYSTEMD_NETWORK_DIR.joinpath(f'{DEVNAME}.network')
 class Endpoint(NamedTuple):
     """A WireGuard endpoint."""
 
-    address: Address
+    address: str
     port: int
 
     @classmethod
     def from_string(cls, string):
         """Parses an endpoint from a string."""
         address, port = string.split(':')
-        address = ip_address(address)
         port = int(port)
         return cls(address, port)
 
@@ -49,7 +44,7 @@ class Endpoint(NamedTuple):
 
 
 def create_netdev_unit(
-        private: str, server_pubkey: str, allowed_ips: List[Network],
+        private: str, server_pubkey: str, allowed_ips: List[str],
         endpoint: Endpoint, psk: str = None):
     """Creates a network device."""
 
@@ -72,7 +67,7 @@ def create_netdev_unit(
     return unit
 
 
-def create_netdev(private: str, server_pubkey: str, allowed_ips: List[Network],
+def create_netdev(private: str, server_pubkey: str, allowed_ips: List[str],
                   endpoint: Endpoint, psk: str = None):
     """Creates a network device."""
 
@@ -83,53 +78,40 @@ def create_netdev(private: str, server_pubkey: str, allowed_ips: List[Network],
         unit.write(netdev_unit_file)
 
 
-def create_network_unit(ipaddress: Network, gateway: Address,
-                        destination: Network):
-    """Creates a WireGuard network unit file."""
+def create_network_unit(ipaddress: str, routes: List[dict]):
+    """Yields WireGuard network unit file parts."""
 
     unit = SystemdUnit()
     unit.add_section('Match')
     unit['Match']['Name'] = DEVNAME
     unit.add_section('Network')
-    unit['Network']['Address'] = str(ipaddress)
-    unit.add_section('Route')
-    unit['Route']['Gateway'] = str(gateway)
-    unit['Route']['Destination'] = str(destination)
-    unit['Route']['GatewayOnlink'] = 'true'
-    return unit
+    unit['Network']['Address'] = ipaddress
+    yield unit
+
+    for route in routes:
+        unit = SystemdUnit()
+        unit.add_section('Route')
+        unit['Route']['Gateway'] = route['gateway']
+        unit['Route']['Destination'] = route['destination']
+        unit['Route']['GatewayOnlink'] = route.get('gateway_onlink', False)
+        yield unit
 
 
-def create_network(ipaddress: Network, gateway: Address,
-                   destination: Network):
+def create_network(ipaddress: str, routes: List[dict]):
     """Creates a WireGuard network unit file."""
 
-    unit = create_network_unit(ipaddress, gateway, destination)
-
     with NETWORK_UNIT_FILE.open('w') as network_unit_file:
-        unit.write(network_unit_file)
+        for part in create_network_unit(ipaddress, routes):
+            part.write(network_unit_file)
 
 
 def create_units(wireguard: dict, private: str):
     """Configures a WireGuard interface for the given JSON-ish settings."""
 
-    ipaddress = wireguard.get('ipaddress')
-
-    if not ipaddress:
-        raise ProgramError('Missing IP address for WireGuard.')
-
     server_pubkey = wireguard.get('server_pubkey')
 
     if not server_pubkey:
         raise ProgramError('Missing server pubkey for WireGuard.')
-
-    allowed_ips = wireguard.get('allowed_ips')
-
-    if not allowed_ips:
-        raise ProgramError('Missing allowed IPs for WireGuard.')
-
-    # We need networks here, since WireGuard does not
-    # function properly without the CIDR suffixes.
-    allowed_ips = [ip_network(ip) for ip in allowed_ips]
 
     endpoint = wireguard.get('endpoint')
 
@@ -138,24 +120,22 @@ def create_units(wireguard: dict, private: str):
 
     endpoint = Endpoint.from_string(endpoint)
     psk = wireguard.get('psk')
-    gateway = wireguard.get('gateway')
+    ipaddress = wireguard.get('ipaddress')
 
-    if not gateway:
-        raise ProgramError('Missing gateway address for WireGuard.')
+    if not ipaddress:
+        raise ProgramError('Missing IP address for WireGuard.')
 
-    gateway = ip_address(gateway)
-    destination = wireguard.get('destination')
+    routes = wireguard.get('routes')
 
-    if not destination:
-        raise ProgramError('Missing destination network for WireGuard.')
-
-    destination = ip_network(destination)
+    if not routes:
+        raise ProgramError('No routes configured for WireGuard.')
 
     if pubkey := wireguard.get('pubkey'):
         LOGGER.warning('WireGuard already configured for pubkey %s.', pubkey)
 
+    allowed_ips = [route['destination'] for route in routes]
     create_netdev(private, server_pubkey, allowed_ips, endpoint, psk=psk)
-    create_network(ipaddress, gateway, destination)
+    create_network(ipaddress, routes)
 
 
 def configure(wireguard):
