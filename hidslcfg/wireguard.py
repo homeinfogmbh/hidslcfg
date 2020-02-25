@@ -1,7 +1,7 @@
 """Configures a WireGuard interface."""
 
+from os import chown
 from time import sleep
-from typing import List
 
 from wgtools import keypair
 
@@ -22,11 +22,12 @@ DEVNAME = 'terminals'
 DESCRIPTION = 'Terminal maintenance VPN.'
 NETDEV_UNIT_FILE = SYSTEMD_NETWORK_DIR.joinpath(f'{DEVNAME}.netdev')
 NETWORK_UNIT_FILE = SYSTEMD_NETWORK_DIR.joinpath(f'{DEVNAME}.network')
+NETDEV_OWNER = 'root'
+NETDEV_GROUP = 'systemd-network'
+NETDEV_MODE = 0o640
 
 
-def create_netdev_unit(
-        private: str, server_pubkey: str, allowed_ips: List[str],
-        endpoint: str, psk: str = None, persistent_keepalive: int = None):
+def create_netdev_unit(wireguard: dict, private: str):
     """Creates a network device."""
 
     unit = SystemdUnit()
@@ -37,45 +38,61 @@ def create_netdev_unit(
     unit.add_section('WireGuard')
     unit['WireGuard']['PrivateKey'] = private
     unit.add_section('WireGuardPeer')
-    unit['WireGuardPeer']['PublicKey'] = server_pubkey
 
-    if psk:
+    try:
+        unit['WireGuardPeer']['PublicKey'] = wireguard['server_pubkey']
+    except KeyError:
+        raise ProgramError('Missing server pubkey for WireGuard.')
+
+    if psk := wireguard.get('psk'):
         unit['WireGuardPeer']['PresharedKey'] = psk
 
-    unit['WireGuardPeer']['AllowedIPs'] = ', '.join(allowed_ips)
-    unit['WireGuardPeer']['Endpoint'] = endpoint
+    try:
+        allowed_ips = [route['destination'] for route in wireguard['routes']]
+    except KeyError:
+        raise ProgramError('Missing routes for WireGuard.')
 
-    if persistent_keepalive:
-        unit['WireGuardPeer']['PersistentKeepalive'] = str(
-            persistent_keepalive)
+    unit['WireGuardPeer']['AllowedIPs'] = ', '.join(allowed_ips)
+
+    try:
+        unit['WireGuardPeer']['Endpoint'] = wireguard['endpoint']
+    except KeyError:
+        raise ProgramError('Missing endpoint for WireGuard.')
+
+    if keepalive := wireguard.get('persistent_keepalive'):
+        unit['WireGuardPeer']['PersistentKeepalive'] = str(keepalive)
 
     return unit
 
 
-def write_netdev(
-        private: str, server_pubkey: str, allowed_ips: List[str],
-        endpoint: str, psk: str = None, persistent_keepalive: int = None):
+def write_netdev(wireguard: dict, private: str):
     """Creates a network device."""
 
-    unit = create_netdev_unit(
-        private, server_pubkey, allowed_ips, endpoint, psk=psk,
-        persistent_keepalive=persistent_keepalive)
+    unit = create_netdev_unit(wireguard, private)
 
     with NETDEV_UNIT_FILE.open('w') as netdev_unit_file:
         unit.write(netdev_unit_file)
 
+    chown(NETDEV_UNIT_FILE, NETDEV_OWNER, NETDEV_GROUP)
+    NETDEV_UNIT_FILE.chmod(NETDEV_MODE)
 
-def create_network_unit(ipaddress: str, routes: List[dict]):
+
+def create_network_unit(wireguard: dict):
     """Yields WireGuard network unit file parts."""
 
     unit = SystemdUnit()
     unit.add_section('Match')
     unit['Match']['Name'] = DEVNAME
     unit.add_section('Network')
-    unit['Network']['Address'] = ipaddress
+
+    try:
+        unit['Network']['Address'] = wireguard['ipaddress']
+    except KeyError:
+        raise ProgramError('Missing IP address for WireGuard.')
+
     yield unit
 
-    for route in routes:
+    for route in wireguard.get('routes') or ():
         unit = SystemdUnit()
         unit.add_section('Route')
         unit['Route']['Gateway'] = route['gateway']
@@ -87,55 +104,25 @@ def create_network_unit(ipaddress: str, routes: List[dict]):
         yield unit
 
 
-def write_network(ipaddress: str, routes: List[dict]):
+def write_network(wireguard: dict):
     """Creates a WireGuard network unit file."""
 
     with NETWORK_UNIT_FILE.open('w') as network_unit_file:
-        for part in create_network_unit(ipaddress, routes):
+        for part in create_network_unit(wireguard):
             part.write(network_unit_file)
-
-
-def create_units(wireguard: dict, private: str):
-    """Configures a WireGuard interface for the given JSON-ish settings."""
-
-    server_pubkey = wireguard.get('server_pubkey')
-
-    if not server_pubkey:
-        raise ProgramError('Missing server pubkey for WireGuard.')
-
-    endpoint = wireguard.get('endpoint')
-
-    if not endpoint:
-        raise ProgramError('Missing endpoint for WireGuard.')
-
-    psk = wireguard.get('psk')
-    ipaddress = wireguard.get('ipaddress')
-
-    if not ipaddress:
-        raise ProgramError('Missing IP address for WireGuard.')
-
-    routes = wireguard.get('routes')
-
-    if not routes:
-        raise ProgramError('No routes configured for WireGuard.')
-
-    if pubkey := wireguard.get('pubkey'):
-        LOGGER.warning('WireGuard already configured for pubkey %s.', pubkey)
-
-    allowed_ips = [route['destination'] for route in routes]
-    persistent_keepalive = wireguard.get('persistent_keepalive')
-    write_netdev(private, server_pubkey, allowed_ips, endpoint, psk=psk,
-                 persistent_keepalive=persistent_keepalive)
-    write_network(ipaddress, routes)
 
 
 def configure(wireguard):
     """Configures the WireGuard connection."""
 
+    if pubkey := wireguard.get('pubkey'):
+        LOGGER.warning('WireGuard already configured for pubkey %s.', pubkey)
+
     LOGGER.debug('Creating public / private key pair.')
     pubkey, private = keypair()
     LOGGER.debug('Installing WireGuard configuration.')
-    create_units(wireguard, private)
+    write_netdev(wireguard, private)
+    write_network(wireguard)
     return pubkey
 
 
