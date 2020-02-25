@@ -26,7 +26,7 @@ NETWORK_UNIT_FILE = SYSTEMD_NETWORK_DIR.joinpath(f'{DEVNAME}.network')
 
 def create_netdev_unit(
         private: str, server_pubkey: str, allowed_ips: List[str],
-        endpoint: str, psk: str = None):
+        endpoint: str, psk: str = None, persistent_keepalive: int = None):
     """Creates a network device."""
 
     unit = SystemdUnit()
@@ -44,15 +44,22 @@ def create_netdev_unit(
 
     unit['WireGuardPeer']['AllowedIPs'] = ', '.join(allowed_ips)
     unit['WireGuardPeer']['Endpoint'] = endpoint
+
+    if persistent_keepalive:
+        unit['WireGuardPeer']['PersistentKeepalive'] = str(
+            persistent_keepalive)
+
     return unit
 
 
-def create_netdev(private: str, server_pubkey: str, allowed_ips: List[str],
-                  endpoint: str, psk: str = None):
+def write_netdev(
+        private: str, server_pubkey: str, allowed_ips: List[str],
+        endpoint: str, psk: str = None, persistent_keepalive: int = None):
     """Creates a network device."""
 
     unit = create_netdev_unit(
-        private, server_pubkey, allowed_ips, endpoint, psk=psk)
+        private, server_pubkey, allowed_ips, endpoint, psk=psk,
+        persistent_keepalive=persistent_keepalive)
 
     with NETDEV_UNIT_FILE.open('w') as netdev_unit_file:
         unit.write(netdev_unit_file)
@@ -80,7 +87,7 @@ def create_network_unit(ipaddress: str, routes: List[dict]):
         yield unit
 
 
-def create_network(ipaddress: str, routes: List[dict]):
+def write_network(ipaddress: str, routes: List[dict]):
     """Creates a WireGuard network unit file."""
 
     with NETWORK_UNIT_FILE.open('w') as network_unit_file:
@@ -116,8 +123,10 @@ def create_units(wireguard: dict, private: str):
         LOGGER.warning('WireGuard already configured for pubkey %s.', pubkey)
 
     allowed_ips = [route['destination'] for route in routes]
-    create_netdev(private, server_pubkey, allowed_ips, endpoint, psk=psk)
-    create_network(ipaddress, routes)
+    persistent_keepalive = wireguard.get('persistent_keepalive')
+    write_netdev(private, server_pubkey, allowed_ips, endpoint, psk=psk,
+                 persistent_keepalive=persistent_keepalive)
+    write_network(ipaddress, routes)
 
 
 def configure(wireguard):
