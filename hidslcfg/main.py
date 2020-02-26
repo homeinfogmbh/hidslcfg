@@ -12,6 +12,7 @@ from hidslcfg.openvpn import configure as configure_openvpn
 from hidslcfg.system import ProgramErrorHandler, reboot
 from hidslcfg.termio import ask, read_credentials
 from hidslcfg.wireguard import configure as configure_wireguard
+from hidslcfg.wireguard import check as check_wireguard
 
 
 __all__ = ['run']
@@ -61,9 +62,11 @@ def main():
         if not args.no_openvpn:
             configure_openvpn(client.openvpn, gracetime=args.grace_time)
 
-        pubkey = configure_wireguard(client.wireguard)
+        wireguard = client.wireguard
+        pubkey = configure_wireguard(wireguard)
         LOGGER.debug('Finalizing system.')
         client.finalize(sn=args.sn, wg_pubkey=pubkey)
+        check_wireguard(wireguard, gracetime=args.grace_time)
         LOGGER.info('Setup completed successfully.')
 
     if ask('Do you want to reboot now?'):
