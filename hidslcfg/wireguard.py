@@ -1,5 +1,6 @@
 """Configures a WireGuard interface."""
 
+from contextlib import suppress
 from os import chown
 from pwd import getpwnam
 from grp import getgrnam
@@ -154,6 +155,11 @@ def remove():
     """Removes the WireGuard configuration."""
 
     LOGGER.debug('Removing netdev unit file.')
-    NETDEV_UNIT_FILE.unlink()
+
+    with suppress(FileNotFoundError):
+        NETDEV_UNIT_FILE.unlink()
+
     LOGGER.debug('Removing network unit file.')
-    NETWORK_UNIT_FILE.unlink()
+
+    with suppress(FileNotFoundError):
+        NETWORK_UNIT_FILE.unlink()
