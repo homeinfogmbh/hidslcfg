@@ -8,11 +8,9 @@ from hidslcfg.api import Client
 from hidslcfg.configure import confirm, configure as configure_system
 from hidslcfg.exceptions import ProgramError
 from hidslcfg.globals import LOG_FORMAT, LOGGER
-from hidslcfg.openvpn import configure as configure_openvpn
 from hidslcfg.system import ProgramErrorHandler, reboot
 from hidslcfg.termio import ask, read_credentials
-from hidslcfg.wireguard import configure as configure_wireguard
-from hidslcfg.wireguard import check as check_wireguard
+from hidslcfg.vpn import VPNSetup
 
 
 __all__ = ['run']
@@ -61,20 +59,10 @@ def main():
         confirm(client.info, serial_number=args.sn, force=args.force)
         configure_system(args.id)
 
-        if args.openvpn:
-            configure_openvpn(client.openvpn, gracetime=args.grace_time)
-
-        if args.wireguard:
-            wireguard = client.wireguard
-            pubkey = configure_wireguard(wireguard)
-        else:
-            pubkey = None
-
-        LOGGER.debug('Finalizing system.')
-        client.finalize(sn=args.sn, wg_pubkey=pubkey)
-
-        if args.wireguard:
-            check_wireguard(wireguard, gracetime=args.grace_time)
+        with VPNSetup(client, args.grace_time, openvpn=args.openvpn,
+                      wireguard=args.wireguard) as vpn:
+            LOGGER.debug('Finalizing system.')
+            client.finalize(sn=args.sn, wg_pubkey=vpn.wireguard_pubkey)
 
         LOGGER.info('Setup completed successfully.')
 
