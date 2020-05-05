@@ -3,11 +3,11 @@
 #  This unit provides a service to automatically login
 #  the homeinfo setup user to a certain terminal.
 #
-# (C) 2015: HOMEINFO - Digitale Informationssysteme GmbH
+# (C) 2015 - 2020: HOMEINFO - Digitale Informationssysteme GmbH
 #
 # Maintainer: Richard Neumann <r.neumann@homeinfo.de>
 #
-########################################################
+###############################################################
 
 [Unit]
 Description=HOMEINFO Digial Signage configuration login on %I
