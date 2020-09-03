@@ -102,8 +102,8 @@ class ProgramErrorHandler:
     def __exit__(self, _, value, __):
         """Log program errors and exit accordingly."""
         if isinstance(value, ProgramError):
-            LOGGER.fatal(value.error)
-            LOGGER.error(value)
+            LOGGER.error(value.error)
+            LOGGER.debug(value)
             exit(value.exit_code)
 
 
