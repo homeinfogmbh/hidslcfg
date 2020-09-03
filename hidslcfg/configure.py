@@ -1,5 +1,7 @@
 """Basic system configuration."""
 
+from typing import Iterable, Tuple
+
 from hidslcfg.exceptions import ProgramError
 from hidslcfg.globals import LOGGER, UNCONFIGURED_WARNING_SERVICE
 from hidslcfg.system import hostname
@@ -10,7 +12,7 @@ from hidslcfg.termio import ask, Table
 __all__ = ['confirm', 'configure']
 
 
-def update_sn(system, serial_number):
+def update_sn(system: dict, serial_number: str) -> dict:
     """Updates the serial number hint to indicate changed serial number."""
 
     if serial_number is not None:
@@ -24,7 +26,7 @@ def update_sn(system, serial_number):
     return system
 
 
-def confirm(system, serial_number=None, force=False):
+def confirm(system: dict, serial_number: str = None, force: bool = False):
     """Prompt the user to confirm the given location."""
 
     LOGGER.info('You are about to configure the following system:')
@@ -47,7 +49,7 @@ def confirm(system, serial_number=None, force=False):
         raise ProgramError('Setup aborted by user.')
 
 
-def configure(system):
+def configure(system: dict):
     """Performs the system configuration."""
 
     LOGGER.debug('Configuring host name.')
@@ -56,7 +58,7 @@ def configure(system):
     systemctl('disable', UNCONFIGURED_WARNING_SERVICE)
 
 
-def rows(system):
+def rows(system: dict) -> Iterable[Tuple[str, type]]:
     """Yields table rows containing system information."""
 
     yield ('Option', 'Value')   # Header.

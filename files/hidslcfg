@@ -1,8 +1,8 @@
 #! /usr/bin/env python3
 """HOMEINFO Digital Signage Linux configurator."""
 
-from hidslcfg.main import run
+from hidslcfg import hidslcfg
 
 
 if __name__ == '__main__':
-    run()
+    hidslcfg()

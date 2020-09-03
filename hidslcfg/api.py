@@ -15,7 +15,7 @@ LOGIN_URL = 'https://his.homeinfo.de/session'
 SETUP_URL_BASE = 'https://termgr.homeinfo.de/setup/'
 
 
-def get_url(endpoint):
+def get_url(endpoint: str) -> str:
     """Returns a URL for the respective endpoint."""
 
     return urljoin(SETUP_URL_BASE, endpoint)
@@ -24,7 +24,7 @@ def get_url(endpoint):
 class Client:
     """Class to retrieve data from the web API."""
 
-    def __init__(self, user, passwd, system):
+    def __init__(self, user: str, passwd: str, system: dict):
         """Initialize with credentials."""
         self.user = user
         self.passwd = passwd
@@ -46,7 +46,7 @@ class Client:
             print()
             raise ProgramError('Setup aborted by user.')
 
-    def post(self, url, json):
+    def post(self, url: str, json: dict):
         """Performs a POST request."""
         try:
             response = self.session.post(url, json=json)
@@ -63,7 +63,7 @@ class Client:
         json = {'account': self.user, 'passwd': self.passwd}
         return self.post(LOGIN_URL, json=json)
 
-    def post_endpoint(self, endpoint):
+    def post_endpoint(self, endpoint: str):
         """Makes a POST request to the respective endpoint."""
         return self.post(get_url(endpoint), {'system': self.system})
 

@@ -3,6 +3,7 @@
 from enum import Enum
 from getpass import getpass
 from os import linesep
+from typing import Iterable, Tuple
 
 from hidslcfg.exceptions import ProgramError
 
@@ -14,7 +15,7 @@ YES_VALUES = {'y', 'yes'}
 DEFAULT_SPACING = ' {} '
 
 
-def ask(question, default=False):
+def ask(question: str, default: bool = False) -> bool:
     """Ask a question and return True on yes or else False."""
 
     suffix = ' [Y/n]: ' if default else ' [y/N]: '
@@ -34,13 +35,13 @@ def ask(question, default=False):
     return reply.strip().lower() in YES_VALUES
 
 
-def bold(string):
+def bold(string: str) -> str:
     """Formats a string as bold."""
 
     return f'\033[1m{string}\033[0m'
 
 
-def read_credentials(user):
+def read_credentials(user: str) -> Tuple[str, str]:
     """Reads the user name."""
 
     try:
@@ -70,7 +71,9 @@ class Table(Enum):
     FOOTER = '╚{}╩{}╝'
 
     @classmethod
-    def make_rows(cls, key_value_pairs, header=True, spacing=DEFAULT_SPACING):
+    def make_rows(cls, key_value_pairs: Iterable[Tuple[str, str]],
+                  header: bool = True, spacing: str = DEFAULT_SPACING
+                  ) -> Iterable[str]:
         """Generates rows for a UTF-8 table."""
         items = []
         keys_len = 0
@@ -105,7 +108,8 @@ class Table(Enum):
                         cls.BOLD.value * keys_len, cls.BOLD.value * value_len)
 
     @classmethod
-    def generate(cls, key_value_pairs, header=True, spacing=DEFAULT_SPACING):
+    def generate(cls, key_value_pairs: Iterable[Tuple[str, str]],
+                 header: bool = True, spacing: str = DEFAULT_SPACING) -> str:
         """Generates a UTF-8 table."""
         rows = cls.make_rows(key_value_pairs, header=header, spacing=spacing)
         return linesep.join(rows)

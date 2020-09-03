@@ -1,6 +1,6 @@
 """HOMEINFO Digital Signage Linux configurator."""
 
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 from logging import DEBUG, INFO, basicConfig
 from os import geteuid
 
@@ -19,7 +19,7 @@ __all__ = ['run']
 DESCRIPTION = 'HOMEINFO Digital Signage Linux configurator.'
 
 
-def get_args():
+def get_args() -> Namespace:
     """Parses the arguments."""
 
     parser = ArgumentParser(description=DESCRIPTION)

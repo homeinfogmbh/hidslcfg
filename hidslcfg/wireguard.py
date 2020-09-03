@@ -5,6 +5,7 @@ from os import chown
 from pwd import getpwnam
 from grp import getgrnam
 from time import sleep
+from typing import Iterable
 
 from wgtools import keypair
 
@@ -30,7 +31,7 @@ NETDEV_GROUP = 'systemd-network'
 NETDEV_MODE = 0o640
 
 
-def create_netdev_unit(wireguard: dict, private: str):
+def create_netdev_unit(wireguard: dict, private: str) -> SystemdUnit:
     """Creates a network device."""
 
     unit = SystemdUnit()
@@ -82,7 +83,7 @@ def write_netdev(wireguard: dict, private: str):
     NETDEV_UNIT_FILE.chmod(NETDEV_MODE)
 
 
-def create_network_unit(wireguard: dict):
+def create_network_unit(wireguard: dict) -> Iterable[SystemdUnit]:
     """Yields WireGuard network unit file parts."""
 
     unit = SystemdUnit()
@@ -117,7 +118,7 @@ def write_network(wireguard: dict):
             part.write(network_unit_file)
 
 
-def configure(wireguard):
+def configure(wireguard: dict) -> str:
     """Configures the WireGuard connection."""
 
     if pubkey := wireguard.get('pubkey'):
@@ -131,7 +132,7 @@ def configure(wireguard):
     return pubkey
 
 
-def check(wireguard, gracetime: int = 3):
+def check(wireguard: dict, gracetime: int = 3):
     """Checks the connection to the WireGuard server."""
 
     LOGGER.debug('Restarting %s.', SYSTEMD_NETWORKD)

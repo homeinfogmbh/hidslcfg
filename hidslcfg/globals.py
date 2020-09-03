@@ -1,8 +1,13 @@
 """Global constants and configuration."""
 
-from logging import getLogger
+from argparse import Namespace
+from logging import DEBUG, INFO, basicConfig, getLogger
+from os import geteuid
 from pathlib import Path
 from sys import argv
+from typing import Callable
+
+from hidslcfg.exceptions import ProgramError
 
 
 __all__ = [
@@ -12,7 +17,8 @@ __all__ = [
     'LOG_FORMAT',
     'SYSTEMD_NETWORKD',
     'SYSTEMD_NETWORK_DIR',
-    'UNCONFIGURED_WARNING_SERVICE'
+    'UNCONFIGURED_WARNING_SERVICE',
+    'init_root_script'
 ]
 
 
@@ -23,3 +29,14 @@ LOGGER = getLogger(Path(argv[0]).name)
 SYSTEMD_NETWORKD = 'systemd-networkd.service'
 SYSTEMD_NETWORK_DIR = Path('/etc/systemd/network')
 UNCONFIGURED_WARNING_SERVICE = 'unconfigured-warning.service'
+
+
+def init_root_script(args_getter: Callable) -> Namespace:
+    """Initializes a script that shall be run as root."""
+
+    if geteuid() != 0:
+        raise ProgramError('You need to be root to run this script!')
+
+    args = args_getter()
+    basicConfig(level=DEBUG if args.verbose else INFO, format=LOG_FORMAT)
+    return args

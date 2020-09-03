@@ -3,7 +3,7 @@
 from configparser import ConfigParser
 from logging import DEBUG
 from pathlib import Path
-from subprocess import DEVNULL, CalledProcessError, run
+from subprocess import DEVNULL, CalledProcessError, CompletedProcess, run
 from sys import exit    # pylint: disable=W0622
 
 from hidslcfg.globals import LOGGER
@@ -28,7 +28,7 @@ PING = Path('/usr/bin/ping')
 SYSTEMCTL = Path('/usr/bin/systemctl')
 
 
-def system(*args):
+def system(*args) -> CompletedProcess:
     """Invoke system commands."""
 
     if LOGGER.getEffectiveLevel() > DEBUG:
@@ -42,31 +42,31 @@ def system(*args):
     return completed_process
 
 
-def ping(host, timeout=1, count=5):
+def ping(host: str, timeout: int = 1, count: int = 5) -> CompletedProcess:
     """Pings the respective host."""
 
     return system(PING, '-W', timeout, '-c', count, host)
 
 
-def hostname(hostname_):
+def hostname(hostname: str) -> CompletedProcess:    # pylint: disable=W0621
     """Sets the respective host name or deletes the host name file."""
 
-    return system(HOSTNAMECTL, 'set-hostname', hostname_)
+    return system(HOSTNAMECTL, 'set-hostname', hostname)
 
 
-def systemctl(*args):
+def systemctl(*args) -> CompletedProcess:
     """Invokes systemctl."""
 
     return system(SYSTEMCTL, *args)
 
 
-def reboot():
+def reboot() -> CompletedProcess:
     """Reboots the system."""
 
     return systemctl('reboot')
 
 
-def rmsubtree(path):
+def rmsubtree(path: Path):
     """Removes all children within the specified directory."""
 
     for inode in path.iterdir():

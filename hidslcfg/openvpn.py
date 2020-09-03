@@ -28,7 +28,7 @@ def clean():
             item.unlink()
 
 
-def install(vpn_data):
+def install(vpn_data: bytes):
     """Installs the respective VPN configuration."""
 
     clean()     # Clean up config beforehand.
@@ -38,7 +38,7 @@ def install(vpn_data):
             tar_file.extractall(path=CLIENT_DIR)
 
 
-def configure(vpn_data, gracetime=3):
+def configure(vpn_data: bytes, gracetime: int = 3):
     """Sets up the OpenVPN configuration."""
 
     LOGGER.debug('Installing OpenVPN configuration.')
