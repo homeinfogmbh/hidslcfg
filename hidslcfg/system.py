@@ -107,7 +107,6 @@ class ProgramErrorHandler:
             if message := str(value):
                 LOGGER.error(message)
 
-            LOGGER.debug(value)
             exit(value.exit_code)
 
 
