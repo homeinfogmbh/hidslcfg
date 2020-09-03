@@ -26,6 +26,24 @@ def update_sn(system: dict, serial_number: str) -> dict:
     return system
 
 
+def rows(system: dict) -> Iterable[Tuple[str, type]]:
+    """Yields table rows containing system information."""
+
+    yield ('Option', 'Value')   # Header.
+    yield ('System ID', system['id'])
+    yield ('Creation date', system['created'])
+    yield ('Operating system', system['operatingSystem'])
+
+    if configured := system.get('configured'):
+        yield ('Configured', configured)
+
+    if serial_number := system.get('serialNumber'):
+        yield ('Serial number', serial_number)
+
+    if model := system.get('model'):
+        yield ('Model', model)
+
+
 def confirm(system: dict, serial_number: str = None, force: bool = False):
     """Prompt the user to confirm the given location."""
 
@@ -49,28 +67,10 @@ def confirm(system: dict, serial_number: str = None, force: bool = False):
         raise ProgramError('Setup aborted by user.')
 
 
-def configure(system: dict):
-    """Performs the system configuration."""
+def configure(system: int):
+    """Configures the system with the given ID."""
 
     LOGGER.debug('Configuring host name.')
     hostname(str(system))
     LOGGER.debug('Disabling unconfigured warning.')
     systemctl('disable', UNCONFIGURED_WARNING_SERVICE)
-
-
-def rows(system: dict) -> Iterable[Tuple[str, type]]:
-    """Yields table rows containing system information."""
-
-    yield ('Option', 'Value')   # Header.
-    yield ('System ID', system['id'])
-    yield ('Creation date', system['created'])
-    yield ('Operating system', system['operatingSystem'])
-
-    if configured := system.get('configured'):
-        yield ('Configured', configured)
-
-    if serial_number := system.get('serialNumber'):
-        yield ('Serial number', serial_number)
-
-    if model := system.get('model'):
-        yield ('Model', model)

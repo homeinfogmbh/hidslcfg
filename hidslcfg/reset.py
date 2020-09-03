@@ -25,7 +25,7 @@ class ResetOperation(NamedTuple):
 
 # Oder matters here!
 RESET_OPERATIONS = (
-    ResetOperation('reset hostname', partial(hostname, None)),
+    ResetOperation('reset hostname', partial(hostname, 'unconfigured')),
     ResetOperation(
         'remove digital signage data',
         partial(rmsubtree, DIGSIG_DATA_DIR)

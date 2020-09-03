@@ -4,7 +4,7 @@ from argparse import ArgumentParser, Namespace
 
 from hidslcfg.api import Client
 from hidslcfg.common import LOGGER, init_root_script
-from hidslcfg.configure import confirm, configure as configure_system
+from hidslcfg.configure import confirm, configure
 from hidslcfg.system import ProgramErrorHandler, reboot
 from hidslcfg.termio import ask, read_credentials
 from hidslcfg.vpn import VPNSetup
@@ -50,7 +50,7 @@ def main():
     with Client(user, passwd, args.id) as client:
         client.login()
         confirm(client.info, serial_number=args.sn, force=args.force)
-        configure_system(args.id)
+        configure(args.id)
 
         with VPNSetup(client, args.grace_time, openvpn=args.openvpn,
                       wireguard=args.wireguard) as vpn:
