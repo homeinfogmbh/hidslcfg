@@ -4,8 +4,7 @@ from urllib.parse import urljoin
 
 from requests import ConnectionError, Session   # pylint: disable=W0622
 
-from hidslcfg.exceptions import APIError
-from hidslcfg.exceptions import ProgramError
+from hidslcfg.exceptions import APIError, ProgramError
 
 
 __all__ = ['Client']
