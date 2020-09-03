@@ -6,7 +6,7 @@ from pathlib import Path
 from subprocess import DEVNULL, CalledProcessError, CompletedProcess, run
 from sys import exit    # pylint: disable=W0622
 
-from hidslcfg.globals import LOGGER
+from hidslcfg.common import LOGGER
 from hidslcfg.exceptions import ProgramError
 
 

@@ -2,8 +2,8 @@
 
 from typing import Iterable, Tuple
 
+from hidslcfg.common import LOGGER, UNCONFIGURED_WARNING_SERVICE
 from hidslcfg.exceptions import ProgramError
-from hidslcfg.globals import LOGGER, UNCONFIGURED_WARNING_SERVICE
 from hidslcfg.system import hostname
 from hidslcfg.system import systemctl
 from hidslcfg.termio import ask, Table

@@ -9,10 +9,10 @@ from typing import Iterable
 
 from wgtools import keypair
 
+from hidslcfg.common import LOGGER
+from hidslcfg.common import SYSTEMD_NETWORKD
+from hidslcfg.common import SYSTEMD_NETWORK_DIR
 from hidslcfg.exceptions import ProgramError
-from hidslcfg.globals import LOGGER
-from hidslcfg.globals import SYSTEMD_NETWORKD
-from hidslcfg.globals import SYSTEMD_NETWORK_DIR
 from hidslcfg.system import ping
 from hidslcfg.system import systemctl
 from hidslcfg.system import CalledProcessErrorHandler

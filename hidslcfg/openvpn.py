@@ -6,7 +6,7 @@ from pathlib import Path
 from tarfile import open as TarFile
 from time import sleep
 
-from hidslcfg.globals import LOGGER
+from hidslcfg.common import LOGGER
 from hidslcfg.system import ping, systemctl, CalledProcessErrorHandler
 
 

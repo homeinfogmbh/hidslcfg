@@ -1,6 +1,6 @@
 """Common VPN manager."""
 
-from hidslcfg.globals import LOGGER
+from hidslcfg.common import LOGGER
 from hidslcfg.openvpn import configure as configure_openvpn
 from hidslcfg.wireguard import configure as configure_wg, check as check_wg
 

@@ -2,16 +2,14 @@
 
 from argparse import ArgumentParser, Namespace
 from functools import partial
-from logging import DEBUG, INFO, basicConfig
-from os import geteuid
 from subprocess import CalledProcessError
 from typing import Callable, NamedTuple
 
+from hidslcfg.common import APPLICATION_SERVICE
+from hidslcfg.common import DIGSIG_DATA_DIR
+from hidslcfg.common import UNCONFIGURED_WARNING_SERVICE
+from hidslcfg.common import init_root_script
 from hidslcfg.exceptions import ProgramError
-from hidslcfg.globals import APPLICATION_SERVICE
-from hidslcfg.globals import DIGSIG_DATA_DIR
-from hidslcfg.globals import LOG_FORMAT
-from hidslcfg.globals import UNCONFIGURED_WARNING_SERVICE
 from hidslcfg.openvpn import DEFAULT_SERVICE, clean
 from hidslcfg.system import systemctl, hostname, rmsubtree, ProgramErrorHandler
 from hidslcfg.wireguard import remove
@@ -76,11 +74,7 @@ def get_args() -> Namespace:
 def main():
     """Runs the HIDSL reset."""
 
-    if geteuid() != 0:
-        raise ProgramError('You need to be root to run this script!')
-
-    args = get_args()
-    basicConfig(level=DEBUG if args.verbose else INFO, format=LOG_FORMAT)
+    init_root_script(get_args)
 
     try:
         reset()

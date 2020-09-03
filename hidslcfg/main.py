@@ -1,13 +1,10 @@
 """HOMEINFO Digital Signage Linux configurator."""
 
 from argparse import ArgumentParser, Namespace
-from logging import DEBUG, INFO, basicConfig
-from os import geteuid
 
 from hidslcfg.api import Client
+from hidslcfg.common import LOGGER, init_root_script
 from hidslcfg.configure import confirm, configure as configure_system
-from hidslcfg.exceptions import ProgramError
-from hidslcfg.globals import LOG_FORMAT, LOGGER
 from hidslcfg.system import ProgramErrorHandler, reboot
 from hidslcfg.termio import ask, read_credentials
 from hidslcfg.vpn import VPNSetup
@@ -47,11 +44,7 @@ def get_args() -> Namespace:
 def main():
     """Runs the HIDSL configurations."""
 
-    if geteuid() != 0:
-        raise ProgramError('You need to be root to run this script!')
-
-    args = get_args()
-    basicConfig(level=DEBUG if args.verbose else INFO, format=LOG_FORMAT)
+    args = init_root_script(get_args)
     user, passwd = read_credentials(args.user)
 
     with Client(user, passwd, args.id) as client:
