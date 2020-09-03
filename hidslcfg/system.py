@@ -102,7 +102,11 @@ class ProgramErrorHandler:
     def __exit__(self, _, value, __):
         """Log program errors and exit accordingly."""
         if isinstance(value, ProgramError):
-            LOGGER.error(value.error)
+            LOGGER.critical(value.error)
+
+            if message := str(value):
+                LOGGER.error(message)
+
             LOGGER.debug(value)
             exit(value.exit_code)
 
