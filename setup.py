@@ -10,6 +10,6 @@ setup(
     maintainer='Richard Neumann',
     maintainer_email='r.neumann@homeinfo.de',
     requires=['requests'],
-    packages=['hidslcfg'],
+    packages=['hidslcfg', 'hidslcfg.cli'],
     scripts=['files/hidslcfg', 'files/hidslreset'],
     description='HOMEINFO Digital Signage Linux configurator.')
