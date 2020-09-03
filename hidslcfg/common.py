@@ -34,9 +34,10 @@ UNCONFIGURED_WARNING_SERVICE = 'unconfigured-warning.service'
 def init_root_script(args_getter: Callable) -> Namespace:
     """Initializes a script that shall be run as root."""
 
+    args = args_getter()
+    basicConfig(level=DEBUG if args.verbose else INFO, format=LOG_FORMAT)
+
     if geteuid() != 0:
         raise ProgramError('You need to be root to run this script!')
 
-    args = args_getter()
-    basicConfig(level=DEBUG if args.verbose else INFO, format=LOG_FORMAT)
     return args
