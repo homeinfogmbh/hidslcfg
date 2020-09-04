@@ -135,7 +135,7 @@ def check(wireguard: dict, gracetime: int = 3):
 
     LOGGER.debug('Restarting %s.', SYSTEMD_NETWORKD)
 
-    with CalledProcessErrorHandler('Restart of %s failed.', SYSTEMD_NETWORKD):
+    with CalledProcessErrorHandler(f'Restart of {SYSTEMD_NETWORKD} failed.'):
         systemctl('restart', SYSTEMD_NETWORKD)
 
     LOGGER.debug('Waiting for WireGuard to establish connection.')
@@ -147,7 +147,7 @@ def check(wireguard: dict, gracetime: int = 3):
         with CalledProcessErrorHandler('Cannot contact WireGuard server.'):
             ping(server)
     else:
-        LOGGER.warning('No server address set. Cannot check connection.')
+        raise ProgramError('No server address set. Cannot check connection.')
 
 
 def remove():

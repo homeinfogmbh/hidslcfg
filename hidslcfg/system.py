@@ -31,11 +31,7 @@ SYSTEMCTL = Path('/usr/bin/systemctl')
 def system(*args) -> CompletedProcess:
     """Invoke system commands."""
 
-    if LOGGER.getEffectiveLevel() > DEBUG:
-        output = DEVNULL
-    else:
-        output = None
-
+    output = DEVNULL if LOGGER.getEffectiveLevel() > DEBUG else None
     cmd = tuple(str(arg) for arg in args)
     completed_process = run(cmd, check=True, stdout=output, stderr=output)
     completed_process.check_returncode()
