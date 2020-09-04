@@ -1,9 +1,9 @@
 """Configures a WireGuard interface."""
 
 from contextlib import suppress
+from grp import getgrnam
 from os import chown
 from pwd import getpwnam
-from grp import getgrnam
 from time import sleep
 from typing import Iterable
 
