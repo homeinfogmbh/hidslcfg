@@ -23,7 +23,7 @@ def get_url(endpoint: str) -> str:
 class Client:
     """Class to retrieve data from the web API."""
 
-    def __init__(self, user: str, passwd: str, system: dict):
+    def __init__(self, user: str, passwd: str, system: int):
         """Initialize with credentials."""
         self.user = user
         self.passwd = passwd
@@ -67,21 +67,21 @@ class Client:
         return self.post(get_url(endpoint), {'system': self.system})
 
     @property
-    def info(self):
+    def info(self) -> dict:
         """Returns the terminal information."""
         return self.post_endpoint('info').json()
 
     @property
-    def openvpn(self):
+    def openvpn(self) -> bytes:
         """Returns the terminal's VPN keys and configuration as bytes."""
         return self.post_endpoint('openvpn').content
 
     @property
-    def wireguard(self):
+    def wireguard(self) -> dict:
         """Returns the terminal's WireGuard configuration."""
         return self.post_endpoint('wireguard').json()
 
-    def finalize(self, **json):
+    def finalize(self, **json) -> str:
         """Sets the respective serial number."""
         json['system'] = self.system
         return self.post(get_url('finalize'), json).text
