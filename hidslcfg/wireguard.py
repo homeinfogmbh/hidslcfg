@@ -1,9 +1,6 @@
 """Configures a WireGuard interface."""
 
 from contextlib import suppress
-from grp import getgrnam
-from os import chown
-from pwd import getpwnam
 from time import sleep
 from typing import Iterable
 
@@ -11,6 +8,7 @@ from wgtools import keypair
 
 from hidslcfg.common import LOGGER, SYSTEMD_NETWORKD, SYSTEMD_NETWORK_DIR
 from hidslcfg.exceptions import ProgramError
+from hidslcfg.system import chown
 from hidslcfg.system import ping
 from hidslcfg.system import systemctl
 from hidslcfg.system import CalledProcessErrorHandler
@@ -44,7 +42,7 @@ def create_netdev_unit(wireguard: dict, private: str) -> SystemdUnit:
     try:
         unit['WireGuardPeer']['PublicKey'] = wireguard['server_pubkey']
     except KeyError:
-        raise ProgramError('Missing server pubkey for WireGuard.')
+        raise ProgramError('Missing server pubkey for WireGuard.') from None
 
     if psk := wireguard.get('psk'):
         unit['WireGuardPeer']['PresharedKey'] = psk
@@ -52,14 +50,14 @@ def create_netdev_unit(wireguard: dict, private: str) -> SystemdUnit:
     try:
         allowed_ips = [route['destination'] for route in wireguard['routes']]
     except KeyError:
-        raise ProgramError('Missing routes for WireGuard.')
+        raise ProgramError('Missing routes for WireGuard.') from None
 
     unit['WireGuardPeer']['AllowedIPs'] = ', '.join(allowed_ips)
 
     try:
         unit['WireGuardPeer']['Endpoint'] = wireguard['endpoint']
     except KeyError:
-        raise ProgramError('Missing endpoint for WireGuard.')
+        raise ProgramError('Missing endpoint for WireGuard.') from None
 
     if keepalive := wireguard.get('persistent_keepalive'):
         unit['WireGuardPeer']['PersistentKeepalive'] = str(keepalive)
@@ -75,9 +73,7 @@ def write_netdev(wireguard: dict, private: str):
     with NETDEV_UNIT_FILE.open('w') as netdev_unit_file:
         unit.write(netdev_unit_file)
 
-    uid = getpwnam(NETDEV_OWNER).pw_uid
-    gid = getgrnam(NETDEV_GROUP).gr_gid
-    chown(NETDEV_UNIT_FILE, uid, gid)
+    chown(NETDEV_UNIT_FILE, NETDEV_OWNER, NETDEV_GROUP)
     NETDEV_UNIT_FILE.chmod(NETDEV_MODE)
 
 
@@ -92,7 +88,7 @@ def create_network_unit(wireguard: dict) -> Iterable[SystemdUnit]:
     try:
         unit['Network']['Address'] = wireguard['ipaddress']
     except KeyError:
-        raise ProgramError('Missing IP address for WireGuard.')
+        raise ProgramError('Missing IP address for WireGuard.') from None
 
     yield unit
 

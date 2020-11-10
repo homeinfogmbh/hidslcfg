@@ -1,18 +1,21 @@
 """Operating system commands."""
 
 from configparser import ConfigParser
+from grp import getgrnam
 from logging import DEBUG
-from os import chown
+from os import chown as _chown
 from pathlib import Path
+from pwd import getpwnam
 from subprocess import DEVNULL, CalledProcessError, CompletedProcess, run
 from sys import exit    # pylint: disable=W0622
+from typing import Union
 
 from hidslcfg.common import LOGGER
 from hidslcfg.exceptions import ProgramError
 
 
 __all__ = [
-    'chown_tree',
+    'chown',
     'system',
     'systemctl',
     'ping',
@@ -28,16 +31,23 @@ __all__ = [
 HOSTNAMECTL = Path('/usr/bin/hostnamectl')
 PING = Path('/usr/bin/ping')
 SYSTEMCTL = Path('/usr/bin/systemctl')
+IntOrStr = Union[int, str]
 
 
-def chown_tree(path: Path, user, group):
-    """Performs a chown on the tree under the given path."""
+def chown(path: Path, uid: IntOrStr, gid: IntOrStr, recursive: bool = False):
+    """Performs a recursive chown on the the given path."""
 
-    chown(path, user, group)
+    if isinstance(uid, str):
+        uid = getpwnam(uid).pw_uid
 
-    if path.is_dir():
+    if isinstance(gid, str):
+        gid = getgrnam(gid).gr_gid
+
+    _chown(path, uid, gid)
+
+    if recursive and path.is_dir():
         for child in path.iterdir():
-            chown_tree(child, user, group)
+            chown(child, uid, gid, recursive=recursive)
 
 
 def system(*args) -> CompletedProcess:

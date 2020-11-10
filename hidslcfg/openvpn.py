@@ -7,7 +7,7 @@ from tarfile import open    # pylint: disable=W0622
 from time import sleep
 
 from hidslcfg.common import LOGGER
-from hidslcfg.system import chown_tree
+from hidslcfg.system import chown
 from hidslcfg.system import ping
 from hidslcfg.system import systemctl
 from hidslcfg.system import CalledProcessErrorHandler
@@ -42,7 +42,7 @@ def install(tarball: bytes):
         with open('r', fileobj=fileobj) as tarfile:
             tarfile.extractall(path=CLIENT_DIR)
 
-    chown_tree(CLIENT_DIR, OWNER, GROUP)
+    chown(CLIENT_DIR, OWNER, GROUP, recursive=True)
 
 
 def configure(vpn_data: bytes, gracetime: int = 3):
