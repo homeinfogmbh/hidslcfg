@@ -32,7 +32,7 @@ def main():
         reset()
     except KeyboardInterrupt:
         print()
-        raise ProgramError('Reset aborted by user.')
+        raise ProgramError('Reset aborted by user.') from None
 
 
 def run():

@@ -54,4 +54,4 @@ def reset():
         try:
             function()
         except CalledProcessError:
-            raise ProgramError(f'Could not {description}.')
+            raise ProgramError(f'Could not {description}.') from None

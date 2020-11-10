@@ -51,10 +51,10 @@ def read_credentials(user: str) -> Tuple[str, str]:
         passwd = getpass('Password: ')
     except EOFError:
         print()
-        raise ProgramError('Missing mandatory data.')
+        raise ProgramError('Missing mandatory data.') from None
     except KeyboardInterrupt:
         print()
-        raise ProgramError('Configuration aborted by user.')
+        raise ProgramError('Configuration aborted by user.') from None
 
     return (user, passwd)
 
