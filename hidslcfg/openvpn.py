@@ -3,11 +3,14 @@
 from io import BytesIO
 from ipaddress import IPv4Address
 from pathlib import Path
-from tarfile import open as TarFile
+from tarfile import open    # pylint: disable=W0622
 from time import sleep
 
 from hidslcfg.common import LOGGER
-from hidslcfg.system import ping, systemctl, CalledProcessErrorHandler
+from hidslcfg.system import chown_tree
+from hidslcfg.system import ping
+from hidslcfg.system import systemctl
+from hidslcfg.system import CalledProcessErrorHandler
 
 
 __all__ = ['DEFAULT_SERVICE', 'clean', 'install', 'configure']
@@ -18,6 +21,8 @@ CLIENT_DIR = Path('/etc/openvpn/client')
 DEFAULT_INSTANCE = 'terminals'
 SERVICE_TEMPLATE = 'openvpn-client@{}.service'
 DEFAULT_SERVICE = SERVICE_TEMPLATE.format(DEFAULT_INSTANCE)
+OWNER = 'openvpn'
+GROUP = 'network'
 
 
 def clean():
@@ -28,14 +33,16 @@ def clean():
             item.unlink()
 
 
-def install(vpn_data: bytes):
+def install(tarball: bytes):
     """Installs the respective VPN configuration."""
 
     clean()     # Clean up config beforehand.
 
-    with BytesIO(vpn_data) as vpn_archive:
-        with TarFile('r', fileobj=vpn_archive) as tar_file:
-            tar_file.extractall(path=CLIENT_DIR)
+    with BytesIO(tarball) as fileobj:
+        with open('r', fileobj=fileobj) as tarfile:
+            tarfile.extractall(path=CLIENT_DIR)
+
+    chown_tree(CLIENT_DIR, OWNER, GROUP)
 
 
 def configure(vpn_data: bytes, gracetime: int = 3):

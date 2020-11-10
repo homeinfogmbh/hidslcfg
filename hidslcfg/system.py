@@ -2,6 +2,7 @@
 
 from configparser import ConfigParser
 from logging import DEBUG
+from os import chown
 from pathlib import Path
 from subprocess import DEVNULL, CalledProcessError, CompletedProcess, run
 from sys import exit    # pylint: disable=W0622
@@ -11,6 +12,7 @@ from hidslcfg.exceptions import ProgramError
 
 
 __all__ = [
+    'chown_tree',
     'system',
     'systemctl',
     'ping',
@@ -26,6 +28,16 @@ __all__ = [
 HOSTNAMECTL = Path('/usr/bin/hostnamectl')
 PING = Path('/usr/bin/ping')
 SYSTEMCTL = Path('/usr/bin/systemctl')
+
+
+def chown_tree(path: Path, user, group):
+    """Performs a chown on the tree under the given path."""
+
+    chown(path, user, group)
+
+    if path.is_dir():
+        for child in path.iterdir():
+            chown_tree(child, user, group)
 
 
 def system(*args) -> CompletedProcess:
