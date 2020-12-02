@@ -1,10 +1,14 @@
 #! /usr/bin/env python3
+"""Installation script."""
 
 from distutils.core import setup
 
 
 setup(
     name='hidslcfg',
+    version_format='{tag}',
+    setup_requires=['setuptools-git-version'],
+    python_requires='>=3.8',
     author='HOMEINFO - Digitale Informationssysteme GmbH',
     author_email='info@homeinfo.de',
     maintainer='Richard Neumann',
@@ -12,4 +16,5 @@ setup(
     requires=['requests'],
     packages=['hidslcfg', 'hidslcfg.cli'],
     scripts=['files/hidslcfg', 'files/hidslreset'],
-    description='HOMEINFO Digital Signage Linux configurator.')
+    description='HOMEINFO Digital Signage Linux configurator.'
+)
