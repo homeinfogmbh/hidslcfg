@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 """Installation script."""
 
-from distutils.core import setup
+from setuptools import setup
 
 
 setup(
