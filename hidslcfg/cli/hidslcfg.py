@@ -5,6 +5,7 @@ from argparse import ArgumentParser, Namespace
 from hidslcfg.api import Client
 from hidslcfg.common import LOGGER, init_root_script
 from hidslcfg.configure import confirm, configure
+from hidslcfg.cpuinfo import cpuinfo
 from hidslcfg.network import get_mac_addresses
 from hidslcfg.system import ProgramErrorHandler, reboot
 from hidslcfg.termio import ask, read_credentials
@@ -47,9 +48,10 @@ def main():
 
     args = init_root_script(get_args)
     user, passwd = read_credentials(args.user)
-    json = {
+    sysinfo = {
         'sn': args.sn,
-        'mac_addresses': list(get_mac_addresses())
+        'mac_addresses': list(get_mac_addresses()),
+        'cpuinfo': list(cpuinfo())
     }
 
     with Client(user, passwd, args.id) as client:
@@ -59,10 +61,10 @@ def main():
 
         with VPNSetup(client, args.grace_time, openvpn=args.openvpn,
                       wireguard=args.wireguard) as vpn:
-            json['wg_pubkey'] = vpn.wireguard_pubkey
+            sysinfo['wg_pubkey'] = vpn.wireguard_pubkey
 
         LOGGER.debug('Finalizing system.')
-        client.finalize(json)
+        client.finalize(sysinfo)
         LOGGER.info('Setup completed successfully.')
 
     if ask('Do you want to reboot now?'):

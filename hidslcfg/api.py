@@ -81,7 +81,7 @@ class Client:
         """Returns the terminal's WireGuard configuration."""
         return self.post_endpoint('wireguard').json()
 
-    def finalize(self, json: dict) -> str:
+    def finalize(self, sysinfo: dict) -> str:
         """Sets the respective serial number."""
-        json['system'] = self.system
-        return self.post(get_url('finalize'), json).text
+        sysinfo['system'] = self.system
+        return self.post(get_url('finalize'), sysinfo).text
