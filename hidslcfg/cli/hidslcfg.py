@@ -7,7 +7,7 @@ from hidslcfg.common import LOGGER, init_root_script
 from hidslcfg.configure import confirm, configure
 from hidslcfg.cpuinfo import cpuinfo
 from hidslcfg.network import get_mac_addresses
-from hidslcfg.system import ProgramErrorHandler, reboot
+from hidslcfg.system import ProgramErrorHandler, efi_booted, reboot
 from hidslcfg.termio import ask, read_credentials
 from hidslcfg.vpn import VPNSetup
 
@@ -51,7 +51,8 @@ def main():
     sysinfo = {
         'sn': args.sn,
         'mac_addresses': list(get_mac_addresses()),
-        'cpuinfo': list(cpuinfo())
+        'cpuinfo': list(cpuinfo()),
+        'efi_booted': efi_booted()
     }
 
     with Client(user, passwd, args.id) as client:

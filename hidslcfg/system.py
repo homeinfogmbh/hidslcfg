@@ -16,6 +16,7 @@ from hidslcfg.exceptions import ProgramError
 
 __all__ = [
     'chown',
+    'efi_booted',
     'system',
     'systemctl',
     'ping',
@@ -32,6 +33,7 @@ HOSTNAMECTL = Path('/usr/bin/hostnamectl')
 PING = Path('/usr/bin/ping')
 SYSTEMCTL = Path('/usr/bin/systemctl')
 IntOrStr = Union[int, str]
+efi_booted = Path('/sys/firmware/efi').is_dir
 
 
 def chown(path: Path, uid: IntOrStr, gid: IntOrStr, recursive: bool = False):
