@@ -23,7 +23,7 @@ __all__ = [
 
 
 APPLICATION_SERVICE = 'application.service'
-DIGSIG_DATA_DIR = Path('/usr/share/digsig')
+DIGSIG_DATA_DIR = Path('/var/lib/digsig')
 LOG_FORMAT = '[%(levelname)s] %(name)s: %(message)s'
 LOGGER = getLogger(Path(argv[0]).name)
 SYSTEMD_NETWORKD = 'systemd-networkd.service'
