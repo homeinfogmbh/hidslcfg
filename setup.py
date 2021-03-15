@@ -6,8 +6,7 @@ from setuptools import setup
 
 setup(
     name='hidslcfg',
-    version_format='{tag}',
-    setup_requires=['setuptools-git-version'],
+    setup_requires=['setuptools_scm'],
     python_requires='>=3.8',
     author='HOMEINFO - Digitale Informationssysteme GmbH',
     author_email='info@homeinfo.de',
