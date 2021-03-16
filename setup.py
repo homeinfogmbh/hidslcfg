@@ -14,6 +14,11 @@ setup(
     maintainer_email='r.neumann@homeinfo.de',
     requires=['requests'],
     packages=['hidslcfg', 'hidslcfg.cli'],
-    scripts=['files/hidslcfg', 'files/hidslreset'],
+    entry_points={
+        'console_scripts': [
+            'hidslcfg = hidslcfg:hidslcfg',
+            'hidslreset = hidslcfg:hidslreset'
+        ],
+    },
     description='HOMEINFO Digital Signage Linux configurator.'
 )

@@ -1,8 +1,0 @@
-#! /usr/bin/env python3
-"""HOMEINFO Digital Signage Linux resetter."""
-
-from hidslcfg import hidslreset
-
-
-if __name__ == '__main__':
-    hidslreset()
