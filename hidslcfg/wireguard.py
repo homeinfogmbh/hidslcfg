@@ -2,7 +2,7 @@
 
 from contextlib import suppress
 from time import sleep
-from typing import Iterable
+from typing import Iterator
 
 from wgtools import keypair
 
@@ -27,7 +27,7 @@ NETDEV_GROUP = 'systemd-network'
 NETDEV_MODE = 0o640
 
 
-def create_netdev_unit(wireguard: dict, private: str) -> SystemdUnit:
+def create_netdev_unit(wireguard: dict, private: str) -> Iterator[SystemdUnit]:
     """Creates a network device."""
 
     unit = SystemdUnit()
@@ -37,47 +37,38 @@ def create_netdev_unit(wireguard: dict, private: str) -> SystemdUnit:
     unit['NetDev']['Description'] = DESCRIPTION
     unit.add_section('WireGuard')
     unit['WireGuard']['PrivateKey'] = private
-    unit.add_section('WireGuardPeer')
+    yield unit
 
-    try:
-        unit['WireGuardPeer']['PublicKey'] = wireguard['server_pubkey']
-    except KeyError:
-        raise ProgramError('Missing server pubkey for WireGuard.') from None
+    for peer in wireguard.get('peers', []):
+        unit = SystemdUnit()
+        unit.add_section('WireGuardPeer')
+        unit['WireGuardPeer']['PublicKey'] = peer['server_pubkey']
 
-    if psk := wireguard.get('psk'):
-        unit['WireGuardPeer']['PresharedKey'] = psk
+        if psk := peer.get('psk'):
+            unit['WireGuardPeer']['PresharedKey'] = psk
 
-    try:
-        allowed_ips = [route['destination'] for route in wireguard['routes']]
-    except KeyError:
-        raise ProgramError('Missing routes for WireGuard.') from None
+        allowed_ips = [route['destination'] for route in peer['routes']]
+        unit['WireGuardPeer']['AllowedIPs'] = ', '.join(allowed_ips)
+        unit['WireGuardPeer']['Endpoint'] = peer['endpoint']
 
-    unit['WireGuardPeer']['AllowedIPs'] = ', '.join(allowed_ips)
+        if keepalive := peer.get('persistent_keepalive'):
+            unit['WireGuardPeer']['PersistentKeepalive'] = str(keepalive)
 
-    try:
-        unit['WireGuardPeer']['Endpoint'] = wireguard['endpoint']
-    except KeyError:
-        raise ProgramError('Missing endpoint for WireGuard.') from None
-
-    if keepalive := wireguard.get('persistent_keepalive'):
-        unit['WireGuardPeer']['PersistentKeepalive'] = str(keepalive)
-
-    return unit
+        yield unit
 
 
 def write_netdev(wireguard: dict, private: str):
     """Creates a network device."""
 
-    unit = create_netdev_unit(wireguard, private)
-
     with NETDEV_UNIT_FILE.open('w') as netdev_unit_file:
-        unit.write(netdev_unit_file)
+        for part in create_netdev_unit(wireguard, private):
+            part.write(netdev_unit_file)
 
     chown(NETDEV_UNIT_FILE, NETDEV_OWNER, NETDEV_GROUP)
     NETDEV_UNIT_FILE.chmod(NETDEV_MODE)
 
 
-def create_network_unit(wireguard: dict) -> Iterable[SystemdUnit]:
+def create_network_unit(wireguard: dict) -> Iterator[SystemdUnit]:
     """Yields WireGuard network unit file parts."""
 
     unit = SystemdUnit()
@@ -92,16 +83,17 @@ def create_network_unit(wireguard: dict) -> Iterable[SystemdUnit]:
 
     yield unit
 
-    for route in wireguard.get('routes') or ():
-        unit = SystemdUnit()
-        unit.add_section('Route')
-        unit['Route']['Gateway'] = route['gateway']
-        unit['Route']['Destination'] = route['destination']
+    for peer in wireguard.get('peers', []):
+        for route in peer.get('routes', []):
+            unit = SystemdUnit()
+            unit.add_section('Route')
+            unit['Route']['Gateway'] = route['gateway']
+            unit['Route']['Destination'] = route['destination']
 
-        if route.get('gateway_onlink'):
-            unit['Route']['GatewayOnlink'] = 'true'
+            if route.get('gateway_onlink'):
+                unit['Route']['GatewayOnlink'] = 'true'
 
-        yield unit
+            yield unit
 
 
 def write_network(wireguard: dict):
