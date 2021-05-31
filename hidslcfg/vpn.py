@@ -1,5 +1,6 @@
 """Common VPN manager."""
 
+from hidslcfg.api import Client
 from hidslcfg.common import LOGGER
 from hidslcfg.openvpn import configure as configure_openvpn
 from hidslcfg.openvpn import disable as disable_openvpn
@@ -12,7 +13,8 @@ __all__ = ['VPNSetup']
 class VPNSetup:
     """VPN connection configurator."""
 
-    def __init__(self, client, gracetime, *, openvpn=False, wireguard=False):
+    def __init__(self, client: Client, gracetime: int, *,
+                 openvpn: bool = False, wireguard: bool = False):
         """Sets the API client, openvpn and wireguard flags."""
         self.client = client
         self.gracetime = gracetime
@@ -30,7 +32,7 @@ class VPNSetup:
 
         return self
 
-    def __exit__(self, typ, value, traceback):
+    def __exit__(self, *_):
         """Exits a context."""
         if self.wireguard:
             self.finalize_wireguard()
