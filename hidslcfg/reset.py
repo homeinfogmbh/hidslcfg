@@ -34,7 +34,7 @@ RESET_OPERATIONS = (
         'disable OpenVPN service',
         partial(systemctl, 'disable', DEFAULT_SERVICE)
     ),
-    ResetOperation('Removing OpenVPN configuration', clean),
+    ResetOperation('remove OpenVPN configuration', clean),
     ResetOperation('remove WireGuard configuration', remove),
     ResetOperation(
         'disable application',
