@@ -1,7 +1,6 @@
 """Configures a WireGuard interface."""
 
 from contextlib import suppress
-from time import sleep
 from typing import Iterator
 
 from wgtools import keypair
@@ -9,13 +8,12 @@ from wgtools import keypair
 from hidslcfg.common import LOGGER, SYSTEMD_NETWORKD, SYSTEMD_NETWORK_DIR
 from hidslcfg.exceptions import ProgramError
 from hidslcfg.system import chown
-from hidslcfg.system import ping
 from hidslcfg.system import systemctl
 from hidslcfg.system import CalledProcessErrorHandler
 from hidslcfg.system import SystemdUnit
 
 
-__all__ = ['configure', 'check', 'remove']
+__all__ = ['configure', 'load', 'remove']
 
 
 DEVNAME = 'terminals'
@@ -118,24 +116,13 @@ def configure(wireguard: dict) -> str:
     return pubkey
 
 
-def check(wireguard: dict, gracetime: int = 3):
-    """Checks the connection to the WireGuard server."""
+def load():
+    """Establishes the connection to the WireGuard server."""
 
     LOGGER.debug('Restarting %s.', SYSTEMD_NETWORKD)
 
     with CalledProcessErrorHandler(f'Restart of {SYSTEMD_NETWORKD} failed.'):
         systemctl('restart', SYSTEMD_NETWORKD)
-
-    LOGGER.debug('Waiting for WireGuard to establish connection.')
-    sleep(gracetime)
-    LOGGER.debug('Checking WireGuard connection.')
-    server = wireguard.get('server')
-
-    if server:
-        with CalledProcessErrorHandler('Cannot contact WireGuard server.'):
-            ping(server)
-    else:
-        raise ProgramError('No server address set. Cannot check connection.')
 
 
 def remove():

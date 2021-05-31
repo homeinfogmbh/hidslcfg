@@ -4,7 +4,7 @@ from hidslcfg.api import Client
 from hidslcfg.common import LOGGER
 from hidslcfg.openvpn import configure as configure_openvpn
 from hidslcfg.openvpn import disable as disable_openvpn
-from hidslcfg.wireguard import configure as configure_wg, check as check_wg
+from hidslcfg.wireguard import configure as configure_wg, load
 
 
 __all__ = ['VPNSetup']
@@ -35,7 +35,8 @@ class VPNSetup:
     def __exit__(self, *_):
         """Exits a context."""
         if self.wireguard:
-            self.finalize_wireguard()
+            LOGGER.debug('Checking WireGuard configuration.')
+            load()
 
     def setup_openvpn(self):
         """Perform OpenVPN setup."""
@@ -48,8 +49,3 @@ class VPNSetup:
         disable_openvpn()
         self.wireguard_config = self.client.wireguard
         self.wireguard_pubkey = configure_wg(self.wireguard_config)
-
-    def finalize_wireguard(self):
-        """Finalize WireGuard setup."""
-        LOGGER.debug('Checking WireGuard configuration.')
-        check_wg(self.wireguard_config, gracetime=self.gracetime)
