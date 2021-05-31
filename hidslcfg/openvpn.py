@@ -13,7 +13,7 @@ from hidslcfg.system import systemctl
 from hidslcfg.system import CalledProcessErrorHandler
 
 
-__all__ = ['DEFAULT_SERVICE', 'clean', 'install', 'configure']
+__all__ = ['DEFAULT_SERVICE', 'clean', 'disable', 'install', 'configure']
 
 
 SERVER = IPv4Address('10.8.0.1')
@@ -31,6 +31,13 @@ def clean():
     for item in CLIENT_DIR.iterdir():
         if item.is_file():
             item.unlink()
+
+
+def disable():
+    """Disables OpenVPN."""
+
+    with CalledProcessErrorHandler('Disabling of OpenVPN client failed.'):
+        systemctl('disable', '--now', DEFAULT_SERVICE)
 
 
 def install(tarball: bytes):
