@@ -8,7 +8,7 @@ from pathlib import Path
 from pwd import getpwnam
 from subprocess import DEVNULL, CalledProcessError, CompletedProcess, run
 from sys import exit    # pylint: disable=W0622
-from typing import Union
+from typing import Any, Union
 
 from hidslcfg.common import LOGGER
 from hidslcfg.exceptions import ProgramError
@@ -52,7 +52,7 @@ def chown(path: Path, uid: IntOrStr, gid: IntOrStr, recursive: bool = False):
             chown(child, uid, gid, recursive=recursive)
 
 
-def system(*args) -> CompletedProcess:
+def system(*args: Any) -> CompletedProcess:
     """Invoke system commands."""
 
     output = DEVNULL if LOGGER.getEffectiveLevel() > DEBUG else None
@@ -74,7 +74,7 @@ def hostname(hostname: str) -> CompletedProcess:    # pylint: disable=W0621
     return system(HOSTNAMECTL, 'set-hostname', hostname)
 
 
-def systemctl(*args) -> CompletedProcess:
+def systemctl(*args: Any) -> CompletedProcess:
     """Invokes systemctl."""
 
     return system(SYSTEMCTL, *args)
@@ -100,7 +100,7 @@ def rmsubtree(path: Path):
 class CalledProcessErrorHandler:
     """Handles subprocess errors."""
 
-    def __init__(self, *messages):
+    def __init__(self, *messages: str):
         """Sets the respective error messages."""
         self.messages = messages
 
@@ -119,7 +119,7 @@ class ProgramErrorHandler:
     def __enter__(self):
         return self
 
-    def __exit__(self, _, value, __):
+    def __exit__(self, _, value: Exception, __):
         """Log program errors and exit accordingly."""
         if isinstance(value, ProgramError):
             LOGGER.critical(value.error)
@@ -133,7 +133,7 @@ class ProgramErrorHandler:
 class SystemdUnit(ConfigParser):    # pylint: disable=R0901
     """A systemd unit."""
 
-    def optionxform(self, optionstr):
+    def optionxform(self, optionstr: str):
         """Returns the option as stripped value."""
         if optionstr is None:
             return None
