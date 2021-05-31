@@ -42,7 +42,7 @@ def create_netdev_unit(wireguard: dict, private: str) -> Iterator[SystemdUnit]:
     for peer in wireguard.get('peers', []):
         unit = SystemdUnit()
         unit.add_section('WireGuardPeer')
-        unit['WireGuardPeer']['PublicKey'] = peer['server_pubkey']
+        unit['WireGuardPeer']['PublicKey'] = peer['pubkey']
 
         if psk := peer.get('psk'):
             unit['WireGuardPeer']['PresharedKey'] = psk
