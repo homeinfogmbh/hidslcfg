@@ -22,10 +22,9 @@ def get_args() -> Namespace:
     """Parses the arguments."""
 
     parser = ArgumentParser(description=DESCRIPTION)
-    vpn = parser.add_mutually_exclusive_group(required=True)
-    vpn.add_argument(
+    parser.add_argument(
         '-O', '--openvpn', action='store_true', help='use OpenVPN as VPN')
-    vpn.add_argument(
+    parser.add_argument(
         '-W', '--wireguard', action='store_true', help='use WireGuard as VPN')
     parser.add_argument('-u', '--user', metavar='user', help='user name')
     parser.add_argument(
