@@ -81,5 +81,5 @@ class Client:
 
     def finalize(self, sysinfo: dict) -> str:
         """Sets the respective serial number."""
-        sysinfo['system'] = self.system
-        return self.post_endpoint('finalize', sysinfo).text
+        json = {**sysinfo, 'system': self.system}
+        return self.post_endpoint('finalize', json).text
