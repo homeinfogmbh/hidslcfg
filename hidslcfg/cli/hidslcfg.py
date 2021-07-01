@@ -38,7 +38,8 @@ def get_args() -> Namespace:
         help='force setup of already configured systems')
     parser.add_argument(
         '-v', '--verbose', action='store_true', help='be gassy')
-    parser.add_argument('id', type=int, metavar='id', help='the system ID')
+    parser.add_argument('id', nargs='?', type=int, metavar='id',
+                        help='the system ID')
     return parser.parse_args()
 
 
