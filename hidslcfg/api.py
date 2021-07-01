@@ -15,12 +15,6 @@ LOGIN_URL = 'https://his.homeinfo.de/session'
 SETUP_URL_BASE = 'https://termgr.homeinfo.de/setup/'
 
 
-def get_url(endpoint: str) -> str:
-    """Returns a URL for the respective endpoint."""
-
-    return urljoin(SETUP_URL_BASE, endpoint)
-
-
 class Client:
     """Class to retrieve data from the web API."""
 
@@ -63,9 +57,12 @@ class Client:
         json = {'account': self.user, 'passwd': self.passwd}
         return self.post(LOGIN_URL, json=json)
 
-    def post_endpoint(self, endpoint: str):
+    def post_endpoint(self, endpoint: str, json: Optional[dict] = None):
         """Makes a POST request to the respective endpoint."""
-        return self.post(get_url(endpoint), {'system': self.system})
+        if json is None:
+            json = {'system': self.system}
+
+        return self.post(urljoin(SETUP_URL_BASE, endpoint), json)
 
     @property
     def info(self) -> dict:
@@ -85,4 +82,4 @@ class Client:
     def finalize(self, sysinfo: dict) -> str:
         """Sets the respective serial number."""
         sysinfo['system'] = self.system
-        return self.post(get_url('finalize'), sysinfo).text
+        return self.post_endpoint('finalize', sysinfo).text
