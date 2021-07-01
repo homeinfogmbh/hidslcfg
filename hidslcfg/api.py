@@ -1,5 +1,6 @@
 """Web API client."""
 
+from typing import Optional
 from urllib.parse import urljoin
 
 from requests import ConnectionError, Session   # pylint: disable=W0622
@@ -23,7 +24,7 @@ def get_url(endpoint: str) -> str:
 class Client:
     """Class to retrieve data from the web API."""
 
-    def __init__(self, user: str, passwd: str, system: int):
+    def __init__(self, user: str, passwd: str, system: Optional[int]):
         """Initialize with credentials."""
         self.user = user
         self.passwd = passwd
