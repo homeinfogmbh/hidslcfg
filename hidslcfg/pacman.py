@@ -49,6 +49,9 @@ def write_lines(lines: Iterable[str]) -> None:
 def get_modifier(repo: str, addr: Union[IPv4Address, IPv6Address]) -> Callable:
     """Sets the line to the server string."""
 
+    if isinstance(addr, IPv6Address):
+        addr = f'[{addr}]'
+
     def modifier(item: tuple[Optional[str], str]) -> str:
         """Modifies a line within a section."""
         section, line = item
