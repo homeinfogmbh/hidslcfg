@@ -18,6 +18,7 @@ def get_args() -> Namespace:
     """Parses the arguments."""
 
     parser = ArgumentParser(description=DESCRIPTION)
+    parser.add_argument('-u', '--user', metavar='user', help='user name')
     parser.add_argument(
         '-g', '--grace-time', type=int, default=3, metavar='secs',
         help='seconds to wait for contacting the VPN servers')
