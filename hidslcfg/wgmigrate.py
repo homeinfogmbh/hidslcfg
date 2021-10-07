@@ -16,7 +16,7 @@ __all__ = ['migrate']
 WIREGUARD_SERVER = IPv6Address('fd56:1dda:8794:cb90:ffff:ffff:ffff:fffe')
 
 
-def test_connection(gracetime: int = 5) -> bool:
+def test_connection(gracetime: int = 10) -> bool:
     """Tests whether the WireGuard connection works."""
 
     try:
@@ -48,7 +48,7 @@ class WireGuardMigrater:
             load()
 
 
-def migrate(user: str, passwd: str, *, gracetime: int = 5) -> bool:
+def migrate(user: str, passwd: str, *, gracetime: int = 10) -> bool:
     """Migrate from OpenVPN to WireGuard."""
 
     with Client(user, passwd, get_system_id()) as client:
