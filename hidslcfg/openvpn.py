@@ -86,7 +86,7 @@ class OpenVPNGuard:
     """Disable OpenVPN and restore on failure."""
 
     def __init__(self):
-        self.error = True
+        self.success = False
 
     def __enter__(self):
         LOGGER.info('Disabling and stopping OpenVPN.')
@@ -94,6 +94,6 @@ class OpenVPNGuard:
         return self
 
     def __exit__(self, *args):
-        if self.error:
+        if not self.success:
             LOGGER.info('Enabling and starting OpenVPN.')
             systemctl('enable', '--now', DEFAULT_SERVICE)

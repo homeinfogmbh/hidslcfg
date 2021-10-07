@@ -54,9 +54,6 @@ def migrate(user: str, passwd: str) -> bool:
     with Client(user, passwd, get_system_id()) as client:
         with OpenVPNGuard() as openvpn_guard:
             with WireGuardMigrater(client) as migrater:
-                if test_connection():
-                    migrater.success = True
-                    openvpn_guard.error = False
-                    return True
+                migrater.success = openvpn_guard.success = test_connection()
 
-    return False
+    return migrater.success
