@@ -52,6 +52,8 @@ def migrate(user: str, passwd: str, *, gracetime: int = 5) -> bool:
     """Migrate from OpenVPN to WireGuard."""
 
     with Client(user, passwd, get_system_id()) as client:
+        client.login()
+
         with OpenVPNGuard() as guard:
             with WireGuardMigrater(client) as migrater:
                 migrater.success = guard.success = test_connection(gracetime)
