@@ -5,7 +5,9 @@ from subprocess import CalledProcessError
 
 from hidslcfg.api import Client
 from hidslcfg.common import LOGGER
+from hidslcfg.hosts import set_ip
 from hidslcfg.openvpn import OpenVPNGuard
+from hidslcfg.pacman import set_server
 from hidslcfg.system import get_system_id, ping
 from hidslcfg.wireguard import configure, load, remove
 
@@ -27,6 +29,15 @@ def test_connection(gracetime: int = 10) -> bool:
     return True
 
 
+def postprocess() -> None:
+    """Post-processes the WireGuard migration."""
+
+    LOGGER.info('Updating /etc/hosts.')
+    set_ip('appcmd', WIREGUARD_SERVER)
+    LOGGER.info('Updating /etc/pacman.conf.')
+    set_server('homeinfo', WIREGUARD_SERVER)
+
+
 class WireGuardMigrater:
     """Migrates to WireGuard."""
 
@@ -42,7 +53,9 @@ class WireGuardMigrater:
         return self
 
     def __exit__(self, *args):
-        if not self.success:
+        if self.success:
+            postprocess()
+        else:
             LOGGER.info('Rolling back WireGuard configuration.')
             remove()
             load()
