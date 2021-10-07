@@ -32,7 +32,7 @@ def cpuinfo() -> Iterator[dict]:
 
     core = {}
 
-    with CPUINFO.open('r') as file:
+    with CPUINFO.open('r', encoding='ascii') as file:
         for line in file:
             if (line := line.strip()):
                 key, value = map(str.strip, line.split(':'))
