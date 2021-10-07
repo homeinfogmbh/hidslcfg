@@ -16,6 +16,7 @@ from hidslcfg.wireguard import configure, load, remove
 __all__ = ['migrate']
 
 
+APPCMD_HOSTNAME = 'appcmd.homeinfo.intra'
 WIREGUARD_SERVER = IPv6Address('fd56:1dda:8794:cb90:ffff:ffff:ffff:fffe')
 
 
@@ -37,7 +38,7 @@ def postprocess() -> None:
     """Post-processes the WireGuard migration."""
 
     LOGGER.info('Updating /etc/hosts.')
-    set_ip('appcmd', WIREGUARD_SERVER)
+    set_ip(APPCMD_HOSTNAME, WIREGUARD_SERVER)
     LOGGER.info('Updating /etc/pacman.conf.')
     set_server('homeinfo', WIREGUARD_SERVER)
 

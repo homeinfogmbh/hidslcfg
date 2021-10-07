@@ -20,13 +20,13 @@ class HostsEntry:
 
     ipaddr: Union[IPv4Address, IPv6Address]
     hostname: str
-    fullname: Optional[str] = None
+    short_name: Optional[str] = None
 
     def __str__(self):
         items = [str(self.ipaddr), self.hostname]
 
-        if self.fullname is not None:
-            items.append(self.fullname)
+        if self.short_name is not None:
+            items.append(self.short_name)
 
         return '\t'.join(items)
 
@@ -34,12 +34,12 @@ class HostsEntry:
     def from_string(cls, line: str) -> HostsEntry:
         """Creates a host entry from a line."""
         try:
-            ipaddr, hostname, fullname = line.split()
+            ipaddr, hostname, short_name = line.split()
         except ValueError:
             ipaddr, hostname = line.split()
-            fullname = None
+            short_name = None
 
-        return cls(ip_address(ipaddr), hostname, fullname)
+        return cls(ip_address(ipaddr), hostname, short_name)
 
 
 def read_hosts() -> Iterator[Union[str, HostsEntry]]:
@@ -71,7 +71,7 @@ def set_ip(hostname: str, ipaddr: Union[IPv4Address, IPv6Address]):
 
     for entry in hosts:
         if isinstance(entry, HostsEntry):
-            if hostname in {entry.hostname, entry.fullname}:
+            if hostname in {entry.hostname, entry.short_name}:
                 entry.ipaddr = ipaddr
 
     write_hosts(hosts)
