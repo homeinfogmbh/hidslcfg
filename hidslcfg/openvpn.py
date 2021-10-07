@@ -89,9 +89,11 @@ class OpenVPNGuard:
         self.error = True
 
     def __enter__(self):
+        LOGGER.info('Disabling and stopping OpenVPN.')
         systemctl('disable', '--now', DEFAULT_SERVICE)
         return self
 
     def __exit__(self, *args):
         if self.error:
+            LOGGER.info('Enabling and starting OpenVPN.')
             systemctl('enable', '--now', DEFAULT_SERVICE)
