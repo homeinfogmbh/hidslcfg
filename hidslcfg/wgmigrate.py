@@ -16,11 +16,11 @@ __all__ = ['migrate']
 WIREGUARD_SERVER = IPv6Address('fd56:1dda:8794:cb90:ffff:ffff:ffff:fffe')
 
 
-def test_connection() -> bool:
+def test_connection(gracetime: int = 5) -> bool:
     """Tests whether the WireGuard connection works."""
 
     try:
-        ping(str(WIREGUARD_SERVER))
+        ping(str(WIREGUARD_SERVER), count=gracetime)
     except CalledProcessError:
         return False
 
@@ -48,12 +48,12 @@ class WireGuardMigrater:
             load()
 
 
-def migrate(user: str, passwd: str) -> bool:
+def migrate(user: str, passwd: str, *, gracetime: int = 5) -> bool:
     """Migrate from OpenVPN to WireGuard."""
 
     with Client(user, passwd, get_system_id()) as client:
-        with OpenVPNGuard() as openvpn_guard:
+        with OpenVPNGuard() as guard:
             with WireGuardMigrater(client) as migrater:
-                migrater.success = openvpn_guard.success = test_connection()
+                migrater.success = guard.success = test_connection(gracetime)
 
     return migrater.success

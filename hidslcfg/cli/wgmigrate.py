@@ -33,7 +33,7 @@ def main():
     args = init_root_script(get_args)
     user, passwd = read_credentials(args.user)
 
-    if migrate(user, passwd):
+    if migrate(user, passwd, gracetime=args.grace_time):
         LOGGER.info('System migrated to WireGuard.')
     else:
         LOGGER.error('Could not migrate system to WireGuard.')
