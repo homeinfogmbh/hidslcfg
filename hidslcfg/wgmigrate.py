@@ -20,7 +20,7 @@ def test_connection() -> bool:
     """Tests whether the WireGuard connection works."""
 
     try:
-        ping(WIREGUARD_SERVER)
+        ping(str(WIREGUARD_SERVER))
     except CalledProcessError:
         return False
 
