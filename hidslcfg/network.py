@@ -3,7 +3,7 @@
 from re import fullmatch
 from typing import Iterator
 
-from netifaces import AF_LINK, ifaddresses, interfaces  # pylint: disable=E0611
+from netifaces import AF_LINK, ifaddresses, interfaces  # pylint: disable=E0401
 
 
 __all__ = ['get_mac_addresses']
