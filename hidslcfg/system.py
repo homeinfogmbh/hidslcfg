@@ -23,12 +23,14 @@ __all__ = [
     'hostname',
     'reboot',
     'rmsubtree',
+    'get_system_id',
     'CalledProcessErrorHandler',
     'ProgramErrorHandler',
     'SystemdUnit'
 ]
 
 
+HOSTNAME = Path('/etc/hostname')
 HOSTNAMECTL = Path('/usr/bin/hostnamectl')
 PING = Path('/usr/bin/ping')
 SYSTEMCTL = Path('/usr/bin/systemctl')
@@ -95,6 +97,13 @@ def rmsubtree(path: Path):
             inode.rmdir()
         else:
             inode.unlink()
+
+
+def get_system_id() -> int:
+    """Returns the system id."""
+
+    with HOSTNAME.open('r', encoding='ascii') as file:
+        return int(file.read().strip())
 
 
 class CalledProcessErrorHandler:
