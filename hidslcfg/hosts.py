@@ -58,6 +58,7 @@ def write_hosts(entries: Iterable[Union[str, HostsEntry]]) -> None:
 
     with HOSTS.open('w', encoding='ascii') as file:
         file.write(linesep.join(map(str, entries)))
+        file.write(linesep)
 
 
 def set_ip(hostname: str, ipaddr: Union[IPv4Address, IPv6Address]):

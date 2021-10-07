@@ -40,6 +40,7 @@ def write_lines(lines: Iterable[str]) -> None:
 
     with PACMAN_CONF.open('w', encoding='ascii') as file:
         file.write(linesep.join(lines))
+        file.write(linesep)
 
 
 def get_modifier(repo: str, addr: Union[IPv4Address, IPv6Address]) -> Callable:
