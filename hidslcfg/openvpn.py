@@ -88,7 +88,7 @@ class OpenVPNGuard:
     def __init__(self):
         self.error = True
 
-    def __ener__(self):
+    def __enter__(self):
         systemctl('disable', '--now', DEFAULT_SERVICE)
         return self
 
