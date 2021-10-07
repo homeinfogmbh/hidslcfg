@@ -2,6 +2,7 @@
 
 from ipaddress import IPv6Address
 from subprocess import CalledProcessError
+from time import sleep
 
 from hidslcfg.api import Client
 from hidslcfg.common import LOGGER
@@ -21,8 +22,10 @@ WIREGUARD_SERVER = IPv6Address('fd56:1dda:8794:cb90:ffff:ffff:ffff:fffe')
 def test_connection(gracetime: int = 10) -> bool:
     """Tests whether the WireGuard connection works."""
 
+    sleep(gracetime)
+
     try:
-        ping(str(WIREGUARD_SERVER), count=gracetime)
+        ping(str(WIREGUARD_SERVER))
     except CalledProcessError:
         return False
 
