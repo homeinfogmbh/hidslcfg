@@ -1,15 +1,18 @@
 """Pacman config handling."""
 
-from functools import partial
 from ipaddress import IPv4Address, IPv6Address
 from os import linesep
 from pathlib import Path
-from re import sub
-from typing import Iterable, Iterator, Union
+from re import fullmatch, sub
+from typing import Callable, Iterable, Iterator, Optional, Union
+
+
+__all__ = ['set_server']
 
 
 PACMAN_CONF = Path('/etc/pacman.conf')
-PATTERN = '(http://).*(:8080/)'
+URL_PATTERN = '(http://).*(:8080/)'
+SECTION_PATTERN = r'^\[(.*)\]'
 
 
 def read_lines() -> Iterator[str]:
@@ -20,6 +23,18 @@ def read_lines() -> Iterator[str]:
             yield line.strip()
 
 
+def read_lines_with_section() -> Iterator[tuple[Optional[str], str]]:
+    """Yields lines with section names."""
+
+    section = None
+
+    for line in read_lines():
+        if match := fullmatch(SECTION_PATTERN, line):
+            section = match.group(1)
+
+        yield (section, line)
+
+
 def write_lines(lines: Iterable[str]) -> None:
     """Writes the lines to the file."""
 
@@ -27,13 +42,22 @@ def write_lines(lines: Iterable[str]) -> None:
         file.write(linesep.join(lines))
 
 
-def modify_line(line: str, server: Union[IPv4Address, IPv6Address]):
+def get_modifier(repo: str, addr: Union[IPv4Address, IPv6Address]) -> Callable:
     """Sets the line to the server string."""
 
-    return sub(PATTERN, fr'\g<1>{server}\g<2>', line)
+    def modifier(item: tuple[Optional[str], str]) -> str:
+        """Modifies a line within a section."""
+        section, line = item
+
+        if section == repo:
+            return sub(URL_PATTERN, fr'\g<1>{addr}\g<2>', line)
+
+        return line
+
+    return modifier
 
 
-def set_server(server: Union[IPv4Address, IPv6Address]):
+def set_server(repo: str, addr: Union[IPv4Address, IPv6Address]):
     """Sets the server of the respective repo."""
 
-    write_lines(map(partial(modify_line, server=server), read_lines()))
+    write_lines(map(get_modifier(repo, addr), read_lines_with_section()))
