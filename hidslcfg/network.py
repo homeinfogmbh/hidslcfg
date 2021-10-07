@@ -1,7 +1,7 @@
 """Private network discovery."""
 
 from re import fullmatch
-from typing import Generator
+from typing import Iterator
 
 from netifaces import AF_LINK, ifaddresses, interfaces  # pylint: disable=E0611
 
@@ -9,7 +9,7 @@ from netifaces import AF_LINK, ifaddresses, interfaces  # pylint: disable=E0611
 __all__ = ['get_mac_addresses']
 
 
-def get_mac_addresses(match: str = 'enp\\ds\\d') -> Generator[str, None, None]:
+def get_mac_addresses(match: str = 'enp\\ds\\d') -> Iterator[str]:
     """Yields the system's MAC addresses."""
 
     for interface in interfaces():
