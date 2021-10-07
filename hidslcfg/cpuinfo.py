@@ -2,7 +2,7 @@
 
 from contextlib import suppress
 from pathlib import Path
-from typing import Generator, Union
+from typing import Iterator, Union
 
 
 __all__ = ['cpuinfo']
@@ -27,7 +27,7 @@ def parse(key: str, value: str) -> Union[str, int, float, list]:
     return value
 
 
-def cpuinfo() -> Generator[dict, None, None]:
+def cpuinfo() -> Iterator[dict]:
     """Yields information about the built-in CPUs."""
 
     core = {}
