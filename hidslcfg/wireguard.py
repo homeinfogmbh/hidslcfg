@@ -3,7 +3,7 @@
 from contextlib import suppress
 from typing import Iterator
 
-from wgtools import keypair
+from wgtools import keypair     # pylint: disable=E0401
 
 from hidslcfg.common import LOGGER, SYSTEMD_NETWORKD, SYSTEMD_NETWORK_DIR
 from hidslcfg.exceptions import ProgramError
