@@ -22,6 +22,7 @@ WIREGUARD_SERVER = IPv6Address('fd56:1dda:8794:cb90:ffff:ffff:ffff:fffe')
 def test_connection(gracetime: int = 10) -> bool:
     """Tests whether the WireGuard connection works."""
 
+    LOGGER.info('Testing connection. Please wait %i seconds.', gracetime)
     sleep(gracetime)
 
     try:
