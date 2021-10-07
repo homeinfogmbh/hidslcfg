@@ -56,8 +56,11 @@ def read_hosts() -> Iterator[Union[str, HostsEntry]]:
 def write_hosts(entries: Iterable[Union[str, HostsEntry]]) -> None:
     """Yields host entries."""
 
+    # Generate text before opening the file to prevent r/w conflict.
+    text = linesep.join(map(str, entries))
+
     with HOSTS.open('w', encoding='ascii') as file:
-        file.write(linesep.join(map(str, entries)))
+        file.write(text)
         file.write(linesep)
 
 

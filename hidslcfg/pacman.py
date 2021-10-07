@@ -38,8 +38,11 @@ def read_lines_with_section() -> Iterator[tuple[Optional[str], str]]:
 def write_lines(lines: Iterable[str]) -> None:
     """Writes the lines to the file."""
 
+    # Generate text before opening the file to prevent r/w conflict.
+    text = linesep.join(lines)
+
     with PACMAN_CONF.open('w', encoding='ascii') as file:
-        file.write(linesep.join(lines))
+        file.write(text)
         file.write(linesep)
 
 
