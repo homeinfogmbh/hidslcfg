@@ -13,7 +13,14 @@ from hidslcfg.system import systemctl
 from hidslcfg.system import CalledProcessErrorHandler
 
 
-__all__ = ['DEFAULT_SERVICE', 'clean', 'disable', 'install', 'configure']
+__all__ = [
+    'DEFAULT_SERVICE',
+    'clean',
+    'disable',
+    'install',
+    'configure',
+    'OpenVPNGuard'
+]
 
 
 SERVER = IPv4Address('10.8.0.1')
@@ -73,3 +80,20 @@ def configure(vpn_data: bytes, gracetime: int = 3):
 
     with CalledProcessErrorHandler('Cannot contact OpenVPN server.'):
         ping(SERVER)
+
+
+class OpenVPNGuard:
+    """Disable OpenVPN and restore on failure."""
+
+    def __init__(self):
+        self.error = True
+
+    def __ener__(self):
+        """Enables the OpenVPN service."""
+        systemctl('disable', '--now', DEFAULT_SERVICE)
+        return self
+
+    def __exit__(self, *args):
+        """Disables the OpenVPN service."""
+        if self.error:
+            systemctl('enable', '--now', DEFAULT_SERVICE)
