@@ -119,13 +119,6 @@ def write_units(wireguard: dict, private: str) -> None:
     write_network(wireguard)
 
 
-def configure(system: dict, private: str) -> None:
-    """Configures the system for WireGuard."""
-
-    configure_system(system['id'], SERVER)
-    write_units(system['wireguard'], private)
-
-
 def load():
     """Establishes the connection to the WireGuard server."""
 
@@ -133,6 +126,16 @@ def load():
 
     with CalledProcessErrorHandler(f'Restart of {SYSTEMD_NETWORKD} failed.'):
         systemctl('restart', SYSTEMD_NETWORKD)
+
+
+def configure(system: dict, private: str) -> None:
+    """Configures the system for WireGuard."""
+
+    configure_system(system['id'], SERVER)
+    write_units(system['wireguard'], private)
+    LOGGER.debug('Disabling OpenVPN.')
+    disable_openvpn()
+    load()
 
 
 def remove():
@@ -170,7 +173,4 @@ def setup(client: Client, args: Namespace) -> bool:
         return False
 
     configure(system, private)
-    LOGGER.debug('Disabling OpenVPN.')
-    disable_openvpn()
-    load()
     return True

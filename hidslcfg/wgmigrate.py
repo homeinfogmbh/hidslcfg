@@ -42,7 +42,6 @@ class WireGuardMigrater:
         system = self.client.patch_system(system=get_system_id(),
                                           pubkey=pubkey)
         configure(system, private)
-        load()
         return self
 
     def __exit__(self, *args):
