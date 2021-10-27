@@ -21,4 +21,4 @@ def disable():
     """Disables OpenVPN."""
 
     with CalledProcessErrorHandler('Disabling of OpenVPN client failed.'):
-        systemctl('disable', DEFAULT_SERVICE)
+        systemctl('disable', '--now', DEFAULT_SERVICE)
