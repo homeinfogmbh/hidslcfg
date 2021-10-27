@@ -1,13 +1,19 @@
 """OpenVPN configuration and un-configuration."""
 
+from argparse import Namespace
 from io import BytesIO
 from ipaddress import IPv4Address
 from pathlib import Path
 from tarfile import open    # pylint: disable=W0622
 from time import sleep
 
+from hidslcfg.api import Client
 from hidslcfg.common import LOGGER
+from hidslcfg.configure import confirm, configure as configure_system
+from hidslcfg.cpuinfo import cpuinfo
+from hidslcfg.network import get_mac_addresses
 from hidslcfg.system import chown
+from hidslcfg.system import efi_booted
 from hidslcfg.system import ping
 from hidslcfg.system import systemctl
 from hidslcfg.system import CalledProcessErrorHandler
@@ -19,6 +25,7 @@ __all__ = [
     'disable',
     'install',
     'configure',
+    'setup',
     'OpenVPNGuard'
 ]
 
@@ -80,6 +87,21 @@ def configure(vpn_data: bytes, gracetime: int = 3):
 
     with CalledProcessErrorHandler('Cannot contact OpenVPN server.'):
         ping(SERVER)
+
+
+def setup(client: Client, args: Namespace) -> None:
+    """Set up a system with OpenVPN."""
+
+    confirm(client.info(args.id), serial_number=args.serial_number,
+            force=args.force)
+    configure_system(args.id)
+    LOGGER.debug('Configuring OpenVPN.')
+    configure(client.openvpn(args.id), gracetime=args.grace_time)
+    LOGGER.debug('Finalizing system.')
+    client.finalize(system=args.id, sn=args.sn,
+                    mac_addresses=list(get_mac_addresses()),
+                    cpuinfo=list(cpuinfo()), efi_booted=efi_booted())
+    LOGGER.info('Setup completed successfully.')
 
 
 class OpenVPNGuard:

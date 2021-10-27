@@ -10,9 +10,10 @@ __all__ = ['cpuinfo']
 
 CPUINFO = Path('/proc/cpuinfo')
 LIST_KEYS = {'flags', 'bugs'}
+CPUInfoValue = Union[str, int, float, list[str]]
 
 
-def parse(key: str, value: str) -> Union[str, int, float, list]:
+def parse(key: str, value: str) -> CPUInfoValue:
     """Parses a key / value pair."""
 
     if key in LIST_KEYS:
@@ -27,7 +28,7 @@ def parse(key: str, value: str) -> Union[str, int, float, list]:
     return value
 
 
-def cpuinfo() -> Iterator[dict]:
+def cpuinfo() -> Iterator[dict[str, CPUInfoValue]]:
     """Yields information about the built-in CPUs."""
 
     core = {}

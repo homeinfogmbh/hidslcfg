@@ -1,12 +1,16 @@
 """Configures a WireGuard interface."""
 
+from argparse import Namespace
 from contextlib import suppress
 from typing import Iterator
 
 from wgtools import keypair     # pylint: disable=E0401
 
+from hidslcfg.api import Client
 from hidslcfg.common import LOGGER, SYSTEMD_NETWORKD, SYSTEMD_NETWORK_DIR
+from hidslcfg.configure import configure as configure_system
 from hidslcfg.exceptions import ProgramError
+from hidslcfg.openvpn import disable as disable_openvpn
 from hidslcfg.system import chown
 from hidslcfg.system import systemctl
 from hidslcfg.system import CalledProcessErrorHandler
@@ -102,18 +106,15 @@ def write_network(wireguard: dict):
             part.write(network_unit_file)
 
 
-def configure(wireguard: dict) -> str:
+def configure(wireguard: dict, private: str) -> None:
     """Configures the WireGuard connection."""
 
     if pubkey := wireguard.get('pubkey'):
         LOGGER.warning('WireGuard already configured for pubkey %s.', pubkey)
 
-    LOGGER.debug('Creating public / private key pair.')
-    pubkey, private = keypair()
     LOGGER.debug('Installing WireGuard configuration.')
     write_netdev(wireguard, private)
     write_network(wireguard)
-    return pubkey
 
 
 def load():
@@ -137,3 +138,31 @@ def remove():
 
     with suppress(FileNotFoundError):
         NETWORK_UNIT_FILE.unlink()
+
+
+def setup(client: Client, args: Namespace) -> bool:
+    """Set up a system with WireGuard."""
+
+    LOGGER.debug('Creating public / private key pair.')
+    pubkey, private = keypair()
+
+    if args.id is None:
+        LOGGER.info('Creating new WireGuard system.')
+        system = client.add_system(
+            pubkey=pubkey, os=args.os, model=args.model,
+            sn=args.serial_number)
+    elif args.force:
+        LOGGER.info('Changing existing WireGuard system #%i.', args.id)
+        system = client.patch_system(
+            pubkey=pubkey, os=args.os, model=args.model,
+            sn=args.serial_number)
+    else:
+        LOGGER.error('Refusing to change existing system without --force.')
+        return False
+
+    configure_system(system)
+    LOGGER.debug('Disabling OpenVPN.')
+    disable_openvpn()
+    configure(system['wireguard'], private)
+    load()
+    return True

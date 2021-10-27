@@ -1,81 +1,64 @@
 """HOMEINFO Digital Signage Linux configurator."""
 
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser
 
 from hidslcfg.api import Client
 from hidslcfg.common import LOGGER, init_root_script
-from hidslcfg.configure import confirm, configure
-from hidslcfg.cpuinfo import cpuinfo
-from hidslcfg.network import get_mac_addresses
-from hidslcfg.system import ProgramErrorHandler, efi_booted, reboot
+from hidslcfg.system import ProgramErrorHandler, reboot
 from hidslcfg.termio import ask, read_credentials
-from hidslcfg.vpn import VPNSetup
 
 
 __all__ = ['run']
 
 
-DESCRIPTION = 'HOMEINFO Digital Signage Linux configurator.'
+PARSER = ArgumentParser(description=__doc__)
+PARSER.add_argument('-u', '--user', metavar='user', help='user name')
+PARSER.add_argument(
+    '-s', '--serial-number', metavar='sn', dest='sn',
+    help="the system's serial number")
+PARSER.add_argument(
+    '-g', '--grace-time', type=int, default=3, metavar='secs',
+    help='seconds to wait for contacting the VPN servers')
+PARSER.add_argument(
+    '-f', '--force', action='store_true',
+    help='force setup of already configured systems')
+PARSER.add_argument('-v', '--verbose', action='store_true', help='be gassy')
+subparsers = PARSER.add_subparsers(dest='vpn', help='VPN solutions')
+openvpn = subparsers.add_parser('openvpn', help='use OpenVPN as VPN')
+openvpn.add_argument('id', type=int, help='the system ID')
+wireguard = subparsers.add_parser('wireguard', help='use WireGuard as VPN')
+wireguard.add_argument('id', nargs='?', type=int, help='the system ID')
 
 
-def get_args() -> Namespace:
-    """Parses the arguments."""
-
-    parser = ArgumentParser(description=DESCRIPTION)
-    parser.add_argument(
-        '-O', '--openvpn', action='store_true', help='use OpenVPN as VPN')
-    parser.add_argument(
-        '-W', '--wireguard', action='store_true', help='use WireGuard as VPN')
-    parser.add_argument('-u', '--user', metavar='user', help='user name')
-    parser.add_argument(
-        '-s', '--serial-number', metavar='sn', dest='sn',
-        help="the system's serial number")
-    parser.add_argument(
-        '-g', '--grace-time', type=int, default=3, metavar='secs',
-        help='seconds to wait for contacting the VPN servers')
-    parser.add_argument(
-        '-f', '--force', action='store_true',
-        help='force setup of already configured systems')
-    parser.add_argument(
-        '-v', '--verbose', action='store_true', help='be gassy')
-    parser.add_argument('id', nargs='?', type=int, metavar='id',
-                        help='the system ID')
-    return parser.parse_args()
-
-
-def main():
+def main() -> int:
     """Runs the HIDSL configurations."""
 
-    args = init_root_script(get_args)
-    user, passwd = read_credentials(args.user)
-    sysinfo = {
-        'sn': args.sn,
-        'mac_addresses': list(get_mac_addresses()),
-        'cpuinfo': list(cpuinfo()),
-        'efi_booted': efi_booted()
-    }
+    args = init_root_script(PARSER.parse_args)
 
-    with Client(user, passwd, args.id) as client:
-        client.login()
-        confirm(client.info, serial_number=args.sn, force=args.force)
-        configure(args.id)
+    if args.vpn == 'openvpn':
+        from hidslcfg.openvpn import setup      # pylint: disable=C0415
+    elif args.vpn == 'wireguard':
+        from hidslcfg.wireguard import setup    # pylint: disable=C0415
+    else:
+        LOGGER.error('Must specify either "openvpn" or "wireguard".')
+        return 1
 
-        with VPNSetup(client, args.grace_time, openvpn=args.openvpn,
-                      wireguard=args.wireguard) as vpn:
-            sysinfo['wg_pubkey'] = vpn.wireguard_pubkey
+    with Client() as client:
+        client.login(*read_credentials(args.user))
+        setup(client, args)
 
-        LOGGER.debug('Finalizing system.')
-        client.finalize(sysinfo)
-        LOGGER.info('Setup completed successfully.')
+    LOGGER.info('Setup completed successfully.')
 
     if ask('Do you want to reboot now?'):
         reboot()
     else:
         LOGGER.info('Okay, not rebooting.')
 
+    return 0
 
-def run():
+
+def run() -> int:
     """Runs main() with error handling."""
 
     with ProgramErrorHandler():
-        main()
+        return main()

@@ -4,6 +4,8 @@ from ipaddress import IPv6Address
 from subprocess import CalledProcessError
 from time import sleep
 
+from wgtools import keypair     # pylint: disable=E0401
+
 from hidslcfg.api import Client
 from hidslcfg.common import LOGGER
 from hidslcfg.hosts import set_ip
@@ -52,8 +54,10 @@ class WireGuardMigrater:
 
     def __enter__(self):
         LOGGER.info('Configuring WireGuard.')
-        pubkey = configure(self.client.wireguard)
-        self.client.finalize({'wg_pubkey': pubkey})
+        system = get_system_id()
+        pubkey, private = keypair()
+        wireguard = self.client.patch_system(system=system, pubkey=pubkey)
+        configure(wireguard, private)
         load()
         return self
 
@@ -66,14 +70,11 @@ class WireGuardMigrater:
             load()
 
 
-def migrate(user: str, passwd: str, *, gracetime: int = 10) -> bool:
+def migrate(client: Client, *, gracetime: int = 10) -> bool:
     """Migrate from OpenVPN to WireGuard."""
 
-    with Client(user, passwd, get_system_id()) as client:
-        client.login()
-
-        with OpenVPNGuard() as guard:
-            with WireGuardMigrater(client) as migrater:
-                migrater.success = guard.success = test_connection(gracetime)
+    with OpenVPNGuard() as guard:
+        with WireGuardMigrater(client) as migrater:
+            migrater.success = guard.success = test_connection(gracetime)
 
     return migrater.success

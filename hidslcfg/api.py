@@ -1,9 +1,9 @@
 """Web API client."""
 
-from typing import Optional
+from enum import Enum
 from urllib.parse import urljoin
 
-from requests import ConnectionError, Session   # pylint: disable=W0622
+from requests import ConnectionError as ConnErr, Response, Session
 
 from hidslcfg.exceptions import APIError, ProgramError
 
@@ -15,14 +15,18 @@ LOGIN_URL = 'https://his.homeinfo.de/session'
 SETUP_URL_BASE = 'https://termgr.homeinfo.de/setup/'
 
 
+class HTTPMethod(Enum):
+    """Available HTTP methods."""
+
+    POST = 'POST'
+    PATCH = 'PATCH'
+
+
 class Client:
     """Class to retrieve data from the web API."""
 
-    def __init__(self, user: str, passwd: str, system: Optional[int]):
+    def __init__(self):
         """Initialize with credentials."""
-        self.user = user
-        self.passwd = passwd
-        self.system = system
         self.session = None
 
     def __enter__(self):
@@ -40,11 +44,18 @@ class Client:
             print()
             raise ProgramError('Setup aborted by user.')
 
-    def post(self, url: str, json: dict):
-        """Performs a POST request."""
+    def request(self, method: HTTPMethod, url: str, json: dict) -> Response:
+        """Make a request."""
+        if method is HTTPMethod.POST:
+            function = self.session.post
+        elif method is HTTPMethod.PATCH:
+            function = self.session.patch
+        else:
+            raise NotImplementedError(f'HTTP method {method} not implemented.')
+
         try:
-            response = self.session.post(url, json=json)
-        except ConnectionError:
+            response = function(url, json=json)
+        except ConnErr:
             raise APIError('Connection error.') from None
 
         if response.status_code != 200:
@@ -52,34 +63,38 @@ class Client:
 
         return response
 
-    def login(self):
+    def post(self, url: str, json: dict) -> Response:
+        """Performs a POST request."""
+        return self.request(HTTPMethod.POST, url, json)
+
+    def patch(self, url: str, json: dict) -> Response:
+        """Performs a PATCH request."""
+        return self.request(HTTPMethod.PATCH, url, json)
+
+    def login(self, account: str, passwd: str) -> Response:
         """Performs a HIS login."""
-        json = {'account': self.user, 'passwd': self.passwd}
-        return self.post(LOGIN_URL, json=json)
+        return self.post(LOGIN_URL, {'account': account, 'passwd': passwd})
 
-    def post_endpoint(self, endpoint: str, json: Optional[dict] = None):
+    def post_endpoint(self, endpoint: str, **json) -> Response:
         """Makes a POST request to the respective endpoint."""
-        if json is None:
-            json = {'system': self.system}
-
         return self.post(urljoin(SETUP_URL_BASE, endpoint), json)
 
-    @property
-    def info(self) -> dict:
+    def info(self, system: int) -> dict:
         """Returns the terminal information."""
-        return self.post_endpoint('info').json()
+        return self.post_endpoint('info', system=system).json()
 
-    @property
-    def openvpn(self) -> bytes:
+    def openvpn(self, system: int) -> bytes:
         """Returns the terminal's VPN keys and configuration as bytes."""
-        return self.post_endpoint('openvpn').content
+        return self.post_endpoint('openvpn', system=system).content
 
-    @property
-    def wireguard(self) -> dict:
-        """Returns the terminal's WireGuard configuration."""
-        return self.post_endpoint('wireguard').json()
-
-    def finalize(self, sysinfo: dict) -> str:
+    def finalize(self, **json) -> str:
         """Sets the respective serial number."""
-        json = {**sysinfo, 'system': self.system}
-        return self.post_endpoint('finalize', json).text
+        return self.post_endpoint('finalize', **json).text
+
+    def add_system(self, **json) -> dict:
+        """Adds a new WireGuard system."""
+        return self.post(urljoin(SETUP_URL_BASE, 'system'), json).json()
+
+    def patch_system(self, **json) -> dict:
+        """Patches an existing WireGuard system."""
+        return self.patch(urljoin(SETUP_URL_BASE, 'system'), json).json()
