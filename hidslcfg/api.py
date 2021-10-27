@@ -1,6 +1,7 @@
 """Web API client."""
 
 from enum import Enum
+from typing import Callable
 from urllib.parse import urljoin
 
 from requests import ConnectionError as ConnErr, Response, Session
@@ -44,17 +45,20 @@ class Client:
             print()
             raise ProgramError('Setup aborted by user.')
 
+    def get_http_method(self, method: HTTPMethod) -> Callable:
+        """Returns the requested HTTP method to call."""
+        if method is HTTPMethod.POST:
+            return self.session.post
+
+        if method is HTTPMethod.PATCH:
+            return self.session.patch
+
+        raise NotImplementedError(f'HTTP method {method} is not implemented.')
+
     def request(self, method: HTTPMethod, url: str, json: dict) -> Response:
         """Make a request."""
-        if method is HTTPMethod.POST:
-            function = self.session.post
-        elif method is HTTPMethod.PATCH:
-            function = self.session.patch
-        else:
-            raise NotImplementedError(f'HTTP method {method} not implemented.')
-
         try:
-            response = function(url, json=json)
+            response = self.get_http_method(method)(url, json=json)
         except ConnErr:
             raise APIError('Connection error.') from None
 
