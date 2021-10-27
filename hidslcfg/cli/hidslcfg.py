@@ -23,6 +23,8 @@ PARSER.add_argument('-v', '--verbose', action='store_true', help='be gassy')
 PARSER.add_argument('-o', '--operating-system', default='Arch Linux',
                     help='the operating system to use')
 PARSER.add_argument('-m', '--model', metavar='model', help='hardware model')
+PARSER.add_argument('-x', '--exclusive', action='store_true',
+                    help='disable other VPN solutions')
 subparsers = PARSER.add_subparsers(dest='vpn', help='VPN solutions')
 openvpn = subparsers.add_parser('openvpn', help='use OpenVPN as VPN')
 openvpn.add_argument('id', type=int, help='the system ID')
@@ -36,9 +38,11 @@ def main() -> int:
     args = init_root_script(PARSER.parse_args)
 
     if args.vpn == 'openvpn':
-        from hidslcfg.openvpn.setup import setup    # pylint: disable=C0415
+        from hidslcfg.openvpn.setup import setup        # pylint: disable=C0415
+        from hidslcfg.wireguard.disable import disable  # pylint: disable=C0415
     elif args.vpn == 'wireguard':
-        from hidslcfg.wireguard.setup import setup  # pylint: disable=C0415
+        from hidslcfg.wireguard.setup import setup      # pylint: disable=C0415
+        from hidslcfg.openvpn.disable import disable    # pylint: disable=C0415
     else:
         LOGGER.error('Must specify either "openvpn" or "wireguard".')
         return 1
@@ -46,6 +50,9 @@ def main() -> int:
     with Client() as client:
         client.login(*read_credentials(args.user))
         setup(client, args)
+
+    if args.exclusive:
+        disable()
 
     LOGGER.info('Setup completed successfully.')
 
