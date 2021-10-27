@@ -9,7 +9,6 @@ from hidslcfg.api import Client
 from hidslcfg.common import LOGGER
 from hidslcfg.configure import configure
 from hidslcfg.exceptions import ProgramError
-from hidslcfg.openvpn.disable import disable
 from hidslcfg.system import chown
 from hidslcfg.system import SystemdUnit
 
@@ -121,7 +120,6 @@ def configure_(system: dict, private: str) -> None:
     configure(system['id'], SERVER)
     write_units(system['wireguard'], private)
     LOGGER.debug('Disabling OpenVPN.')
-    disable()
     load()
 
 
