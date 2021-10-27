@@ -25,8 +25,8 @@ PARSER.add_argument('-o', '--operating-system', default='Arch Linux',
 PARSER.add_argument('-m', '--model', metavar='model', help='hardware model')
 PARSER.add_argument('-x', '--exclusive', action='store_true',
                     help='disable other VPN solutions')
-SUBPARSERS = PARSER.add_subparsers(dest='vpn', help='VPN solutions')
-SUBPARSERS.required = True
+SUBPARSERS = PARSER.add_subparsers(dest='vpn', help='VPN solutions',
+                                   required=True)
 OPENVPN = SUBPARSERS.add_parser('openvpn', help='use OpenVPN as VPN')
 OPENVPN.add_argument('id', type=int, help='the system ID')
 OPENVPN = SUBPARSERS.add_parser('wireguard', help='use WireGuard as VPN')
