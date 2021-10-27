@@ -1,34 +1,30 @@
 """Configures a WireGuard interface."""
 
 from argparse import Namespace
-from contextlib import suppress
-from ipaddress import IPv6Address
 from typing import Iterator
 
 from wgtools import keypair     # pylint: disable=E0401
 
 from hidslcfg.api import Client
-from hidslcfg.common import LOGGER, SYSTEMD_NETWORKD, SYSTEMD_NETWORK_DIR
-from hidslcfg.configure import configure as configure_system
+from hidslcfg.common import LOGGER
+from hidslcfg.configure import configure
 from hidslcfg.exceptions import ProgramError
-from hidslcfg.openvpn import disable as disable_openvpn
+from hidslcfg.openvpn.disable import disable
 from hidslcfg.system import chown
-from hidslcfg.system import systemctl
-from hidslcfg.system import CalledProcessErrorHandler
 from hidslcfg.system import SystemdUnit
 
+from hidslcfg.wireguard.common import DEVNAME
+from hidslcfg.wireguard.common import DESCRIPTION
+from hidslcfg.wireguard.common import NETDEV_UNIT_FILE
+from hidslcfg.wireguard.common import NETWORK_UNIT_FILE
+from hidslcfg.wireguard.common import NETDEV_OWNER
+from hidslcfg.wireguard.common import NETDEV_GROUP
+from hidslcfg.wireguard.common import NETDEV_MODE
+from hidslcfg.wireguard.common import SERVER
+from hidslcfg.wireguard.common import load
 
-__all__ = ['SERVER', 'configure', 'load', 'remove']
 
-
-DEVNAME = 'terminals'
-DESCRIPTION = 'Terminal maintenance VPN.'
-NETDEV_UNIT_FILE = SYSTEMD_NETWORK_DIR.joinpath(f'{DEVNAME}.netdev')
-NETWORK_UNIT_FILE = SYSTEMD_NETWORK_DIR.joinpath(f'{DEVNAME}.network')
-NETDEV_OWNER = 'root'
-NETDEV_GROUP = 'systemd-network'
-NETDEV_MODE = 0o640
-SERVER = IPv6Address('fd56:1dda:8794:cb90:ffff:ffff:ffff:fffe')
+__all__ = ['patch', 'setup']
 
 
 def create_netdev_unit(wireguard: dict, private: str) -> Iterator[SystemdUnit]:
@@ -119,58 +115,45 @@ def write_units(wireguard: dict, private: str) -> None:
     write_network(wireguard)
 
 
-def load():
-    """Establishes the connection to the WireGuard server."""
-
-    LOGGER.debug('Restarting %s.', SYSTEMD_NETWORKD)
-
-    with CalledProcessErrorHandler(f'Restart of {SYSTEMD_NETWORKD} failed.'):
-        systemctl('restart', SYSTEMD_NETWORKD)
-
-
-def configure(system: dict, private: str) -> None:
+def configure_(system: dict, private: str) -> None:
     """Configures the system for WireGuard."""
 
-    configure_system(system['id'], SERVER)
+    configure(system['id'], SERVER)
     write_units(system['wireguard'], private)
     LOGGER.debug('Disabling OpenVPN.')
-    disable_openvpn()
+    disable()
     load()
 
 
-def remove():
-    """Removes the WireGuard configuration."""
-
-    LOGGER.debug('Removing netdev unit file.')
-
-    with suppress(FileNotFoundError):
-        NETDEV_UNIT_FILE.unlink()
-
-    LOGGER.debug('Removing network unit file.')
-
-    with suppress(FileNotFoundError):
-        NETWORK_UNIT_FILE.unlink()
-
-
-def setup(client: Client, args: Namespace) -> bool:
-    """Set up a system with WireGuard."""
+def create(client: Client, **json) -> None:
+    """Creates a new WireGuard system."""
 
     LOGGER.debug('Creating public / private key pair.')
     pubkey, private = keypair()
+    LOGGER.info('Creating new WireGuard system.')
+    system = client.add_system(**json, pubkey=pubkey)
+    configure_(system, private)
+
+
+def patch(client: Client, system: int, **json) -> None:
+    """Patches an existing WireGuard system."""
+
+    LOGGER.debug('Creating public / private key pair.')
+    pubkey, private = keypair()
+    LOGGER.info('Changing existing WireGuard system #%i.', system)
+    system = client.patch_system(**json, system=system, pubkey=pubkey)
+    configure_(system, private)
+
+
+def setup(client: Client, args: Namespace) -> None:
+    """Set up a system with WireGuard."""
 
     if args.id is None:
-        LOGGER.info('Creating new WireGuard system.')
-        system = client.add_system(
-            pubkey=pubkey, os=args.operating_system, model=args.model,
-            sn=args.serial_number)
-    elif args.force:
-        LOGGER.info('Changing existing WireGuard system #%i.', args.id)
-        system = client.patch_system(
-            system=args.id, pubkey=pubkey, os=args.operating_system,
-            model=args.model, sn=args.serial_number)
-    else:
-        LOGGER.error('Refusing to change existing system without --force.')
-        return False
+        return create(client, os=args.operating_system, model=args.model,
+                      sn=args.serial_number)
 
-    configure(system, private)
-    return True
+    if args.force:
+        return patch(client, args.id, os=args.operating_system,
+                     model=args.model, sn=args.serial_number)
+
+    raise ProgramError('Refusing to change existing system without --force.')

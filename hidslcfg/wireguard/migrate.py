@@ -3,16 +3,35 @@
 from subprocess import CalledProcessError
 from time import sleep
 
-from wgtools import keypair     # pylint: disable=E0401
-
 from hidslcfg.api import Client
 from hidslcfg.common import LOGGER
-from hidslcfg.openvpn import OpenVPNGuard
+from hidslcfg.openvpn.guard import OpenVPNGuard
 from hidslcfg.system import get_system_id, ping
-from hidslcfg.wireguard import SERVER, configure, load, remove
+
+from hidslcfg.wireguard.common import SERVER
+from hidslcfg.wireguard.setup import patch
+from hidslcfg.wireguard.disable import disable
 
 
 __all__ = ['migrate']
+
+
+class WireGuardMigrater:
+    """Migrates to WireGuard."""
+
+    def __init__(self, client: Client):
+        self.client = client
+        self.success = False
+
+    def __enter__(self):
+        LOGGER.info('Configuring WireGuard.')
+        patch(self.client, get_system_id())
+        return self
+
+    def __exit__(self, *args):
+        if not self.success:
+            LOGGER.info('Rolling back WireGuard configuration.')
+            disable()
 
 
 def test_connection(gracetime: int = 10) -> bool:
@@ -27,28 +46,6 @@ def test_connection(gracetime: int = 10) -> bool:
         return False
 
     return True
-
-
-class WireGuardMigrater:
-    """Migrates to WireGuard."""
-
-    def __init__(self, client: Client):
-        self.client = client
-        self.success = False
-
-    def __enter__(self):
-        LOGGER.info('Configuring WireGuard.')
-        pubkey, private = keypair()
-        system = self.client.patch_system(system=get_system_id(),
-                                          pubkey=pubkey)
-        configure(system, private)
-        return self
-
-    def __exit__(self, *args):
-        if not self.success:
-            LOGGER.info('Rolling back WireGuard configuration.')
-            remove()
-            load()
 
 
 def migrate(client: Client, *, gracetime: int = 10) -> bool:

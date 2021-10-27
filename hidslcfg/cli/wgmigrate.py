@@ -6,7 +6,7 @@ from hidslcfg.api import Client
 from hidslcfg.common import LOGGER, init_root_script
 from hidslcfg.system import ProgramErrorHandler
 from hidslcfg.termio import read_credentials
-from hidslcfg.wgmigrate import migrate
+from hidslcfg.wireguard.migrate import migrate
 
 
 __all__ = ['run']

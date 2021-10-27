@@ -8,9 +8,10 @@ from hidslcfg.common import APPLICATION_SERVICE
 from hidslcfg.common import DIGSIG_DATA_DIR
 from hidslcfg.common import UNCONFIGURED_WARNING_SERVICE
 from hidslcfg.exceptions import ProgramError
-from hidslcfg.openvpn import DEFAULT_SERVICE, clean
+from hidslcfg.openvpn.common import DEFAULT_SERVICE
+from hidslcfg.openvpn.disable import clean
 from hidslcfg.system import systemctl, hostname, rmsubtree
-from hidslcfg.wireguard import remove
+from hidslcfg.wireguard.disable import remove
 
 
 __all__ = ['reset']

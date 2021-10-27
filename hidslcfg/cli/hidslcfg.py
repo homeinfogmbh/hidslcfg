@@ -36,9 +36,9 @@ def main() -> int:
     args = init_root_script(PARSER.parse_args)
 
     if args.vpn == 'openvpn':
-        from hidslcfg.openvpn import setup      # pylint: disable=C0415
+        from hidslcfg.openvpn.setup import setup    # pylint: disable=C0415
     elif args.vpn == 'wireguard':
-        from hidslcfg.wireguard import setup    # pylint: disable=C0415
+        from hidslcfg.wireguard.setup import setup  # pylint: disable=C0415
     else:
         LOGGER.error('Must specify either "openvpn" or "wireguard".')
         return 1

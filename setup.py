@@ -13,7 +13,12 @@ setup(
     maintainer='Richard Neumann',
     maintainer_email='r.neumann@homeinfo.de',
     requires=['requests', 'netifaces', 'wgtools'],
-    packages=['hidslcfg', 'hidslcfg.cli'],
+    packages=[
+        'hidslcfg',
+        'hidslcfg.cli',
+        'hidslcfg.openvpn',
+        'hidslcfg.wireguard'
+    ],
     entry_points={
         'console_scripts': [
             'hidslcfg = hidslcfg.cli.hidslcfg:run',

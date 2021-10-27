@@ -1,58 +1,30 @@
-"""OpenVPN configuration and un-configuration."""
+"""OpenVPN configuration."""
 
 from argparse import Namespace
 from io import BytesIO
-from ipaddress import IPv4Address
-from pathlib import Path
 from tarfile import open    # pylint: disable=W0622
 from time import sleep
 
 from hidslcfg.api import Client
 from hidslcfg.common import LOGGER
-from hidslcfg.configure import confirm, configure as configure_system
+from hidslcfg.configure import confirm, configure
 from hidslcfg.cpuinfo import cpuinfo
 from hidslcfg.network import get_mac_addresses
 from hidslcfg.system import chown
 from hidslcfg.system import efi_booted
-from hidslcfg.system import get_system_id
 from hidslcfg.system import ping
 from hidslcfg.system import systemctl
 from hidslcfg.system import CalledProcessErrorHandler
 
-
-__all__ = [
-    'DEFAULT_SERVICE',
-    'clean',
-    'disable',
-    'install',
-    'configure',
-    'setup',
-    'OpenVPNGuard'
-]
+from hidslcfg.openvpn.common import CLIENT_DIR
+from hidslcfg.openvpn.common import DEFAULT_SERVICE
+from hidslcfg.openvpn.common import GROUP
+from hidslcfg.openvpn.common import OWNER
+from hidslcfg.openvpn.common import SERVER
+from hidslcfg.openvpn.disable import clean
 
 
-SERVER = IPv4Address('10.8.0.1')
-CLIENT_DIR = Path('/etc/openvpn/client')
-DEFAULT_INSTANCE = 'terminals'
-SERVICE_TEMPLATE = 'openvpn-client@{}.service'
-DEFAULT_SERVICE = SERVICE_TEMPLATE.format(DEFAULT_INSTANCE)
-OWNER = 'openvpn'
-GROUP = 'network'
-
-
-def clean():
-    """Removes OpenVPN configuration."""
-
-    for item in CLIENT_DIR.iterdir():
-        if item.is_file():
-            item.unlink()
-
-
-def disable():
-    """Disables OpenVPN."""
-
-    with CalledProcessErrorHandler('Disabling of OpenVPN client failed.'):
-        systemctl('disable', DEFAULT_SERVICE)
+__all__ = ['setup']
 
 
 def install(tarball: bytes):
@@ -67,7 +39,7 @@ def install(tarball: bytes):
     chown(CLIENT_DIR, OWNER, GROUP, recursive=True)
 
 
-def configure(vpn_data: bytes, gracetime: int = 3):
+def write_config(vpn_data: bytes, gracetime: int = 3):
     """Sets up the OpenVPN configuration."""
 
     LOGGER.debug('Installing OpenVPN configuration.')
@@ -95,28 +67,10 @@ def setup(client: Client, args: Namespace) -> None:
 
     confirm(client.info(args.id), serial_number=args.serial_number,
             force=args.force)
-    configure_system(args.id, SERVER)
+    configure(args.id, SERVER)
     LOGGER.debug('Configuring OpenVPN.')
-    configure(client.openvpn(args.id), gracetime=args.grace_time)
+    write_config(client.openvpn(args.id), gracetime=args.grace_time)
     LOGGER.debug('Finalizing system.')
     client.finalize(system=args.id, sn=args.serial_number,
                     mac_addresses=list(get_mac_addresses()),
                     cpuinfo=list(cpuinfo()), efi_booted=efi_booted())
-
-
-class OpenVPNGuard:
-    """Disable OpenVPN and restore on failure."""
-
-    def __init__(self):
-        self.success = False
-
-    def __enter__(self):
-        LOGGER.info('Stopping OpenVPN.')
-        systemctl('stop', DEFAULT_SERVICE)
-        return self
-
-    def __exit__(self, *args):
-        if not self.success:
-            LOGGER.info('Enabling and starting OpenVPN.')
-            systemctl('enable', '--now', DEFAULT_SERVICE)
-            configure_system(get_system_id(), SERVER)
