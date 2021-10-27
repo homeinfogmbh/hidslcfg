@@ -25,14 +25,15 @@ PARSER.add_argument('-o', '--operating-system', default='Arch Linux',
 PARSER.add_argument('-m', '--model', metavar='model', help='hardware model')
 PARSER.add_argument('-x', '--exclusive', action='store_true',
                     help='disable other VPN solutions')
-subparsers = PARSER.add_subparsers(dest='vpn', help='VPN solutions')
-openvpn = subparsers.add_parser('openvpn', help='use OpenVPN as VPN')
-openvpn.add_argument('id', type=int, help='the system ID')
-wireguard = subparsers.add_parser('wireguard', help='use WireGuard as VPN')
-wireguard.add_argument('id', nargs='?', type=int, help='the system ID')
+SUBPARSERS = PARSER.add_subparsers(dest='vpn', help='VPN solutions')
+SUBPARSERS.required = True
+OPENVPN = SUBPARSERS.add_parser('openvpn', help='use OpenVPN as VPN')
+OPENVPN.add_argument('id', type=int, help='the system ID')
+OPENVPN = SUBPARSERS.add_parser('wireguard', help='use WireGuard as VPN')
+OPENVPN.add_argument('id', nargs='?', type=int, help='the system ID')
 
 
-def main() -> int:
+def main() -> None:
     """Runs the HIDSL configurations."""
 
     args = init_root_script(PARSER.parse_args)
@@ -43,9 +44,6 @@ def main() -> int:
     elif args.vpn == 'wireguard':
         from hidslcfg.wireguard.setup import setup      # pylint: disable=C0415
         from hidslcfg.openvpn.disable import disable    # pylint: disable=C0415
-    else:
-        LOGGER.error('Must specify either "openvpn" or "wireguard".')
-        return 1
 
     with Client() as client:
         client.login(*read_credentials(args.user))
@@ -61,11 +59,9 @@ def main() -> int:
     else:
         LOGGER.info('Okay, not rebooting.')
 
-    return 0
 
-
-def run() -> int:
+def run() -> None:
     """Runs main() with error handling."""
 
     with ProgramErrorHandler():
-        return main()
+        main()
