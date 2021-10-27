@@ -160,7 +160,7 @@ def setup(client: Client, args: Namespace) -> bool:
         LOGGER.error('Refusing to change existing system without --force.')
         return False
 
-    configure_system(system.id)
+    configure_system(system['id'])
     LOGGER.debug('Disabling OpenVPN.')
     disable_openvpn()
     configure(system['wireguard'], private)
