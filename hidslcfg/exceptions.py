@@ -41,15 +41,13 @@ class APIError(Exception):
 class ProgramError(Exception):
     """Indicates an error in the program."""
 
-    def __init__(self, error: str, *messages: str,
-                 sep: str = linesep, exit_code: int = 2):
+    def __init__(self, error: str, *messages: str, exit_code: int = 2):
         """Prints error messages to stderr and exit."""
         super().__init__(error, *messages)
         self.error = error
         self.messages = messages
-        self.sep = sep
         self.exit_code = exit_code
 
     def __str__(self):
         """Returns the respective message text."""
-        return self.sep.join(str(message) for message in self.messages)
+        return linesep.join(str(message) for message in self.messages)
