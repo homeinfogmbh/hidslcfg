@@ -101,7 +101,6 @@ def setup(client: Client, args: Namespace) -> None:
     client.finalize(system=args.id, sn=args.serial_number,
                     mac_addresses=list(get_mac_addresses()),
                     cpuinfo=list(cpuinfo()), efi_booted=efi_booted())
-    LOGGER.info('Setup completed successfully.')
 
 
 class OpenVPNGuard:
