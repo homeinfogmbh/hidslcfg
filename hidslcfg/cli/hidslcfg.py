@@ -13,15 +13,16 @@ __all__ = ['run']
 
 PARSER = ArgumentParser(description=__doc__)
 PARSER.add_argument('-u', '--user', metavar='user', help='user name')
-PARSER.add_argument(
-    '-s', '--serial-number', metavar='sn', help="the system's serial number")
-PARSER.add_argument(
-    '-g', '--grace-time', type=int, default=3, metavar='secs',
-    help='seconds to wait for contacting the VPN servers')
-PARSER.add_argument(
-    '-f', '--force', action='store_true',
-    help='force setup of already configured systems')
+PARSER.add_argument('-s', '--serial-number', metavar='sn',
+                    help="the system's serial number")
+PARSER.add_argument('-g', '--grace-time', type=int, default=3, metavar='secs',
+                    help='seconds to wait for contacting the VPN servers')
+PARSER.add_argument('-f', '--force', action='store_true',
+                    help='force setup of already configured systems')
 PARSER.add_argument('-v', '--verbose', action='store_true', help='be gassy')
+PARSER.add_argument('-o', '--operating-system', default='Arch Linux',
+                    help='the operating system to use')
+PARSER.add_argument('-m', '--model', metavar='model', help='hardware model')
 subparsers = PARSER.add_subparsers(dest='vpn', help='VPN solutions')
 openvpn = subparsers.add_parser('openvpn', help='use OpenVPN as VPN')
 openvpn.add_argument('id', type=int, help='the system ID')
