@@ -14,6 +14,7 @@ from hidslcfg.cpuinfo import cpuinfo
 from hidslcfg.network import get_mac_addresses
 from hidslcfg.system import chown
 from hidslcfg.system import efi_booted
+from hidslcfg.system import get_system_id
 from hidslcfg.system import ping
 from hidslcfg.system import systemctl
 from hidslcfg.system import CalledProcessErrorHandler
@@ -94,7 +95,7 @@ def setup(client: Client, args: Namespace) -> None:
 
     confirm(client.info(args.id), serial_number=args.serial_number,
             force=args.force)
-    configure_system(args.id)
+    configure_system(args.id, SERVER)
     LOGGER.debug('Configuring OpenVPN.')
     configure(client.openvpn(args.id), gracetime=args.grace_time)
     LOGGER.debug('Finalizing system.')
@@ -118,3 +119,4 @@ class OpenVPNGuard:
         if not self.success:
             LOGGER.info('Enabling and starting OpenVPN.')
             systemctl('enable', '--now', DEFAULT_SERVICE)
+            configure_system(get_system_id(), SERVER)

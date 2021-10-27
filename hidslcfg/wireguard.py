@@ -2,6 +2,7 @@
 
 from argparse import Namespace
 from contextlib import suppress
+from ipaddress import IPv6Address
 from typing import Iterator
 
 from wgtools import keypair     # pylint: disable=E0401
@@ -17,7 +18,7 @@ from hidslcfg.system import CalledProcessErrorHandler
 from hidslcfg.system import SystemdUnit
 
 
-__all__ = ['configure', 'load', 'remove']
+__all__ = ['SERVER', 'configure', 'load', 'remove']
 
 
 DEVNAME = 'terminals'
@@ -27,6 +28,7 @@ NETWORK_UNIT_FILE = SYSTEMD_NETWORK_DIR.joinpath(f'{DEVNAME}.network')
 NETDEV_OWNER = 'root'
 NETDEV_GROUP = 'systemd-network'
 NETDEV_MODE = 0o640
+SERVER = IPv6Address('fd56:1dda:8794:cb90:ffff:ffff:ffff:fffe')
 
 
 def create_netdev_unit(wireguard: dict, private: str) -> Iterator[SystemdUnit]:
@@ -106,8 +108,8 @@ def write_network(wireguard: dict):
             part.write(network_unit_file)
 
 
-def configure(wireguard: dict, private: str) -> None:
-    """Configures the WireGuard connection."""
+def write_units(wireguard: dict, private: str) -> None:
+    """Writes the WireGuard systemd units."""
 
     if pubkey := wireguard.get('pubkey'):
         LOGGER.warning('WireGuard already configured for pubkey %s.', pubkey)
@@ -115,6 +117,13 @@ def configure(wireguard: dict, private: str) -> None:
     LOGGER.debug('Installing WireGuard configuration.')
     write_netdev(wireguard, private)
     write_network(wireguard)
+
+
+def configure(system: dict, private: str) -> None:
+    """Configures the system for WireGuard."""
+
+    configure_system(system['id'], SERVER)
+    write_units(system['wireguard'], private)
 
 
 def load():
@@ -160,9 +169,8 @@ def setup(client: Client, args: Namespace) -> bool:
         LOGGER.error('Refusing to change existing system without --force.')
         return False
 
-    configure_system(system['id'])
+    configure(system, private)
     LOGGER.debug('Disabling OpenVPN.')
     disable_openvpn()
-    configure(system['wireguard'], private)
     load()
     return True

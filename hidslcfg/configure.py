@@ -1,14 +1,20 @@
 """Basic system configuration."""
 
-from typing import Iterable, Tuple
+from ipaddress import IPv4Address, IPv6Address
+from typing import Iterable, Union
 
 from hidslcfg.common import LOGGER, UNCONFIGURED_WARNING_SERVICE
 from hidslcfg.exceptions import ProgramError
+from hidslcfg.hosts import set_ip
+from hidslcfg.pacman import set_server
 from hidslcfg.system import hostname, systemctl
 from hidslcfg.termio import ask, Table
 
 
 __all__ = ['confirm', 'configure']
+
+
+APPCMD_HOSTNAME = 'appcmd.homeinfo.intra'
 
 
 def update_sn(system: dict, serial_number: str) -> dict:
@@ -25,7 +31,7 @@ def update_sn(system: dict, serial_number: str) -> dict:
     return system
 
 
-def rows(system: dict) -> Iterable[Tuple[str, type]]:
+def rows(system: dict) -> Iterable[tuple[str, type]]:
     """Yields table rows containing system information."""
 
     yield ('Option', 'Value')   # Header.
@@ -66,10 +72,14 @@ def confirm(system: dict, serial_number: str = None, force: bool = False):
         raise ProgramError('Setup aborted by user.')
 
 
-def configure(system: int):
+def configure(system: int, server: Union[IPv4Address, IPv6Address]):
     """Configures the system with the given ID."""
 
     LOGGER.debug('Configuring host name.')
     hostname(str(system))
+    LOGGER.debug('Updating /etc/hosts.')
+    set_ip(APPCMD_HOSTNAME, server)
+    LOGGER.debug('Updating /etc/pacman.conf.')
+    set_server('homeinfo', server)
     LOGGER.debug('Disabling unconfigured warning.')
     systemctl('disable', UNCONFIGURED_WARNING_SERVICE)

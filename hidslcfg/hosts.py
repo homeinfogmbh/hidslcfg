@@ -67,9 +67,7 @@ def write_hosts(entries: Iterable[Union[str, HostsEntry]]) -> None:
 def set_ip(hostname: str, ipaddr: Union[IPv4Address, IPv6Address]):
     """Sets the IP address of a host."""
 
-    hosts = list(read_hosts())
-
-    for entry in hosts:
+    for entry in (hosts := list(read_hosts())):
         if isinstance(entry, HostsEntry):
             if hostname in {entry.hostname, entry.short_name}:
                 entry.ipaddr = ipaddr

@@ -1,6 +1,5 @@
 """Migrate to WireGuard."""
 
-from ipaddress import IPv6Address
 from subprocess import CalledProcessError
 from time import sleep
 
@@ -8,18 +7,12 @@ from wgtools import keypair     # pylint: disable=E0401
 
 from hidslcfg.api import Client
 from hidslcfg.common import LOGGER
-from hidslcfg.hosts import set_ip
 from hidslcfg.openvpn import OpenVPNGuard
-from hidslcfg.pacman import set_server
 from hidslcfg.system import get_system_id, ping
-from hidslcfg.wireguard import configure, load, remove
+from hidslcfg.wireguard import SERVER, configure, load, remove
 
 
 __all__ = ['migrate']
-
-
-APPCMD_HOSTNAME = 'appcmd.homeinfo.intra'
-WIREGUARD_SERVER = IPv6Address('fd56:1dda:8794:cb90:ffff:ffff:ffff:fffe')
 
 
 def test_connection(gracetime: int = 10) -> bool:
@@ -29,20 +22,11 @@ def test_connection(gracetime: int = 10) -> bool:
     sleep(gracetime)
 
     try:
-        ping(str(WIREGUARD_SERVER))
+        ping(str(SERVER))
     except CalledProcessError:
         return False
 
     return True
-
-
-def postprocess() -> None:
-    """Post-processes the WireGuard migration."""
-
-    LOGGER.info('Updating /etc/hosts.')
-    set_ip(APPCMD_HOSTNAME, WIREGUARD_SERVER)
-    LOGGER.info('Updating /etc/pacman.conf.')
-    set_server('homeinfo', WIREGUARD_SERVER)
 
 
 class WireGuardMigrater:
@@ -57,14 +41,12 @@ class WireGuardMigrater:
         pubkey, private = keypair()
         system = self.client.patch_system(system=get_system_id(),
                                           pubkey=pubkey)
-        configure(system['wireguard'], private)
+        configure(system, private)
         load()
         return self
 
     def __exit__(self, *args):
-        if self.success:
-            postprocess()
-        else:
+        if not self.success:
             LOGGER.info('Rolling back WireGuard configuration.')
             remove()
             load()
