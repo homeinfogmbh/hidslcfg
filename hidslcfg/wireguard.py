@@ -154,8 +154,8 @@ def setup(client: Client, args: Namespace) -> bool:
     elif args.force:
         LOGGER.info('Changing existing WireGuard system #%i.', args.id)
         system = client.patch_system(
-            pubkey=pubkey, os=args.operating_system, model=args.model,
-            sn=args.serial_number)
+            system=args.id, pubkey=pubkey, os=args.operating_system,
+            model=args.model, sn=args.serial_number)
     else:
         LOGGER.error('Refusing to change existing system without --force.')
         return False
