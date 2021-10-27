@@ -1,4 +1,4 @@
-"""Configures a WireGuard interface."""
+"""Configure system for WireGuard."""
 
 from argparse import Namespace
 from typing import Iterator

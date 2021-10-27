@@ -1,4 +1,4 @@
-"""Configures a WireGuard interface."""
+"""Common constants and functions for the WireGuard subsystem."""
 
 from ipaddress import IPv6Address
 

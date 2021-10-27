@@ -1,4 +1,4 @@
-"""OpenVPN configuration."""
+"""Configure sytem for OpenVPN."""
 
 from argparse import Namespace
 from io import BytesIO

@@ -1,4 +1,4 @@
-"""Migrate to WireGuard."""
+"""Migrate OpenVPN to WireGuard."""
 
 from subprocess import CalledProcessError
 from time import sleep

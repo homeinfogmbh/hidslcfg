@@ -1,4 +1,4 @@
-"""WireGuard un-configuration."""
+"""Disabling WireGuard."""
 
 from contextlib import suppress
 

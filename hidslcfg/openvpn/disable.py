@@ -1,4 +1,4 @@
-"""OpenVPN un-configuration."""
+"""Disable OpenVPN."""
 
 from hidslcfg.system import systemctl
 from hidslcfg.system import CalledProcessErrorHandler

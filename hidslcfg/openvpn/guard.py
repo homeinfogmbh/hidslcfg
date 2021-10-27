@@ -1,4 +1,4 @@
-"""OpenVPN migration guard."""
+"""OpenVPN to WireGuard migration guard."""
 
 from hidslcfg.common import LOGGER
 from hidslcfg.configure import configure
