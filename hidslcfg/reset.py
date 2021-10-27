@@ -48,7 +48,7 @@ RESET_OPERATIONS = (
 )
 
 
-def reset():
+def reset() -> None:
     """Resets the system's configuration."""
 
     for description, function in RESET_OPERATIONS:

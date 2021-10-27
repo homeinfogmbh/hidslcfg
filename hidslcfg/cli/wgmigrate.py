@@ -20,7 +20,7 @@ PARSER.add_argument(
 PARSER.add_argument('-v', '--verbose', action='store_true', help='be gassy')
 
 
-def main():
+def main() -> None:
     """Runs the HIDSL configurations."""
 
     args = init_root_script(PARSER.parse_args)
@@ -34,7 +34,7 @@ def main():
             LOGGER.error('Could not migrate system to WireGuard.')
 
 
-def run():
+def run() -> None:
     """Runs main() with error handling."""
 
     with ProgramErrorHandler():

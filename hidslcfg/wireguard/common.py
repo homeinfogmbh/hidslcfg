@@ -30,7 +30,7 @@ NETDEV_MODE = 0o640
 SERVER = IPv6Address('fd56:1dda:8794:cb90:ffff:ffff:ffff:fffe')
 
 
-def load():
+def load() -> None:
     """Establishes the connection to the WireGuard server."""
 
     LOGGER.debug('Restarting %s.', SYSTEMD_NETWORKD)

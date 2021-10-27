@@ -15,7 +15,7 @@ PARSER = ArgumentParser(description=__doc__)
 PARSER.add_argument('-v', '--verbose', action='store_true', help='be gassy')
 
 
-def main():
+def main() -> None:
     """Runs the HIDSL reset."""
 
     init_root_script(PARSER.parse_args)
@@ -27,7 +27,7 @@ def main():
         raise ProgramError('Reset aborted by user.') from None
 
 
-def run():
+def run() -> None:
     """Runs main() with error handling."""
 
     with ProgramErrorHandler():

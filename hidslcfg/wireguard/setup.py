@@ -56,7 +56,7 @@ def create_netdev_unit(wireguard: dict, private: str) -> Iterator[SystemdUnit]:
         yield unit
 
 
-def write_netdev(wireguard: dict, private: str):
+def write_netdev(wireguard: dict, private: str) -> None:
     """Creates a network device."""
 
     with NETDEV_UNIT_FILE.open('w', encoding='utf-8') as netdev_unit_file:
@@ -95,7 +95,7 @@ def create_network_unit(wireguard: dict) -> Iterator[SystemdUnit]:
             yield unit
 
 
-def write_network(wireguard: dict):
+def write_network(wireguard: dict) -> None:
     """Creates a WireGuard network unit file."""
 
     with NETWORK_UNIT_FILE.open('w', encoding='utf-8') as network_unit_file:

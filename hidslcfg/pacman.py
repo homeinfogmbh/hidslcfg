@@ -64,7 +64,7 @@ def get_modifier(repo: str, addr: Union[IPv4Address, IPv6Address]) -> Callable:
     return modifier
 
 
-def set_server(repo: str, addr: Union[IPv4Address, IPv6Address]):
+def set_server(repo: str, addr: Union[IPv4Address, IPv6Address]) -> None:
     """Sets the server of the respective repo."""
 
     write_lines(map(get_modifier(repo, addr), read_lines_with_section()))

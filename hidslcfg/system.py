@@ -38,7 +38,8 @@ IntOrStr = Union[int, str]
 efi_booted = Path('/sys/firmware/efi').is_dir
 
 
-def chown(path: Path, uid: IntOrStr, gid: IntOrStr, recursive: bool = False):
+def chown(path: Path, uid: IntOrStr, gid: IntOrStr, *,
+          recursive: bool = False) -> None:
     """Performs a recursive chown on the the given path."""
 
     if isinstance(uid, str):
@@ -88,7 +89,7 @@ def reboot() -> CompletedProcess:
     return systemctl('reboot')
 
 
-def rmsubtree(path: Path):
+def rmsubtree(path: Path) -> None:
     """Removes all children within the specified directory."""
 
     for inode in path.iterdir():
@@ -142,7 +143,7 @@ class ProgramErrorHandler:
 class SystemdUnit(ConfigParser):    # pylint: disable=R0901
     """A systemd unit."""
 
-    def optionxform(self, optionstr: str):
+    def optionxform(self, optionstr: str) -> str:
         """Returns the option as stripped value."""
         if optionstr is None:
             return None

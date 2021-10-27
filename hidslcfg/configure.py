@@ -49,7 +49,8 @@ def rows(system: dict) -> Iterable[tuple[str, type]]:
         yield ('Model', model)
 
 
-def confirm(system: dict, serial_number: str = None, force: bool = False):
+def confirm(system: dict, serial_number: str = None,
+            force: bool = False) -> None:
     """Prompt the user to confirm the given location."""
 
     LOGGER.info('You are about to configure the following system:')
@@ -72,7 +73,7 @@ def confirm(system: dict, serial_number: str = None, force: bool = False):
         raise ProgramError('Setup aborted by user.')
 
 
-def configure(system: int, server: Union[IPv4Address, IPv6Address]):
+def configure(system: int, server: Union[IPv4Address, IPv6Address]) -> None:
     """Configures the system with the given ID."""
 
     LOGGER.debug('Configuring host name.')

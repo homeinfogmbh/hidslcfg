@@ -9,7 +9,7 @@ from hidslcfg.openvpn.common import CLIENT_DIR, DEFAULT_SERVICE
 __all__ = ['clean', 'disable']
 
 
-def clean():
+def clean() -> None:
     """Removes OpenVPN configuration."""
 
     for item in CLIENT_DIR.iterdir():
@@ -17,7 +17,7 @@ def clean():
             item.unlink()
 
 
-def disable():
+def disable() -> None:
     """Disables OpenVPN."""
 
     with CalledProcessErrorHandler('Disabling of OpenVPN client failed.'):

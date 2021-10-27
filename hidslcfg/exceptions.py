@@ -3,6 +3,7 @@
 from contextlib import suppress
 from json import JSONDecodeError
 from os import linesep
+from typing import Optional
 
 
 __all__ = ['APIError', 'ProgramError']
@@ -11,7 +12,8 @@ __all__ = ['APIError', 'ProgramError']
 class APIError(Exception):
     """Indicates an error while using the web API."""
 
-    def __init__(self, text=None, json=None):
+    def __init__(self, text: Optional[str] = None,
+                 json: Optional[dict] = None):
         """Sets the raw error message text and / or JSON."""
         super().__init__()
         self.text = text
@@ -39,7 +41,8 @@ class APIError(Exception):
 class ProgramError(Exception):
     """Indicates an error in the program."""
 
-    def __init__(self, error, *messages, sep=linesep, exit_code=2):
+    def __init__(self, error: str, *messages: str,
+                 sep: str = linesep, exit_code: int = 2):
         """Prints error messages to stderr and exit."""
         super().__init__(error, *messages)
         self.error = error

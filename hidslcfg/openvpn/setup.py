@@ -27,7 +27,7 @@ from hidslcfg.openvpn.disable import clean
 __all__ = ['setup']
 
 
-def install(tarball: bytes):
+def install(tarball: bytes) -> None:
     """Installs the respective VPN configuration."""
 
     clean()     # Clean up config beforehand.
@@ -39,7 +39,7 @@ def install(tarball: bytes):
     chown(CLIENT_DIR, OWNER, GROUP, recursive=True)
 
 
-def write_config(vpn_data: bytes, gracetime: int = 3):
+def write_config(vpn_data: bytes, gracetime: int = 3) -> None:
     """Sets up the OpenVPN configuration."""
 
     LOGGER.debug('Installing OpenVPN configuration.')
