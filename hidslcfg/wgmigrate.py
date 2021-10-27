@@ -54,10 +54,10 @@ class WireGuardMigrater:
 
     def __enter__(self):
         LOGGER.info('Configuring WireGuard.')
-        system = get_system_id()
         pubkey, private = keypair()
-        wireguard = self.client.patch_system(system=system, pubkey=pubkey)
-        configure(wireguard, private)
+        system = self.client.patch_system(system=get_system_id(),
+                                          pubkey=pubkey)
+        configure(system['wireguard'], private)
         load()
         return self
 
