@@ -130,6 +130,7 @@ def create(client: Client, **json) -> None:
     pubkey, private = keypair()
     LOGGER.info('Creating new WireGuard system.')
     system = client.add_system(**json, pubkey=pubkey)
+    LOGGER.info('New system ID: %i', system['id'])
     configure_(system, private)
 
 
