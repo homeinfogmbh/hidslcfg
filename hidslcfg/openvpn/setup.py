@@ -73,4 +73,5 @@ def setup(client: Client, args: Namespace) -> None:
     LOGGER.debug('Finalizing system.')
     client.finalize(system=args.id, sn=args.serial_number,
                     mac_addresses=list(get_mac_addresses()),
-                    cpuinfo=list(cpuinfo()), efi_booted=efi_booted())
+                    cpuinfo=list(cpuinfo()), efi_booted=efi_booted(),
+                    exclusive=args.exclusive)
