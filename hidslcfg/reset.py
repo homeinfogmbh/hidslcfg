@@ -42,7 +42,7 @@ RESET_OPERATIONS = (
         partial(systemctl, 'disable', APPLICATION_SERVICE)
     ),
     ResetOperation(
-        'disable application',
+        'enable not-configured warning message',
         partial(systemctl, 'enable', UNCONFIGURED_WARNING_SERVICE)
     )
 )
