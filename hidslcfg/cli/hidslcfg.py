@@ -31,6 +31,8 @@ OPENVPN = SUBPARSERS.add_parser('openvpn', help='use OpenVPN as VPN')
 OPENVPN.add_argument('id', type=int, help='the system ID')
 WIREGUARD = SUBPARSERS.add_parser('wireguard', help='use WireGuard as VPN')
 WIREGUARD.add_argument('id', nargs='?', type=int, help='the system ID')
+WIREGUARD.add_argument('-G', '--group', type=int, default=1,
+                       help='the system group')
 
 
 def main() -> None:
