@@ -3,7 +3,7 @@
 from enum import Enum
 from getpass import getpass
 from os import linesep
-from typing import Iterable, Tuple
+from typing import Iterator, Iterable, Tuple
 
 from hidslcfg.exceptions import ProgramError
 
@@ -73,7 +73,7 @@ class Table(Enum):
     @classmethod
     def make_rows(cls, key_value_pairs: Iterable[Tuple[str, str]],
                   header: bool = True, spacing: str = DEFAULT_SPACING
-                  ) -> Iterable[str]:
+                  ) -> Iterator[str]:
         """Generates rows for a UTF-8 table."""
         items = []
         keys_len = 0
