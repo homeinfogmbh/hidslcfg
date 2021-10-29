@@ -152,6 +152,6 @@ def setup(client: Client, args: Namespace) -> None:
 
     if args.force:
         return patch(client, args.id, os=args.operating_system,
-                     model=args.model, sn=args.serial_number, group=args.group)
+                     model=args.model, sn=args.serial_number)
 
     raise ProgramError('Refusing to change existing system without --force.')
