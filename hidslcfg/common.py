@@ -13,6 +13,7 @@ from hidslcfg.exceptions import ProgramError
 __all__ = [
     'APPLICATION_SERVICE',
     'DIGSIG_DATA_DIR',
+    'HTML5DS',
     'LOGGER',
     'LOG_FORMAT',
     'SYSTEMD_NETWORKD',
@@ -24,6 +25,7 @@ __all__ = [
 
 APPLICATION_SERVICE = 'application.service'
 DIGSIG_DATA_DIR = Path('/var/lib/digsig')
+HTML5DS = 'html5ds.service'
 LOG_FORMAT = '[%(levelname)s] %(name)s: %(message)s'
 LOGGER = getLogger(Path(argv[0]).name)
 SYSTEMD_NETWORKD = 'systemd-networkd.service'

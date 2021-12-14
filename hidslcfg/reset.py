@@ -6,6 +6,7 @@ from typing import Callable, NamedTuple
 
 from hidslcfg.common import APPLICATION_SERVICE
 from hidslcfg.common import DIGSIG_DATA_DIR
+from hidslcfg.common import HTML5DS
 from hidslcfg.common import UNCONFIGURED_WARNING_SERVICE
 from hidslcfg.exceptions import ProgramError
 from hidslcfg.openvpn.common import DEFAULT_SERVICE
@@ -24,6 +25,16 @@ class ResetOperation(NamedTuple):
     function: Callable
 
 
+def gracefully_disable_service(service: str) -> None:
+    """Disables a service."""
+
+    try:
+        systemctl('disable', service)
+    except CalledProcessError as cpe:
+        if cpe.returncode != 1:
+            raise
+
+
 # Oder matters here!
 RESET_OPERATIONS = (
     ResetOperation('reset hostname', partial(hostname, 'unconfigured')),
@@ -39,7 +50,11 @@ RESET_OPERATIONS = (
     ResetOperation('remove WireGuard configuration', remove),
     ResetOperation(
         'disable application',
-        partial(systemctl, 'disable', APPLICATION_SERVICE)
+        partial(gracefully_disable_service, APPLICATION_SERVICE)
+    ),
+    ResetOperation(
+        'disable html5ds',
+        partial(gracefully_disable_service, HTML5DS)
     ),
     ResetOperation(
         'enable not-configured warning message',
