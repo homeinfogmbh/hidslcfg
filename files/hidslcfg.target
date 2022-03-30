@@ -1,11 +1,3 @@
-# HOMEINFO Digital Signage Linux configuration
-#
-# (C) 2015 - 2020: HOMEINFO - Digitale Informationssysteme GmbH
-#
-# Maintainer: Richard Neumann <r.neumann@homeinfo.de>
-#
-###############################################################
-
 [Unit]
 Description=HOMEINFO Digital Signage Linux configuration
 Requires=multi-user.target
