@@ -3,7 +3,7 @@
 from argparse import Namespace
 from typing import Iterator
 
-from wgtools import keypair     # pylint: disable=E0401
+from wgtools import keypair
 
 from hidslcfg.api import Client
 from hidslcfg.common import LOGGER
@@ -148,11 +148,15 @@ def setup(client: Client, args: Namespace) -> None:
     """Set up a system with WireGuard."""
 
     if args.id is None:
-        return create(client, os=args.operating_system, model=args.model,
-                      sn=args.serial_number, group=args.group)
+        return create(
+            client, os=args.operating_system, model=args.model,
+            sn=args.serial_number, group=args.group
+        )
 
     if args.force:
-        return patch(client, args.id, os=args.operating_system,
-                     model=args.model, sn=args.serial_number)
+        return patch(
+            client, args.id, os=args.operating_system, model=args.model,
+            sn=args.serial_number
+        )
 
     raise ProgramError('Refusing to change existing system without --force.')

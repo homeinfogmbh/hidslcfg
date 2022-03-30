@@ -3,7 +3,7 @@
 from enum import Enum
 from getpass import getpass
 from os import linesep
-from typing import Iterator, Iterable, Tuple
+from typing import Iterator, Iterable
 
 from hidslcfg.exceptions import ProgramError
 
@@ -15,7 +15,7 @@ YES_VALUES = {'y', 'yes'}
 DEFAULT_SPACING = ' {} '
 
 
-def ask(question: str, default: bool = False) -> bool:
+def ask(question: str, default: bool = False) -> bool | None:
     """Ask a question and return True on yes or else False."""
 
     suffix = ' [Y/n]: ' if default else ' [y/N]: '
@@ -41,8 +41,8 @@ def bold(string: str) -> str:
     return f'\033[1m{string}\033[0m'
 
 
-def read_credentials(user: str) -> Tuple[str, str]:
-    """Reads the user name."""
+def read_credentials(user: str) -> tuple[str, str]:
+    """Reads the username."""
 
     try:
         if user is None:
@@ -56,7 +56,7 @@ def read_credentials(user: str) -> Tuple[str, str]:
         print()
         raise ProgramError('Configuration aborted by user.') from None
 
-    return (user, passwd)
+    return user, passwd
 
 
 class Table(Enum):
@@ -71,9 +71,12 @@ class Table(Enum):
     FOOTER = '╚{}╩{}╝'
 
     @classmethod
-    def make_rows(cls, key_value_pairs: Iterable[Tuple[str, str]],
-                  header: bool = True, spacing: str = DEFAULT_SPACING
-                  ) -> Iterator[str]:
+    def make_rows(
+            cls,
+            key_value_pairs: Iterable[tuple[str, str]],
+            header: bool = True,
+            spacing: str = DEFAULT_SPACING
+    ) -> Iterator[str]:
         """Generates rows for a UTF-8 table."""
         items = []
         keys_len = 0
@@ -96,20 +99,27 @@ class Table(Enum):
             if header and row == 1:
                 yield cls.ROW.value.format(bold(key), bold(value))
                 yield cls.BOLD_LINE.value.format(
-                    cls.BOLD.value * keys_len, cls.BOLD.value * value_len)
+                    cls.BOLD.value * keys_len, cls.BOLD.value * value_len
+                )
             else:
                 yield cls.ROW.value.format(key, value)
 
                 if row < len(items):
                     yield cls.THIN_LINE.value.format(
-                        cls.THIN.value * keys_len, cls.THIN.value * value_len)
+                        cls.THIN.value * keys_len, cls.THIN.value * value_len
+                    )
                 else:
                     yield cls.FOOTER.value.format(
-                        cls.BOLD.value * keys_len, cls.BOLD.value * value_len)
+                        cls.BOLD.value * keys_len, cls.BOLD.value * value_len
+                    )
 
     @classmethod
-    def generate(cls, key_value_pairs: Iterable[Tuple[str, str]],
-                 header: bool = True, spacing: str = DEFAULT_SPACING) -> str:
+    def generate(
+            cls,
+            key_value_pairs: Iterable[tuple[str, str]],
+            header: bool = True,
+            spacing: str = DEFAULT_SPACING
+    ) -> str:
         """Generates a UTF-8 table."""
         rows = cls.make_rows(key_value_pairs, header=header, spacing=spacing)
         return linesep.join(rows)

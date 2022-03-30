@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from ipaddress import ip_address, IPv4Address, IPv6Address
 from os import linesep
 from pathlib import Path
-from typing import Iterable, Iterator, Optional, Union
+from typing import Iterable, Iterator
 
 
 __all__ = ['set_ip']
@@ -18,9 +18,9 @@ HOSTS = Path('/etc/hosts')
 class HostsEntry:
     """An entry in /etc/hosts."""
 
-    ipaddr: Union[IPv4Address, IPv6Address]
+    ipaddr: IPv4Address | IPv6Address
     hostname: str
-    short_name: Optional[str] = None
+    short_name: str | None = None
 
     def __str__(self):
         items = [str(self.ipaddr), self.hostname]
@@ -42,7 +42,7 @@ class HostsEntry:
         return cls(ip_address(ipaddr), hostname, short_name)
 
 
-def read_hosts() -> Iterator[Union[str, HostsEntry]]:
+def read_hosts() -> Iterator[str | HostsEntry]:
     """Yields host entries."""
 
     with HOSTS.open('r', encoding='ascii') as file:
@@ -53,10 +53,10 @@ def read_hosts() -> Iterator[Union[str, HostsEntry]]:
                 yield HostsEntry.from_string(line)
 
 
-def write_hosts(entries: Iterable[Union[str, HostsEntry]]) -> None:
+def write_hosts(entries: Iterable[str | HostsEntry]) -> None:
     """Yields host entries."""
 
-    # Generate text before opening the file to prevent r/w conflict.
+    # Generate text before opening the file to prevent r/w race condition.
     text = linesep.join(map(str, entries))
 
     with HOSTS.open('w', encoding='ascii') as file:
@@ -64,7 +64,7 @@ def write_hosts(entries: Iterable[Union[str, HostsEntry]]) -> None:
         file.write(linesep)
 
 
-def set_ip(hostname: str, ipaddr: Union[IPv4Address, IPv6Address]):
+def set_ip(hostname: str, ipaddr: IPv4Address | IPv6Address):
     """Sets the IP address of a host."""
 
     for entry in (hosts := list(read_hosts())):

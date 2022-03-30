@@ -7,8 +7,8 @@ from os import chown as _chown
 from pathlib import Path
 from pwd import getpwnam
 from subprocess import DEVNULL, CalledProcessError, CompletedProcess, run
-from sys import exit    # pylint: disable=W0622
-from typing import Any, Union
+from sys import exit
+from typing import Any
 
 from hidslcfg.common import LOGGER
 from hidslcfg.exceptions import ProgramError
@@ -34,13 +34,17 @@ HOSTNAME = Path('/etc/hostname')
 HOSTNAMECTL = Path('/usr/bin/hostnamectl')
 PING = Path('/usr/bin/ping')
 SYSTEMCTL = Path('/usr/bin/systemctl')
-IntOrStr = Union[int, str]
 efi_booted = Path('/sys/firmware/efi').is_dir
 
 
-def chown(path: Path, uid: IntOrStr, gid: IntOrStr, *,
-          recursive: bool = False) -> None:
-    """Performs a recursive chown on the the given path."""
+def chown(
+        path: Path,
+        uid: int | str,
+        gid: int | str,
+        *,
+        recursive: bool = False
+) -> None:
+    """Performs a recursive chown on the given path."""
 
     if isinstance(uid, str):
         uid = getpwnam(uid).pw_uid
@@ -71,7 +75,7 @@ def ping(host: str, timeout: int = 1, count: int = 5) -> CompletedProcess:
     return system(PING, '-W', timeout, '-c', count, host)
 
 
-def hostname(hostname: str) -> CompletedProcess:    # pylint: disable=W0621
+def hostname(hostname: str) -> CompletedProcess:
     """Sets the respective host name or deletes the host name file."""
 
     return system(HOSTNAMECTL, 'set-hostname', hostname)
@@ -140,10 +144,10 @@ class ProgramErrorHandler:
             exit(value.exit_code)
 
 
-class SystemdUnit(ConfigParser):    # pylint: disable=R0901
+class SystemdUnit(ConfigParser):
     """A systemd unit."""
 
-    def optionxform(self, optionstr: str) -> str:
+    def optionxform(self, optionstr: str) -> str | None:
         """Returns the option as stripped value."""
         if optionstr is None:
             return None

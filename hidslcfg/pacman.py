@@ -4,7 +4,7 @@ from ipaddress import IPv4Address, IPv6Address
 from os import linesep
 from pathlib import Path
 from re import fullmatch, sub
-from typing import Callable, Iterable, Iterator, Optional, Union
+from typing import Callable, Iterable, Iterator
 
 
 __all__ = ['set_server']
@@ -23,7 +23,7 @@ def read_lines() -> Iterator[str]:
             yield line.strip()
 
 
-def read_lines_with_section() -> Iterator[tuple[Optional[str], str]]:
+def read_lines_with_section() -> Iterator[tuple[str | None, str]]:
     """Yields lines with section names."""
 
     section = None
@@ -32,13 +32,13 @@ def read_lines_with_section() -> Iterator[tuple[Optional[str], str]]:
         if match := fullmatch(SECTION_PATTERN, line):
             section = match.group(1)
 
-        yield (section, line)
+        yield section, line
 
 
 def write_lines(lines: Iterable[str]) -> None:
     """Writes the lines to the file."""
 
-    # Generate text before opening the file to prevent r/w conflict.
+    # Generate text before opening the file to prevent r/w race condition.
     text = linesep.join(lines)
 
     with PACMAN_CONF.open('w', encoding='ascii') as file:
@@ -46,25 +46,25 @@ def write_lines(lines: Iterable[str]) -> None:
         file.write(linesep)
 
 
-def get_modifier(repo: str, addr: Union[IPv4Address, IPv6Address]) -> Callable:
+def get_modifier(repo: str, address: IPv4Address | IPv6Address) -> Callable:
     """Sets the line to the server string."""
 
-    if isinstance(addr, IPv6Address):
-        addr = f'[{addr}]'
+    if isinstance(address, IPv6Address):
+        address = f'[{address}]'
 
-    def modifier(item: tuple[Optional[str], str]) -> str:
+    def modifier(item: tuple[str | None, str]) -> str:
         """Modifies a line within a section."""
         section, line = item
 
         if section == repo:
-            return sub(URL_PATTERN, fr'\g<1>{addr}\g<2>', line)
+            return sub(URL_PATTERN, fr'\g<1>{address}\g<2>', line)
 
         return line
 
     return modifier
 
 
-def set_server(repo: str, addr: Union[IPv4Address, IPv6Address]) -> None:
+def set_server(repo: str, address: IPv4Address | IPv6Address) -> None:
     """Sets the server of the respective repo."""
 
-    write_lines(map(get_modifier(repo, addr), read_lines_with_section()))
+    write_lines(map(get_modifier(repo, address), read_lines_with_section()))

@@ -2,7 +2,7 @@
 
 from argparse import Namespace
 from io import BytesIO
-from tarfile import open    # pylint: disable=W0622
+from tarfile import open
 from time import sleep
 
 from hidslcfg.api import Client
@@ -32,8 +32,8 @@ def install(tarball: bytes) -> None:
 
     clean()     # Clean up config beforehand.
 
-    with BytesIO(tarball) as fileobj:
-        with open('r', fileobj=fileobj) as tarfile:
+    with BytesIO(tarball) as file:
+        with open('r', fileobj=file) as tarfile:
             tarfile.extractall(path=CLIENT_DIR)
 
     chown(CLIENT_DIR, OWNER, GROUP, recursive=True)
@@ -71,7 +71,11 @@ def setup(client: Client, args: Namespace) -> None:
     LOGGER.debug('Configuring OpenVPN.')
     write_config(client.openvpn(args.id), gracetime=args.grace_time)
     LOGGER.debug('Finalizing system.')
-    client.finalize(system=args.id, sn=args.serial_number,
-                    mac_addresses=list(get_mac_addresses()),
-                    cpuinfo=list(cpuinfo()), efi_booted=efi_booted(),
-                    exclusive=args.exclusive)
+    client.finalize(
+        system=args.id,
+        sn=args.serial_number,
+        mac_addresses=list(get_mac_addresses()),
+        cpuinfo=list(cpuinfo()),
+        efi_booted=efi_booted(),
+        exclusive=args.exclusive
+    )

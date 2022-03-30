@@ -2,7 +2,7 @@
 
 from contextlib import suppress
 from pathlib import Path
-from typing import Iterator, Union
+from typing import Iterator
 
 
 __all__ = ['cpuinfo']
@@ -10,7 +10,7 @@ __all__ = ['cpuinfo']
 
 CPUINFO = Path('/proc/cpuinfo')
 LIST_KEYS = {'flags', 'bugs'}
-CPUInfoValue = Union[str, int, float, list[str]]
+CPUInfoValue = str | int | float | list[str]
 
 
 def parse(key: str, value: str) -> CPUInfoValue:
@@ -35,7 +35,7 @@ def cpuinfo() -> Iterator[dict[str, CPUInfoValue]]:
 
     with CPUINFO.open('r', encoding='ascii') as file:
         for line in file:
-            if (line := line.strip()):
+            if line := line.strip():
                 key, value = map(str.strip, line.split(':'))
                 core[key] = parse(key, value)
             else:

@@ -1,7 +1,7 @@
 """Basic system configuration."""
 
 from ipaddress import IPv4Address, IPv6Address
-from typing import Iterable, Union
+from typing import Any, Iterable
 
 from hidslcfg.common import LOGGER, UNCONFIGURED_WARNING_SERVICE
 from hidslcfg.exceptions import ProgramError
@@ -31,26 +31,29 @@ def update_sn(system: dict, serial_number: str) -> dict:
     return system
 
 
-def rows(system: dict) -> Iterable[tuple[str, type]]:
+def rows(system: dict) -> Iterable[tuple[str, Any]]:
     """Yields table rows containing system information."""
 
-    yield ('Option', 'Value')   # Header.
-    yield ('System ID', system['id'])
-    yield ('Creation date', system['created'])
-    yield ('Operating system', system['operatingSystem'])
+    yield 'Option', 'Value'   # Header.
+    yield 'System ID', system['id']
+    yield 'Creation date', system['created']
+    yield 'Operating system', system['operatingSystem']
 
     if configured := system.get('configured'):
-        yield ('Configured', configured)
+        yield 'Configured', configured
 
     if serial_number := system.get('serialNumber'):
-        yield ('Serial number', serial_number)
+        yield 'Serial number', serial_number
 
     if model := system.get('model'):
-        yield ('Model', model)
+        yield 'Model', model
 
 
-def confirm(system: dict, serial_number: str = None,
-            force: bool = False) -> None:
+def confirm(
+        system: dict,
+        serial_number: str = None,
+        force: bool = False
+) -> None:
     """Prompt the user to confirm the given location."""
 
     LOGGER.info('You are about to configure the following system:')
@@ -73,7 +76,7 @@ def confirm(system: dict, serial_number: str = None,
         raise ProgramError('Setup aborted by user.')
 
 
-def configure(system: int, server: Union[IPv4Address, IPv6Address]) -> None:
+def configure(system: int, server: IPv4Address | IPv6Address) -> None:
     """Configures the system with the given ID."""
 
     LOGGER.debug('Configuring host name.')
