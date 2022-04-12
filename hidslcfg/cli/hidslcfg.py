@@ -4,9 +4,9 @@ from argparse import ArgumentParser
 
 from hidslcfg.api import Client
 from hidslcfg.common import LOGGER, init_root_script
-from hidslcfg.exceptions import ProgramError
 from hidslcfg.system import ProgramErrorHandler, reboot
 from hidslcfg.termio import ask, read_credentials
+from hidslcfg.wireguard import setup
 
 
 __all__ = ['run']
@@ -31,18 +31,8 @@ PARSER.add_argument(
     help='the operating system to use'
 )
 PARSER.add_argument('-m', '--model', metavar='model', help='hardware model')
+PARSER.add_argument('id', nargs='?', type=int, help='the system ID')
 PARSER.add_argument(
-    '-x', '--exclusive', action='store_true',
-    help='disable other VPN solutions'
-)
-SUBPARSERS = PARSER.add_subparsers(
-    dest='vpn', help='VPN solutions', required=True
-)
-OPENVPN = SUBPARSERS.add_parser('openvpn', help='use OpenVPN as VPN')
-OPENVPN.add_argument('id', type=int, help='the system ID')
-WIREGUARD = SUBPARSERS.add_parser('wireguard', help='use WireGuard as VPN')
-WIREGUARD.add_argument('id', nargs='?', type=int, help='the system ID')
-WIREGUARD.add_argument(
     '-G', '--group', type=int, default=1, help='the system group'
 )
 
@@ -52,21 +42,9 @@ def main() -> None:
 
     args = init_root_script(PARSER.parse_args)
 
-    if args.vpn == 'openvpn':
-        from hidslcfg.openvpn.setup import setup
-        from hidslcfg.wireguard.disable import disable
-    elif args.vpn == 'wireguard':
-        from hidslcfg.wireguard.setup import setup
-        from hidslcfg.openvpn.disable import disable
-    else:
-        raise ProgramError('No VPN solution selected.')
-
     with Client() as client:
         client.login(*read_credentials(args.user))
         setup(client, args)
-
-    if args.exclusive:
-        disable()
 
     LOGGER.info('Setup completed successfully.')
 
