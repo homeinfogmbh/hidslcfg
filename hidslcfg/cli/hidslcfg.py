@@ -31,10 +31,10 @@ PARSER.add_argument(
     help='the operating system to use'
 )
 PARSER.add_argument('-m', '--model', metavar='model', help='hardware model')
-PARSER.add_argument('id', nargs='?', type=int, help='the system ID')
 PARSER.add_argument(
     '-G', '--group', type=int, default=1, help='the system group'
 )
+PARSER.add_argument('id', nargs='?', type=int, help='the system ID')
 
 
 def main() -> None:
