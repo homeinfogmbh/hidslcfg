@@ -10,6 +10,7 @@ from hidslcfg.system import CalledProcessErrorHandler
 __all__ = [
     'DEVNAME',
     'DESCRIPTION',
+    'MTU',
     'NETDEV_UNIT_FILE',
     'NETWORK_UNIT_FILE',
     'NETDEV_OWNER',
@@ -22,6 +23,7 @@ __all__ = [
 
 DEVNAME = 'terminals'
 DESCRIPTION = 'Terminal maintenance VPN.'
+MTU = 1280  # bytes
 NETDEV_UNIT_FILE = SYSTEMD_NETWORK_DIR.joinpath(f'{DEVNAME}.netdev')
 NETWORK_UNIT_FILE = SYSTEMD_NETWORK_DIR.joinpath(f'{DEVNAME}.network')
 NETDEV_OWNER = 'root'

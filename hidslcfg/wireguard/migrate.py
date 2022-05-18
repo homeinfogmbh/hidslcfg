@@ -8,7 +8,7 @@ from hidslcfg.common import LOGGER
 from hidslcfg.openvpn.guard import OpenVPNGuard
 from hidslcfg.system import get_system_id, ping
 
-from hidslcfg.wireguard.common import SERVER
+from hidslcfg.wireguard.common import MTU, SERVER
 from hidslcfg.wireguard.setup import patch
 from hidslcfg.wireguard.disable import disable
 
@@ -19,13 +19,14 @@ __all__ = ['migrate']
 class WireGuardMigrater:
     """Migrates to WireGuard."""
 
-    def __init__(self, client: Client):
+    def __init__(self, client: Client, *, mtu: int = MTU):
         self.client = client
+        self.mtu = mtu
         self.success = False
 
     def __enter__(self):
         LOGGER.info('Configuring WireGuard.')
-        patch(self.client, get_system_id())
+        patch(self.client, get_system_id(), mtu=self.mtu)
         return self
 
     def __exit__(self, *args):
@@ -48,11 +49,11 @@ def test_connection(gracetime: int = 10) -> bool:
     return True
 
 
-def migrate(client: Client, *, gracetime: int = 10) -> bool:
+def migrate(client: Client, *, gracetime: int = 10, mtu: int = MTU) -> bool:
     """Migrate from OpenVPN to WireGuard."""
 
     with OpenVPNGuard() as guard:
-        with WireGuardMigrater(client) as migrater:
+        with WireGuardMigrater(client, mtu=mtu) as migrater:
             migrater.success = guard.success = test_connection(gracetime)
 
     return migrater.success

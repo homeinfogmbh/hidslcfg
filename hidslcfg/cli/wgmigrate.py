@@ -6,7 +6,7 @@ from hidslcfg.api import Client
 from hidslcfg.common import LOGGER, init_root_script
 from hidslcfg.system import ProgramErrorHandler
 from hidslcfg.termio import read_credentials
-from hidslcfg.wireguard.migrate import migrate
+from hidslcfg.wireguard import MTU, migrate
 
 
 __all__ = ['run']
@@ -17,6 +17,10 @@ PARSER.add_argument('-u', '--user', metavar='user', help='user name')
 PARSER.add_argument(
     '-g', '--grace-time', type=int, default=10, metavar='secs',
     help='seconds to wait for contacting the VPN servers'
+)
+PARSER.add_argument(
+    '-m', '--mtu', type=int, default=MTU, metavar='bytes',
+    help='MTU in bytes for the WireGuard interface'
 )
 PARSER.add_argument('-v', '--verbose', action='store_true', help='be gassy')
 
@@ -29,7 +33,7 @@ def main() -> None:
     with Client() as client:
         client.login(*read_credentials(args.user))
 
-        if migrate(client, gracetime=args.grace_time):
+        if migrate(client, gracetime=args.grace_time, mtu=args.mtu):
             LOGGER.info('System migrated to WireGuard.')
         else:
             LOGGER.error('Could not migrate system to WireGuard.')

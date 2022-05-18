@@ -14,6 +14,7 @@ from hidslcfg.system import SystemdUnit
 
 from hidslcfg.wireguard.common import DEVNAME
 from hidslcfg.wireguard.common import DESCRIPTION
+from hidslcfg.wireguard.common import MTU
 from hidslcfg.wireguard.common import NETDEV_UNIT_FILE
 from hidslcfg.wireguard.common import NETWORK_UNIT_FILE
 from hidslcfg.wireguard.common import NETDEV_OWNER
@@ -26,7 +27,11 @@ from hidslcfg.wireguard.common import load
 __all__ = ['patch', 'setup']
 
 
-def create_netdev_unit(wireguard: dict, private: str) -> Iterator[SystemdUnit]:
+def create_netdev_unit(
+        wireguard: dict,
+        private: str,
+        mtu: int
+) -> Iterator[SystemdUnit]:
     """Creates a network device."""
 
     unit = SystemdUnit()
@@ -34,6 +39,10 @@ def create_netdev_unit(wireguard: dict, private: str) -> Iterator[SystemdUnit]:
     unit['NetDev']['Name'] = DEVNAME
     unit['NetDev']['Kind'] = 'wireguard'
     unit['NetDev']['Description'] = DESCRIPTION
+
+    if mtu > 0:
+        unit['NetDev']['MTUBytes'] = str(mtu)
+
     unit.add_section('WireGuard')
     unit['WireGuard']['PrivateKey'] = private
     yield unit
@@ -56,11 +65,11 @@ def create_netdev_unit(wireguard: dict, private: str) -> Iterator[SystemdUnit]:
         yield unit
 
 
-def write_netdev(wireguard: dict, private: str) -> None:
+def write_netdev(wireguard: dict, private: str, mtu: int = MTU) -> None:
     """Creates a network device."""
 
     with NETDEV_UNIT_FILE.open('w', encoding='utf-8') as netdev_unit_file:
-        for part in create_netdev_unit(wireguard, private):
+        for part in create_netdev_unit(wireguard, private, mtu=mtu):
             part.write(netdev_unit_file)
 
     chown(NETDEV_UNIT_FILE, NETDEV_OWNER, NETDEV_GROUP)
@@ -103,27 +112,27 @@ def write_network(wireguard: dict) -> None:
             part.write(network_unit_file)
 
 
-def write_units(wireguard: dict, private: str) -> None:
+def write_units(wireguard: dict, private: str, mtu: int = MTU) -> None:
     """Writes the WireGuard systemd units."""
 
     if pubkey := wireguard.get('pubkey'):
         LOGGER.warning('WireGuard already configured for pubkey %s.', pubkey)
 
     LOGGER.debug('Installing WireGuard configuration.')
-    write_netdev(wireguard, private)
+    write_netdev(wireguard, private, mtu=mtu)
     write_network(wireguard)
 
 
-def configure_(system: dict, private: str) -> None:
+def configure_(system: dict, private: str, mtu: int = MTU) -> None:
     """Configures the system for WireGuard."""
 
     configure(system['id'], SERVER)
-    write_units(system['wireguard'], private)
+    write_units(system['wireguard'], private, mtu=mtu)
     LOGGER.debug('Disabling OpenVPN.')
     load()
 
 
-def create(client: Client, **json) -> None:
+def create(client: Client, mtu: int = MTU, **json) -> None:
     """Creates a new WireGuard system."""
 
     LOGGER.debug('Creating public / private key pair.')
@@ -131,17 +140,17 @@ def create(client: Client, **json) -> None:
     LOGGER.info('Creating new WireGuard system.')
     system = client.add_system(**json, pubkey=pubkey)
     LOGGER.info('New system ID: %i', system['id'])
-    configure_(system, private)
+    configure_(system, private, mtu=mtu)
 
 
-def patch(client: Client, system: int, **json) -> None:
+def patch(client: Client, system: int, mtu: int = MTU, **json) -> None:
     """Patches an existing WireGuard system."""
 
     LOGGER.debug('Creating public / private key pair.')
     pubkey, private = keypair()
     LOGGER.info('Changing existing WireGuard system #%i.', system)
     system = client.patch_system(**json, system=system, pubkey=pubkey)
-    configure_(system, private)
+    configure_(system, private, mtu=mtu)
 
 
 def setup(client: Client, args: Namespace) -> None:
@@ -149,14 +158,14 @@ def setup(client: Client, args: Namespace) -> None:
 
     if args.id is None:
         return create(
-            client, os=args.operating_system, model=args.model,
+            client, mtu=args.mtu, os=args.operating_system, model=args.model,
             sn=args.serial_number, group=args.group
         )
 
     if args.force:
         return patch(
-            client, args.id, os=args.operating_system, model=args.model,
-            sn=args.serial_number
+            client, args.id, mtu=args.mtu, os=args.operating_system,
+            model=args.model, sn=args.serial_number
         )
 
     raise ProgramError('Refusing to change existing system without --force.')

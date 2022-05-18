@@ -6,7 +6,7 @@ from hidslcfg.api import Client
 from hidslcfg.common import LOGGER, init_root_script
 from hidslcfg.system import ProgramErrorHandler, reboot
 from hidslcfg.termio import ask, read_credentials
-from hidslcfg.wireguard import setup
+from hidslcfg.wireguard import MTU, setup
 
 
 __all__ = ['run']
@@ -24,6 +24,10 @@ PARSER.add_argument(
 PARSER.add_argument(
     '-f', '--force', action='store_true',
     help='force setup of already configured systems'
+)
+PARSER.add_argument(
+    '-m', '--mtu', type=int, default=MTU, metavar='bytes',
+    help='MTU in bytes for the WireGuard interface'
 )
 PARSER.add_argument('-v', '--verbose', action='store_true', help='be gassy')
 PARSER.add_argument(
