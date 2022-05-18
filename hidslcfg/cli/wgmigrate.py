@@ -19,7 +19,7 @@ PARSER.add_argument(
     help='seconds to wait for contacting the VPN servers'
 )
 PARSER.add_argument(
-    '-m', '--mtu', type=int, default=MTU, metavar='bytes',
+    '-M', '--mtu', type=int, default=MTU, metavar='bytes',
     help='MTU in bytes for the WireGuard interface'
 )
 PARSER.add_argument('-v', '--verbose', action='store_true', help='be gassy')
