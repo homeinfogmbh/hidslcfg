@@ -34,9 +34,22 @@ PARSER.add_argument(
     '-o', '--operating-system', default='Arch Linux',
     help='the operating system to use'
 )
-PARSER.add_argument('-m', '--model', metavar='model', help='hardware model')
 PARSER.add_argument(
     '-G', '--group', type=int, default=1, help='the system group'
+)
+MODELS = PARSER.add_mutually_exclusive_group()
+MODELS.add_argument('-m', '--model', help='the hardware model')
+MODELS.add_argument(
+    '-S', '--stardard24', action='store_true', help='MOStron TSPC 24"'
+)
+MODELS.add_argument(
+    '-T', '--stardard32', action='store_true', help='MOStron TSPC 32"'
+)
+MODELS.add_argument(
+    '-P', '--phoenix', action='store_true', help='MOStron TSPC Phönix'
+)
+MODELS.add_argument(
+    '-N', '--neptun', action='store_true', help='MOStron TSPC Neptun'
 )
 PARSER.add_argument('id', nargs='?', type=int, help='the system ID')
 

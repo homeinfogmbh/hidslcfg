@@ -27,6 +27,58 @@ from hidslcfg.wireguard.common import load
 __all__ = ['patch', 'setup']
 
 
+def patch(client: Client, system: int, mtu: int = MTU, **json) -> None:
+    """Patches an existing WireGuard system."""
+
+    LOGGER.debug('Creating public / private key pair.')
+    pubkey, private = keypair()
+    LOGGER.info('Changing existing WireGuard system #%i.', system)
+    system = client.patch_system(**json, system=system, pubkey=pubkey)
+    configure_(system, private, mtu=mtu)
+
+
+def setup(client: Client, args: Namespace) -> None:
+    """Set up a system with WireGuard."""
+
+    if args.id is None:
+        return create(
+            client, mtu=args.mtu, os=args.operating_system,
+            model=get_model(args), sn=args.serial_number, group=args.group
+        )
+
+    if args.force:
+        return patch(
+            client, args.id, mtu=args.mtu, os=args.operating_system,
+            model=get_model(args, required=False), sn=args.serial_number
+        )
+
+    raise ProgramError('Refusing to change existing system without --force.')
+
+
+def get_model(args: Namespace, *, required: bool = True) -> str | None:
+    """Returns the model name as string."""
+
+    if args.model:
+        return args.model
+
+    if args.standard24:
+        return 'Standard 24"'
+
+    if args.standard32:
+        return 'Standard 32"'
+
+    if args.phoenix:
+        return 'Phönix'
+
+    if args.neptun:
+        return 'Neptun'
+
+    if required:
+        raise ValueError('No model specified.')
+
+    return None
+
+
 def create_netdev_unit(
         wireguard: dict,
         private: str,
@@ -141,31 +193,3 @@ def create(client: Client, mtu: int = MTU, **json) -> None:
     system = client.add_system(**json, pubkey=pubkey)
     LOGGER.info('New system ID: %i', system['id'])
     configure_(system, private, mtu=mtu)
-
-
-def patch(client: Client, system: int, mtu: int = MTU, **json) -> None:
-    """Patches an existing WireGuard system."""
-
-    LOGGER.debug('Creating public / private key pair.')
-    pubkey, private = keypair()
-    LOGGER.info('Changing existing WireGuard system #%i.', system)
-    system = client.patch_system(**json, system=system, pubkey=pubkey)
-    configure_(system, private, mtu=mtu)
-
-
-def setup(client: Client, args: Namespace) -> None:
-    """Set up a system with WireGuard."""
-
-    if args.id is None:
-        return create(
-            client, mtu=args.mtu, os=args.operating_system, model=args.model,
-            sn=args.serial_number, group=args.group
-        )
-
-    if args.force:
-        return patch(
-            client, args.id, mtu=args.mtu, os=args.operating_system,
-            model=args.model, sn=args.serial_number
-        )
-
-    raise ProgramError('Refusing to change existing system without --force.')
