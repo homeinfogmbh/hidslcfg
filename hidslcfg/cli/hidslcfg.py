@@ -40,10 +40,10 @@ PARSER.add_argument(
 MODELS = PARSER.add_mutually_exclusive_group()
 MODELS.add_argument('-m', '--model', help='the hardware model')
 MODELS.add_argument(
-    '-S', '--stardard24', action='store_true', help='MOStron TSPC 24"'
+    '-S', '--standard24', action='store_true', help='MOStron TSPC 24"'
 )
 MODELS.add_argument(
-    '-T', '--stardard32', action='store_true', help='MOStron TSPC 32"'
+    '-T', '--standard32', action='store_true', help='MOStron TSPC 32"'
 )
 MODELS.add_argument(
     '-P', '--phoenix', action='store_true', help='MOStron TSPC Phönix'
