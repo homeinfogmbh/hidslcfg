@@ -49,13 +49,13 @@ def setup(client: Client, args: Namespace) -> None:
     if args.force:
         return patch(
             client, args.id, mtu=args.mtu, os=args.operating_system,
-            model=get_model(args, required=False), sn=args.serial_number
+            model=get_model(args), sn=args.serial_number
         )
 
     raise ProgramError('Refusing to change existing system without --force.')
 
 
-def get_model(args: Namespace, *, required: bool = True) -> str | None:
+def get_model(args: Namespace) -> str:
     """Returns the model name as string."""
 
     if args.model:
@@ -73,10 +73,7 @@ def get_model(args: Namespace, *, required: bool = True) -> str | None:
     if args.neptun:
         return 'Neptun'
 
-    if required:
-        raise ValueError('No model specified.')
-
-    return None
+    raise ValueError('No model specified.')
 
 
 def create_netdev_unit(

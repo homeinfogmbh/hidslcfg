@@ -37,7 +37,7 @@ PARSER.add_argument(
 PARSER.add_argument(
     '-G', '--group', type=int, default=1, help='the system group'
 )
-MODELS = PARSER.add_mutually_exclusive_group()
+MODELS = PARSER.add_mutually_exclusive_group(required=True)
 MODELS.add_argument('-m', '--model', help='the hardware model')
 MODELS.add_argument(
     '-S', '--standard24', action='store_true', help='MOStron TSPC 24"'
