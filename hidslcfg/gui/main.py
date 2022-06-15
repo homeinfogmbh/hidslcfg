@@ -24,7 +24,7 @@ class GUI(Gtk.ApplicationWindow):
 def init(args: Namespace, application: Gtk.Application) -> None:
     """Initializes the GUI."""
 
-    win = GUI(args, application=application)
+    win = GUI(args, application=application, title=NAME)
     win.present()
 
 
