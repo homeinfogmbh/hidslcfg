@@ -12,7 +12,13 @@ setup(
     author_email='info@homeinfo.de',
     maintainer='Richard Neumann',
     maintainer_email='r.neumann@homeinfo.de',
-    requires=['requests', 'netifaces', 'wgtools'],
+    requires=[
+        'requests',
+        'netifaces',
+        'pygobject',
+        'pygtk',
+        'wgtools'
+    ],
     packages=[
         'hidslcfg',
         'hidslcfg.cli',
