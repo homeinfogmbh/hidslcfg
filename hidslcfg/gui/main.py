@@ -25,6 +25,7 @@ def init(args: Namespace, application: Gtk.Application) -> None:
     """Initializes the GUI."""
 
     win = GUI(args, application=application, title=NAME)
+    win.fullscreen()
     win.present()
 
 
