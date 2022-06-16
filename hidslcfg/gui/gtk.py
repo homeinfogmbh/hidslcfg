@@ -2,7 +2,7 @@
 
 from gi import require_version
 require_version('Gtk', '3.0')
-from gi.repository import Gio, Gtk
+from gi.repository import Gtk
 
 
-__all__ = ['Gio', 'Gtk']
+__all__ = ['Gtk']
