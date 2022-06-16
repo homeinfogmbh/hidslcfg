@@ -26,12 +26,14 @@ class HTTPMethod(Enum):
 class Client:
     """Class to retrieve data from the web API."""
 
-    def __init__(self):
+    def __init__(self, session: Session | None = None):
         """Initialize with credentials."""
-        self.session = None
+        self.session = session
 
     def __enter__(self):
-        self.session = Session()
+        if self.session is None:
+            self.session = Session()
+
         return self
 
     def __exit__(self, typ, value, traceback):
