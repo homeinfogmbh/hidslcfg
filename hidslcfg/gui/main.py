@@ -1,14 +1,15 @@
 """Main GUI application."""
 
-from sys import argv
+from hidslcfg.gui.gtk import Gtk
+from hidslcfg.gui.functions import get_xml, make_window
 
-from hidslcfg.gui.application import Application
 
-
-def main() -> int:
+def main() -> None:
     """Starts the GUI."""
 
-    return Application().run(argv)
+    win = make_window('login', get_xml('login.glade'))
+    win.show_all()
+    Gtk.main()
 
 
 if __name__ == '__main__':
