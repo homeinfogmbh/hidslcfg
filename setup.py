@@ -22,6 +22,7 @@ setup(
     packages=[
         'hidslcfg',
         'hidslcfg.cli',
+        'hidslcfg.gui',
         'hidslcfg.openvpn',
         'hidslcfg.wireguard'
     ],
