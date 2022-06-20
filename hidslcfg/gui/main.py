@@ -1,14 +1,15 @@
 """Main GUI application."""
 
 from hidslcfg.gui.gtk import Gtk
-from hidslcfg.gui.functions import get_xml, make_window
+from hidslcfg.gui.login import LoginForm
 
 
 def main() -> None:
     """Starts the GUI."""
 
-    win = make_window('login', get_xml('login.glade'))
-    win.show_all()
+    login_form = LoginForm.create()
+    login_form.login_button.connect('button-release-event', login_form.login)
+    login_form.window.show_all()
     Gtk.main()
 
 
