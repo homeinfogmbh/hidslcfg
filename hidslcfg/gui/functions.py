@@ -10,7 +10,7 @@ ASSETS_DIR = Path('/usr/share/hidslcfg')
 
 
 def get_asset(filename: str) -> Path:
-    """Returns the path to an asset file."""
+    """Return the path to an asset file."""
 
     return get_base_dir() / filename
 
