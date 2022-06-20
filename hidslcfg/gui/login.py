@@ -3,7 +3,7 @@
 from __future__ import annotations
 from typing import NamedTuple
 
-from hidslcfg.gui.functions import get_xml
+from hidslcfg.gui.functions import get_asset
 from hidslcfg.gui.gtk import Gdk, Gtk
 
 
@@ -22,7 +22,7 @@ class LoginForm(NamedTuple):
     def create(cls) -> LoginForm:
         """Create the login form."""
         builder = Gtk.Builder()
-        builder.add_from_file(str(get_xml('login.glade')))
+        builder.add_from_file(str(get_asset('login.glade')))
         window = builder.get_object('login')
         login_button = builder.get_object('login_button')
         user_name = builder.get_object('user_name')
