@@ -4,12 +4,11 @@ from __future__ import annotations
 from functools import partial
 from os import geteuid
 
-from hidslcfg.exceptions import APIError, ProgramError
 from hidslcfg.api import Client
 from hidslcfg.gui.functions import get_asset
+from hidslcfg.gui.installing import InstallingForm
 from hidslcfg.gui.mixins import WindowMixin
 from hidslcfg.gui.gtk import Gtk
-from hidslcfg.wireguard import MTU, create, patch
 
 
 __all__ = ['SetupForm']
@@ -72,7 +71,7 @@ class SetupForm(WindowMixin):
         self.model_options = ModelOptions(builder)
         builder.connect_signals(self.window)
         self.window.connect('destroy', Gtk.main_quit)
-        self.install.connect('button-release-event', self.setup)
+        self.install.connect('button-release-event', self.on_setup)
 
     def get_system_id(self) -> int | None:
         """Return the system ID."""
@@ -81,19 +80,21 @@ class SetupForm(WindowMixin):
 
         return None
 
-    def on_destroy(self, widget=None, *data) -> None:
+    def on_destroy(self, *_) -> None:
         """Handle window destruction events."""
         if self._installing:
             installing_form = InstallingForm(
+                self.client,
                 self._system_id,
                 self._serial_number,
                 self._model
             )
             installing_form.show()
+            installing_form.setup()
         else:
             Gtk.main_quit()
 
-    def setup(self, *_) -> None:
+    def on_setup(self, *_) -> None:
         """Perform the installation."""
         if geteuid() != 0:
             return self.show_error(
@@ -111,38 +112,5 @@ class SetupForm(WindowMixin):
             return self.show_error('Kein Modell angegeben.')
 
         self._serial_number = self.serial_number.get_text() or None
-
-        try:
-            setup(
-                self.client,
-                self._system_id,
-                self._serial_number,
-                self._model
-            )
-        except ProgramError as error:
-            return self.show_error(str(error))
-        except APIError as error:
-            return self.show_error(error.json.get('message'))
-
         self._installing = True
         self.window.destroy()
-
-
-def setup(
-        client: Client,
-        system_id: int | None,
-        serial_number: str | None,
-        model: str
-) -> None:
-    """Runs the setup process"""
-
-    if system_id is None:
-        return create(
-            client, mtu=MTU, os='Arch Linux', model=model,
-            sn=serial_number, group=1
-        )
-
-    return patch(
-        client, system_id, mtu=MTU, os='Arch Linux', model=model,
-        sn=serial_number
-    )
