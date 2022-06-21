@@ -1,7 +1,5 @@
 """Completed window logic."""
 
-from __future__ import annotations
-
 from hidslcfg.gui.functions import get_asset
 from hidslcfg.gui.gtk import Gtk
 from hidslcfg.gui.mixins import WindowMixin

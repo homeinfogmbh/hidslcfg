@@ -1,6 +1,5 @@
 """Setup window logic."""
 
-from __future__ import annotations
 from functools import partial
 from os import geteuid
 

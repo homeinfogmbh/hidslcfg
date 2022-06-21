@@ -1,7 +1,5 @@
 """Login window logic."""
 
-from __future__ import annotations
-
 from hidslcfg.api import Client
 from hidslcfg.exceptions import APIError
 from hidslcfg.gui.functions import get_asset
