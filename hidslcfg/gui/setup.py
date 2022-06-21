@@ -58,6 +58,10 @@ class SetupForm(WindowMixin):
     def __init__(self, client: Client):
         """Create the setup form."""
         self.client = client
+        self._installing = False
+        self._system_id = None
+        self._serial_number = None
+        self._model = None
         builder = Gtk.Builder()
         builder.add_from_file(str(get_asset('setup.glade')))
         self.window = builder.get_object('setup')
@@ -76,29 +80,46 @@ class SetupForm(WindowMixin):
 
         return None
 
+    def on_destroy(self, widget=None, *data) -> None:
+        """Handle window destruction events."""
+        if self._installing:
+            installing_form = InstallingForm(
+                self._system_id,
+                self._serial_number,
+                self._model
+            )
+            installing_form.show()
+        else:
+            Gtk.main_quit()
+
     def setup(self, *_) -> None:
         """Perform the installation."""
         try:
-            system_id = self.get_system_id()
+            self._system_id = self.get_system_id()
         except ValueError:
             return self.show_error('Ungültige System ID.')
 
         try:
-            model = self.model_options.selected
+            self._model = self.model_options.selected
         except ValueError:
             return self.show_error('Kein Modell angegeben.')
 
+        self._serial_number = self.serial_number.get_text() or None
+
         try:
-            return setup(
+            setup(
                 self.client,
-                system_id,
-                self.serial_number.get_text() or None,
-                model
+                self._system_id,
+                self._serial_number,
+                self._model
             )
         except ProgramError as error:
             return self.show_error(str(error))
         except APIError as error:
             return self.show_error(error.json.get('message'))
+
+        self._installing = True
+        self.window.destroy()
 
 
 def setup(
