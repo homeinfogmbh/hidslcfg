@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from hidslcfg.api import Client
 from hidslcfg.exceptions import APIError, ProgramError
-from hidslcfg.gui.finish import FinishForm
+from hidslcfg.gui.completed import CompletedForm
 from hidslcfg.gui.functions import get_asset
 from hidslcfg.gui.gtk import Gtk
 from hidslcfg.gui.mixins import WindowMixin
@@ -37,12 +37,12 @@ class InstallationForm(WindowMixin):
 
     def on_destroy(self, *_) -> None:
         """Handle window destruction events."""
-        finish_form = FinishForm(
+        completed_form = CompletedForm(
             self.system_id,
             self.serial_number,
             self.model
         )
-        finish_form.show()
+        completed_form.show()
 
     def setup(self) -> None:
         """performs the setup process."""
