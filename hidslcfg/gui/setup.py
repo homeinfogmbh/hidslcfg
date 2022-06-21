@@ -1,7 +1,6 @@
 """Setup window logic."""
 
 from functools import partial
-from os import geteuid
 
 from hidslcfg.api import Client
 from hidslcfg.gui.functions import get_asset
@@ -95,11 +94,6 @@ class SetupForm(WindowMixin):
 
     def on_setup(self, *_) -> None:
         """Perform the installation."""
-        if geteuid() != 0:
-            return self.show_error(
-                'Das Programm muss als Benutzer "root" ausgeführt werden.'
-            )
-
         try:
             self._system_id = self.get_system_id()
         except ValueError:
