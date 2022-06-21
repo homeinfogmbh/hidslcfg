@@ -97,7 +97,6 @@
             <property name="can-focus">True</property>
             <property name="has-focus">True</property>
             <property name="editable">False</property>
-            <property name="visibility">False</property>
             <property name="caps-lock-warning">False</property>
           </object>
           <packing>
