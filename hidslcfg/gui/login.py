@@ -28,7 +28,7 @@ class LoginForm(WindowMixin):
         self.password = builder.get_object('password')
         builder.connect_signals(self.window)
         self.window.connect('destroy', self.on_destroy)
-        self.login_button.connect('button-release-event', self.login)
+        self.login_button.connect('button-release-event', self.on_login)
 
     def on_destroy(self, *_) -> None:
         """Handle window destruction events."""
@@ -38,7 +38,7 @@ class LoginForm(WindowMixin):
         else:
             Gtk.main_quit()
 
-    def login(self, *_) -> None:
+    def on_login(self, *_) -> None:
         """Perform the login."""
         if not (user_name := self.user_name.get_text()):
             return self.show_error('Kein Benutzername angegeben.')
