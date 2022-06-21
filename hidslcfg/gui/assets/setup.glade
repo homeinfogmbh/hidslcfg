@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.38.2 -->
+<interface>
+  <requires lib="gtk+" version="3.24"/>
+  <object class="GtkApplicationWindow" id="setup">
+    <property name="width-request">500</property>
+    <property name="height-request">500</property>
+    <property name="can-focus">False</property>
+    <property name="title" translatable="yes">HIDSL Konfigurator</property>
+    <property name="resizable">False</property>
+    <property name="modal">True</property>
+    <property name="window-position">center</property>
+    <property name="urgency-hint">True</property>
+    <child>
+      <!-- n-columns=2 n-rows=5 -->
+      <object class="GtkGrid">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <child>
+          <object class="GtkImage">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="margin-start">50</property>
+            <property name="margin-end">50</property>
+            <property name="margin-top">10</property>
+            <property name="pixbuf">HI_logo_installer.png</property>
+          </object>
+          <packing>
+            <property name="left-attach">0</property>
+            <property name="top-attach">0</property>
+            <property name="width">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkEntry" id="serial_number">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="margin-start">50</property>
+            <property name="margin-end">10</property>
+            <property name="margin-bottom">10</property>
+            <property name="primary-icon-name">document-properties</property>
+            <property name="primary-icon-tooltip-text" translatable="yes">Seriennummer des Gerätes (optional)</property>
+            <property name="placeholder-text" translatable="yes">Seriennummer (optional)</property>
+          </object>
+          <packing>
+            <property name="left-attach">0</property>
+            <property name="top-attach">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkEntry" id="system_id">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="margin-start">10</property>
+            <property name="margin-end">50</property>
+            <property name="margin-bottom">10</property>
+            <property name="primary-icon-name">media-playlist-repeat</property>
+            <property name="primary-icon-tooltip-text" translatable="yes">ID des Systems
+Nur bei Wiederverwendung z.B. nach Reparatur</property>
+            <property name="placeholder-text" translatable="yes">System ID (optional)</property>
+            <property name="input-purpose">number</property>
+          </object>
+          <packing>
+            <property name="left-attach">1</property>
+            <property name="top-attach">1</property>
+          </packing>
+        </child>
+        <child>
+          <!-- n-columns=2 n-rows=7 -->
+          <object class="GtkGrid">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="margin-start">50</property>
+            <property name="margin-end">50</property>
+            <property name="margin-top">10</property>
+            <property name="margin-bottom">20</property>
+            <child>
+              <object class="GtkRadioButton" id="standard24">
+                <property name="label" translatable="yes">Touch24</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">False</property>
+                <property name="hexpand">True</property>
+                <property name="draw-indicator">True</property>
+                <property name="group">standard32</property>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">0</property>
+                <property name="width">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkRadioButton" id="standard32">
+                <property name="label" translatable="yes">Touch32</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">False</property>
+                <property name="hexpand">True</property>
+                <property name="draw-indicator">True</property>
+                <property name="group">standard24</property>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">1</property>
+                <property name="width">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkRadioButton" id="neptun">
+                <property name="label" translatable="yes">NeptunTouch24</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">False</property>
+                <property name="hexpand">True</property>
+                <property name="draw-indicator">True</property>
+                <property name="group">standard24</property>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">2</property>
+                <property name="width">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkRadioButton" id="phoenix">
+                <property name="label" translatable="yes">PhoenixTouch24</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">False</property>
+                <property name="hexpand">True</property>
+                <property name="draw-indicator">True</property>
+                <property name="group">standard24</property>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">3</property>
+                <property name="width">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkRadioButton" id="concealed24">
+                <property name="label" translatable="yes">ConcealedTouch24</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">False</property>
+                <property name="hexpand">True</property>
+                <property name="draw-indicator">True</property>
+                <property name="group">standard24</property>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">4</property>
+                <property name="width">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkRadioButton" id="concealed32">
+                <property name="label" translatable="yes">ConcealedTouch32</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">False</property>
+                <property name="hexpand">True</property>
+                <property name="draw-indicator">True</property>
+                <property name="group">standard24</property>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">5</property>
+                <property name="width">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkRadioButton" id="other_model">
+                <property name="label" translatable="yes">Anderes Modell</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">False</property>
+                <property name="margin-end">10</property>
+                <property name="draw-indicator">True</property>
+                <property name="group">standard24</property>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">6</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkEntry" id="model">
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="margin-start">10</property>
+                <property name="hexpand">True</property>
+                <property name="primary-icon-name">video-display</property>
+                <property name="primary-icon-tooltip-text" translatable="yes">Bezeichung des Modells (Freitext)
+z.B. "ZOTAC ZBOX Nano"</property>
+                <property name="placeholder-text" translatable="yes">Modellbezeichnung</property>
+              </object>
+              <packing>
+                <property name="left-attach">1</property>
+                <property name="top-attach">6</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="left-attach">0</property>
+            <property name="top-attach">3</property>
+            <property name="width">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="install">
+            <property name="label" translatable="yes">Konfiguration starten</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+            <property name="margin-start">50</property>
+            <property name="margin-end">50</property>
+            <property name="margin-top">20</property>
+            <property name="margin-bottom">50</property>
+            <property name="always-show-image">True</property>
+          </object>
+          <packing>
+            <property name="left-attach">0</property>
+            <property name="top-attach">4</property>
+            <property name="width">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="margin-top">15</property>
+            <property name="hexpand">True</property>
+            <property name="label" translatable="yes">DisplayTyp</property>
+            <property name="xalign">0.15000000596046448</property>
+            <attributes>
+              <attribute name="scale" value="2"/>
+            </attributes>
+          </object>
+          <packing>
+            <property name="left-attach">0</property>
+            <property name="top-attach">2</property>
+            <property name="width">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkEntry" id="focus_dummy">
+            <property name="can-focus">True</property>
+            <property name="has-focus">True</property>
+            <property name="editable">False</property>
+            <property name="visibility">False</property>
+            <property name="caps-lock-warning">False</property>
+          </object>
+          <packing>
+            <property name="left-attach">0</property>
+            <property name="top-attach">0</property>
+            <property name="width">2</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>
