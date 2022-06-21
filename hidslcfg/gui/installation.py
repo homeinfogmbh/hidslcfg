@@ -11,11 +11,11 @@ from hidslcfg.gui.mixins import WindowMixin
 from hidslcfg.wireguard import MTU, create, patch
 
 
-__all__ = ['InstallingForm']
+__all__ = ['InstallationForm']
 
 
-class InstallingForm(WindowMixin):
-    """Installing form objects."""
+class InstallationForm(WindowMixin):
+    """installation form objects."""
 
     def __init__(
             self,
@@ -24,13 +24,13 @@ class InstallingForm(WindowMixin):
             serial_number: str | None,
             model: str
     ):
-        """Create the installing form."""
+        """Create the installation form."""
         self.client = client
         self.system_id = system_id
         self.serial_number = serial_number
         self.model = model
         builder = Gtk.Builder()
-        builder.add_from_file(str(get_asset('login.glade')))
+        builder.add_from_file(str(get_asset('installation.glade')))
         self.window = builder.get_object('installation')
         builder.connect_signals(self.window)
         self.window.connect('destroy', self.on_destroy)

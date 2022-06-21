@@ -6,7 +6,7 @@ from os import geteuid
 
 from hidslcfg.api import Client
 from hidslcfg.gui.functions import get_asset
-from hidslcfg.gui.installing import InstallingForm
+from hidslcfg.gui.installation import InstallationForm
 from hidslcfg.gui.mixins import WindowMixin
 from hidslcfg.gui.gtk import Gtk
 
@@ -83,14 +83,14 @@ class SetupForm(WindowMixin):
     def on_destroy(self, *_) -> None:
         """Handle window destruction events."""
         if self._installing:
-            installing_form = InstallingForm(
+            installation_form = InstallationForm(
                 self.client,
                 self._system_id,
                 self._serial_number,
                 self._model
             )
-            installing_form.show()
-            installing_form.setup()
+            installation_form.show()
+            installation_form.setup()
         else:
             Gtk.main_quit()
 
