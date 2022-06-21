@@ -19,6 +19,8 @@ class LoginForm(WindowMixin):
 
     def __init__(self):
         """Create the login form."""
+        self.client = Client()
+        self.logged_in = False
         builder = Gtk.Builder()
         builder.add_from_file(str(get_asset('login.glade')))
         self.window = builder.get_object('login')
@@ -26,8 +28,15 @@ class LoginForm(WindowMixin):
         self.user_name = builder.get_object('user_name')
         self.password = builder.get_object('password')
         builder.connect_signals(self.window)
-        self.window.connect('destroy', Gtk.main_quit)
+        self.window.connect('destroy', self.on_destroy)
         self.login_button.connect('button-release-event', self.login)
+
+    def on_destroy(self, widget=None, *data) -> None:
+        if self.logged_in:
+            setup_form = SetupForm(self.client)
+            setup_form.show()
+        else:
+            Gtk.main_quit()
 
     def login(self, caller: Gtk.Button, event: Gdk.EventButton) -> None:
         """Performs the login."""
@@ -37,13 +46,10 @@ class LoginForm(WindowMixin):
         if not (password := self.password.get_text()):
             return self.show_error('Kein Passwort angegeben.')
 
-        client = Client()
-
         try:
-            client.login(user_name, password)
+            self.client.login(user_name, password)
         except APIError as error:
             return self.show_error(translate(error.json.get('message')))
 
-        self.window.close()
-        setup_form = SetupForm(client)
-        setup_form.show()
+        self.logged_in = True
+        self.window.destroy()
