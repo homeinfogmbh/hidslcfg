@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 from functools import partial
+from os import geteuid
 
 from hidslcfg.exceptions import APIError, ProgramError
 from hidslcfg.api import Client
@@ -94,6 +95,11 @@ class SetupForm(WindowMixin):
 
     def setup(self, *_) -> None:
         """Perform the installation."""
+        if geteuid() != 0:
+            return self.show_error(
+                'Das Programm muss als Benutzer "root" ausgeführt werden.'
+            )
+
         try:
             self._system_id = self.get_system_id()
         except ValueError:
