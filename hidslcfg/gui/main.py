@@ -7,7 +7,7 @@ from hidslcfg.gui.gtk import Gtk
 from hidslcfg.gui.login import LoginForm
 
 
-def main() -> None:
+def run() -> None:
     """Starts the GUI."""
 
     if geteuid() != 0:
@@ -20,4 +20,4 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    main()
+    run()

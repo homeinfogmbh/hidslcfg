@@ -30,7 +30,8 @@ setup(
         'console_scripts': [
             'hidslcfg = hidslcfg.cli.hidslcfg:run',
             'hidslreset = hidslcfg.cli.hidslreset:run',
-            'wgmigrate = hidslcfg.cli.wgmigrate:run'
+            'wgmigrate = hidslcfg.cli.wgmigrate:run',
+            'hidslcfg-gui = hidslcfg.gui.main:run'
         ],
     },
     description='HOMEINFO Digital Signage Linux configurator.'
