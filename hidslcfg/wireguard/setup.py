@@ -24,7 +24,18 @@ from hidslcfg.wireguard.common import SERVER
 from hidslcfg.wireguard.common import load
 
 
-__all__ = ['patch', 'setup']
+__all__ = ['create', 'patch', 'setup']
+
+
+def create(client: Client, mtu: int = MTU, **json) -> None:
+    """Creates a new WireGuard system."""
+
+    LOGGER.debug('Creating public / private key pair.')
+    pubkey, private = keypair()
+    LOGGER.info('Creating new WireGuard system.')
+    system = client.add_system(**json, pubkey=pubkey)
+    LOGGER.info('New system ID: %i', system['id'])
+    configure_(system, private, mtu=mtu)
 
 
 def patch(client: Client, system: int, mtu: int = MTU, **json) -> None:
@@ -179,14 +190,3 @@ def configure_(system: dict, private: str, mtu: int = MTU) -> None:
     write_units(system['wireguard'], private, mtu=mtu)
     LOGGER.debug('Disabling OpenVPN.')
     load()
-
-
-def create(client: Client, mtu: int = MTU, **json) -> None:
-    """Creates a new WireGuard system."""
-
-    LOGGER.debug('Creating public / private key pair.')
-    pubkey, private = keypair()
-    LOGGER.info('Creating new WireGuard system.')
-    system = client.add_system(**json, pubkey=pubkey)
-    LOGGER.info('New system ID: %i', system['id'])
-    configure_(system, private, mtu=mtu)
