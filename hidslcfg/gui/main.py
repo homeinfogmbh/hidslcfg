@@ -9,7 +9,7 @@ def main() -> None:
 
     login_form = LoginForm.create()
     login_form.login_button.connect('button-release-event', login_form.login)
-    login_form.window.show_all()
+    login_form.window.show()
     Gtk.main()
 
 
