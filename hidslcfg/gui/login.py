@@ -31,7 +31,12 @@ class LoginForm(NamedTuple):
         user_name = builder.get_object('user_name')
         password = builder.get_object('password')
         builder.connect_signals(window)
+        window.connect('destroy', Gtk.main_quit)
         return cls(window, login_button, user_name, password)
+
+    def show(self) -> None:
+        """Shows the window."""
+        self.window.show()
 
     def show_error(self, message: str) -> None:
         """Shows an error message."""
