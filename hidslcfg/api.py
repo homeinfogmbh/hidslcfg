@@ -26,9 +26,9 @@ class HTTPMethod(Enum):
 class Client:
     """Class to retrieve data from the web API."""
 
-    def __init__(self, session: Session | None = None):
+    def __init__(self):
         """Initialize with credentials."""
-        self.session = session
+        self.session = Session()
 
     def __enter__(self):
         if self.session is None:
