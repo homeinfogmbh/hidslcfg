@@ -7,8 +7,7 @@ from hidslcfg.gui.login import LoginForm
 def main() -> None:
     """Starts the GUI."""
 
-    login_form = LoginForm.create()
-    login_form.login_button.connect('button-release-event', login_form.login)
+    login_form = LoginForm()
     login_form.show()
     Gtk.main()
 

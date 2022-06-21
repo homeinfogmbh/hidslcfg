@@ -1,53 +1,33 @@
-"""Login window definitions."""
+"""Login window logic."""
 
 from __future__ import annotations
-from typing import NamedTuple
 
 from hidslcfg.api import Client
 from hidslcfg.exceptions import APIError
 from hidslcfg.gui.functions import get_asset
 from hidslcfg.gui.gtk import Gdk, Gtk
+from hidslcfg.gui.mixins import WindowMixin
+from hidslcfg.gui.setup import SetupForm
 from hidslcfg.gui.translation import translate
 
 
 __all__ = ['LoginForm']
 
 
-class LoginForm(NamedTuple):
+class LoginForm(WindowMixin):
     """Login form objects."""
 
-    window: Gtk.ApplicationWindow
-    login_button: Gtk.Button
-    user_name: Gtk.Entry
-    password: Gtk.Entry
-
-    @classmethod
-    def create(cls) -> LoginForm:
+    def __init__(self):
         """Create the login form."""
         builder = Gtk.Builder()
         builder.add_from_file(str(get_asset('login.glade')))
-        window = builder.get_object('login')
-        login_button = builder.get_object('login_button')
-        user_name = builder.get_object('user_name')
-        password = builder.get_object('password')
-        builder.connect_signals(window)
-        window.connect('destroy', Gtk.main_quit)
-        return cls(window, login_button, user_name, password)
-
-    def show(self) -> None:
-        """Shows the window."""
-        self.window.show()
-
-    def show_error(self, message: str) -> None:
-        """Shows an error message."""
-        message_dialog = Gtk.MessageDialog(
-            transient_for=self.window,
-            message_type=Gtk.MessageType.ERROR,
-            buttons=Gtk.ButtonsType.OK,
-            text=message
-        )
-        message_dialog.run()
-        message_dialog.destroy()
+        self.window = builder.get_object('login')
+        self.login_button = builder.get_object('login_button')
+        self.user_name = builder.get_object('user_name')
+        self.password = builder.get_object('password')
+        builder.connect_signals(self.window)
+        self.window.connect('destroy', Gtk.main_quit)
+        self.login_button.connect('button-release-event', self.login)
 
     def login(self, caller: Gtk.Button, event: Gdk.EventButton) -> None:
         """Performs the login."""
@@ -64,3 +44,6 @@ class LoginForm(NamedTuple):
         except APIError as error:
             return self.show_error(translate(error.json.get('message')))
 
+        self.window.close()
+        setup_form = SetupForm(client)
+        setup_form.show()
