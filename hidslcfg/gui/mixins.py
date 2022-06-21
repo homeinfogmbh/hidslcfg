@@ -1,6 +1,7 @@
 """Common mixins."""
 
 from hidslcfg.gui.gtk import Gtk
+from hidslcfg.gui.translation import translate
 
 
 __all__ = ['WindowMixin']
@@ -19,7 +20,7 @@ class WindowMixin:
             transient_for=self.window,
             message_type=Gtk.MessageType.ERROR,
             buttons=Gtk.ButtonsType.OK,
-            text=message
+            text=translate(message)
         )
         message_dialog.run()
         message_dialog.destroy()

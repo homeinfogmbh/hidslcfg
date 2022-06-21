@@ -8,7 +8,6 @@ from hidslcfg.gui.functions import get_asset
 from hidslcfg.gui.gtk import Gtk
 from hidslcfg.gui.mixins import WindowMixin
 from hidslcfg.gui.setup import SetupForm
-from hidslcfg.gui.translation import translate
 
 
 __all__ = ['LoginForm']
@@ -50,7 +49,7 @@ class LoginForm(WindowMixin):
         try:
             self.client.login(user_name, password)
         except APIError as error:
-            return self.show_error(translate(error.json.get('message')))
+            return self.show_error(error.json.get('message'))
 
         self.logged_in = True
         self.window.destroy()
