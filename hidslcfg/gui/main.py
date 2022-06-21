@@ -11,7 +11,7 @@ def main() -> None:
     """Starts the GUI."""
 
     if geteuid() != 0:
-        print('This program required root privileges.', file=stderr)
+        print('This program requires root privileges.', file=stderr)
         raise SystemExit(1)
 
     login_form = LoginForm()
