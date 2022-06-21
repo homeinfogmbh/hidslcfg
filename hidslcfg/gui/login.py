@@ -5,7 +5,7 @@ from __future__ import annotations
 from hidslcfg.api import Client
 from hidslcfg.exceptions import APIError
 from hidslcfg.gui.functions import get_asset
-from hidslcfg.gui.gtk import Gdk, Gtk
+from hidslcfg.gui.gtk import Gtk
 from hidslcfg.gui.mixins import WindowMixin
 from hidslcfg.gui.setup import SetupForm
 from hidslcfg.gui.translation import translate
@@ -31,15 +31,16 @@ class LoginForm(WindowMixin):
         self.window.connect('destroy', self.on_destroy)
         self.login_button.connect('button-release-event', self.login)
 
-    def on_destroy(self, widget=None, *data) -> None:
+    def on_destroy(self, *_) -> None:
+        """Handle window destruction events."""
         if self.logged_in:
             setup_form = SetupForm(self.client)
             setup_form.show()
         else:
             Gtk.main_quit()
 
-    def login(self, caller: Gtk.Button, event: Gdk.EventButton) -> None:
-        """Performs the login."""
+    def login(self, *_) -> None:
+        """Perform the login."""
         if not (user_name := self.user_name.get_text()):
             return self.show_error('Kein Benutzername angegeben.')
 
