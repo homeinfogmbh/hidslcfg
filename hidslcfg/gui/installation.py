@@ -27,14 +27,18 @@ class InstallationForm(WindowMixin):
         self.system_id = system_id
         self.serial_number = serial_number
         self.model = model
+        self.installed = False
         builder = Gtk.Builder()
         builder.add_from_file(str(get_asset('installation.glade')))
         self.window = builder.get_object('installation')
         builder.connect_signals(self.window)
         self.window.connect('destroy', self.on_destroy)
 
-    def on_destroy(self, *_) -> None:
+    def on_destroy(self, *args, **kwargs) -> None:
         """Handle window destruction events."""
+        if not self.installed:
+            return Gtk.main_quit(*args, **kwargs)
+
         completed_form = CompletedForm(
             self.system_id,
             self.serial_number,
@@ -52,11 +56,13 @@ class InstallationForm(WindowMixin):
                 self.model
             )
         except ProgramError as error:
-            return self.show_error(str(error))
+            self.show_error(str(error))
         except APIError as error:
-            return self.show_error(error.json.get('message'))
+            self.show_error(error.json.get('message'))
         except Exception as error:
-            return self.show_error(str(error))
+            self.show_error(str(error))
+        else:
+            self.installed = True
 
         self.window.destroy()
 
