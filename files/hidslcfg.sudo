@@ -1,1 +1,1 @@
-hidslcfg ALL = NOPASSWD: /usr/bin/hidslcfg, /usr/bin/hidslreset
+hidslcfg ALL = NOPASSWD: /usr/bin/hidslcfg, /usr/bin/hidslcfg-gui, /usr/bin/hidslreset
