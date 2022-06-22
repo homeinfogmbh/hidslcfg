@@ -28,7 +28,7 @@ class CompletedForm(WindowMixin):
         self.reboot_button = builder.get_object('reboot')
         builder.connect_signals(self.window)
         self.window.connect('destroy', Gtk.main_quit)
-        self.reboot_button.connect('button-release-event', on_reboot)
+        self.reboot_button.connect('button-press-event', on_reboot)
         self.system_id_label.set_text(f'{system_id or "-"}')
         self.model_label.set_text(model)
         self.serial_number_label.set_text(f'{serial_number or "-"}')

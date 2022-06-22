@@ -69,7 +69,7 @@ class SetupForm(WindowMixin):
         self.model_options = ModelOptions(builder)
         builder.connect_signals(self.window)
         self.window.connect('destroy', self.on_destroy)
-        self.install.connect('button-release-event', self.on_setup)
+        self.install.connect('button-press-event', self.on_setup)
 
     def get_system_id(self) -> int | None:
         """Return the system ID."""
