@@ -68,7 +68,7 @@ class SetupForm(WindowMixin):
         self.install = builder.get_object('install')
         self.model_options = ModelOptions(builder)
         builder.connect_signals(self.window)
-        self.window.connect('destroy', Gtk.main_quit)
+        self.window.connect('destroy', self.on_destroy)
         self.install.connect('button-release-event', self.on_setup)
 
     def get_system_id(self) -> int | None:
