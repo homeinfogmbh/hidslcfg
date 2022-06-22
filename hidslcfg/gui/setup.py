@@ -88,7 +88,6 @@ class SetupForm(WindowMixin):
                 self._model
             )
             installation_form.show()
-            installation_form.setup()
         else:
             Gtk.main_quit()
 

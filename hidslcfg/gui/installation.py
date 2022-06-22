@@ -32,6 +32,7 @@ class InstallationForm(WindowMixin):
         builder.add_from_file(str(get_asset('installation.glade')))
         self.window = builder.get_object('installation')
         builder.connect_signals(self.window)
+        self.window.connect('show', self.on_show)
         self.window.connect('destroy', self.on_destroy)
 
     def on_destroy(self, *args, **kwargs) -> None:
@@ -46,8 +47,8 @@ class InstallationForm(WindowMixin):
         )
         completed_form.show()
 
-    def setup(self) -> None:
-        """Perform the setup process."""
+    def on_show(self, *_) -> None:
+        """Perform the setup process when window is shown."""
         try:
             self.system_id = setup(
                 self.client,
