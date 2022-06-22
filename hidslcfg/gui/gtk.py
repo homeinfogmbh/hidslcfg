@@ -11,7 +11,7 @@ from gi.repository import Gdk, Gtk
 __all__ = ['Gtk', 'bind_keys']
 
 
-def bind_keys(*widgets: Gtk.Widget, mapping: dict[str, Callable]) -> None:
+def bind_keys(mapping: dict[int, Callable], *widgets: Gtk.Widget) -> None:
     """Bind the pressing of keys to the respective widgets."""
 
     def on_key_press(_: Gtk.Widget, event: Gdk.EventKey) -> None:
