@@ -3,7 +3,7 @@
 from hidslcfg.api import Client
 from hidslcfg.exceptions import APIError
 from hidslcfg.gui.functions import get_asset
-from hidslcfg.gui.gtk import Gtk
+from hidslcfg.gui.gtk import Gtk, bind_keys
 from hidslcfg.gui.mixins import WindowMixin
 from hidslcfg.gui.setup import SetupForm
 
@@ -24,6 +24,7 @@ class LoginForm(WindowMixin):
         self.login_button = builder.get_object('login_button')
         self.user_name = builder.get_object('user_name')
         self.password = builder.get_object('password')
+        bind_keys({65293: self.on_login}, self.user_name, self.password)
         builder.connect_signals(self.window)
         self.window.connect('destroy', self.on_destroy)
         self.login_button.connect('button-press-event', self.on_login)

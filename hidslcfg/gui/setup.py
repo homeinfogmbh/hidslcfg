@@ -6,7 +6,7 @@ from hidslcfg.api import Client
 from hidslcfg.gui.functions import get_asset
 from hidslcfg.gui.installation import InstallationForm
 from hidslcfg.gui.mixins import WindowMixin
-from hidslcfg.gui.gtk import Gtk
+from hidslcfg.gui.gtk import Gtk, bind_keys
 
 
 __all__ = ['SetupForm']
@@ -67,6 +67,12 @@ class SetupForm(WindowMixin):
         self.system_id = builder.get_object('system_id')
         self.install = builder.get_object('install')
         self.model_options = ModelOptions(builder)
+        bind_keys(
+            {65293: self.on_setup},
+            self.serial_number,
+            self.system_id,
+            self.model_options.model
+        )
         builder.connect_signals(self.window)
         self.window.connect('destroy', self.on_destroy)
         self.install.connect('button-press-event', self.on_setup)
