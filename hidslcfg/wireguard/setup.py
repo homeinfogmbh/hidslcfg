@@ -27,28 +27,30 @@ from hidslcfg.wireguard.common import load
 __all__ = ['create', 'patch', 'setup']
 
 
-def create(client: Client, mtu: int = MTU, **json) -> None:
+def create(client: Client, mtu: int = MTU, **json) -> int:
     """Creates a new WireGuard system."""
 
     LOGGER.debug('Creating public / private key pair.')
     pubkey, private = keypair()
     LOGGER.info('Creating new WireGuard system.')
     system = client.add_system(**json, pubkey=pubkey)
-    LOGGER.info('New system ID: %i', system['id'])
+    LOGGER.info('New system ID: %i', system_id := system['id'])
     configure_(system, private, mtu=mtu)
+    return system_id
 
 
-def patch(client: Client, system: int, mtu: int = MTU, **json) -> None:
+def patch(client: Client, system_id: int, mtu: int = MTU, **json) -> int:
     """Patches an existing WireGuard system."""
 
     LOGGER.debug('Creating public / private key pair.')
     pubkey, private = keypair()
-    LOGGER.info('Changing existing WireGuard system #%i.', system)
-    system = client.patch_system(**json, system=system, pubkey=pubkey)
+    LOGGER.info('Changing existing WireGuard system #%i.', system_id)
+    system = client.patch_system(**json, system=system_id, pubkey=pubkey)
     configure_(system, private, mtu=mtu)
+    return system_id
 
 
-def setup(client: Client, args: Namespace) -> None:
+def setup(client: Client, args: Namespace) -> int:
     """Set up a system with WireGuard."""
 
     if args.id is None:

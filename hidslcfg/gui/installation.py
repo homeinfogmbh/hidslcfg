@@ -49,7 +49,7 @@ class InstallationForm(WindowMixin):
     def setup(self) -> None:
         """Perform the setup process."""
         try:
-            setup(
+            self.system_id = setup(
                 self.client,
                 self.system_id,
                 self.serial_number,
@@ -72,7 +72,7 @@ def setup(
         system_id: int | None,
         serial_number: str | None,
         model: str
-) -> None:
+) -> int:
     """Run the setup."""
 
     if system_id is None:
