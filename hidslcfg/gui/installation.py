@@ -77,8 +77,8 @@ def setup(
 
     if system_id is None:
         return create(
-            client, mtu=MTU, os='Arch Linux', model=model,
-            sn=serial_number, group=1
+            client, mtu=MTU, os='Arch Linux', model=model, sn=serial_number,
+            group=1
         )
 
     return patch(
