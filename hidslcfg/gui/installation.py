@@ -55,6 +55,8 @@ class InstallationForm(WindowMixin):
             return self.show_error(str(error))
         except APIError as error:
             return self.show_error(error.json.get('message'))
+        except Exception as error:
+            return self.show_error(str(error))
 
         self.window.destroy()
 
