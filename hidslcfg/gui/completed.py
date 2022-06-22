@@ -36,4 +36,5 @@ class CompletedForm(WindowMixin):
 
 def on_reboot(*_) -> None:
     """Reboot the system."""
+
     reboot()
