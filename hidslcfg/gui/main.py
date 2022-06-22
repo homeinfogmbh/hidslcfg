@@ -1,6 +1,6 @@
 """Main GUI application."""
 
-from os import geteuid
+from os import getenv, geteuid
 from sys import stderr
 
 from hidslcfg.gui.gtk import Gtk
@@ -10,7 +10,7 @@ from hidslcfg.gui.login import LoginForm
 def run() -> None:
     """Starts the GUI."""
 
-    if geteuid() != 0:
+    if not getenv('HIDSL_DEBUG') and geteuid() != 0:
         print('This program requires root privileges.', file=stderr)
         raise SystemExit(1)
 

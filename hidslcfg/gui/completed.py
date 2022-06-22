@@ -1,5 +1,7 @@
 """Completed window logic."""
 
+from os import getenv
+
 from hidslcfg.gui.functions import get_asset
 from hidslcfg.gui.gtk import Gtk
 from hidslcfg.gui.mixins import WindowMixin
@@ -36,5 +38,9 @@ class CompletedForm(WindowMixin):
 
 def on_reboot(*_) -> None:
     """Reboot the system."""
+
+    if getenv('HIDSL_DEBUG'):
+        print('Not rebooting due to debug mode.')
+        return Gtk.main_quit()
 
     reboot()

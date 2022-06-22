@@ -1,5 +1,8 @@
 """Installing window logic."""
 
+from os import getenv
+from time import sleep
+
 from hidslcfg.api import Client
 from hidslcfg.exceptions import APIError, ProgramError
 from hidslcfg.gui.completed import CompletedForm
@@ -47,15 +50,22 @@ class InstallationForm(WindowMixin):
         )
         completed_form.show()
 
+    def install(self) -> None:
+        """Runs the installation."""
+        if getenv('HIDSL_DEBUG'):
+            return sleep(3)
+
+        self.system_id = setup(
+            self.client,
+            self.system_id,
+            self.serial_number,
+            self.model
+        )
+
     def on_show(self, *_) -> None:
         """Perform the setup process when window is shown."""
         try:
-            self.system_id = setup(
-                self.client,
-                self.system_id,
-                self.serial_number,
-                self.model
-            )
+            self.install()
         except ProgramError as error:
             self.show_error(str(error))
         except APIError as error:
