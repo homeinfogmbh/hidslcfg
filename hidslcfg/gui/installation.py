@@ -15,6 +15,9 @@ from hidslcfg.wireguard import MTU, create, patch
 __all__ = ['InstallationForm']
 
 
+SLEEP = 3
+
+
 class InstallationForm(WindowMixin):
     """installation form objects."""
 
@@ -53,7 +56,8 @@ class InstallationForm(WindowMixin):
     def install(self) -> None:
         """Runs the installation."""
         if getenv('HIDSL_DEBUG'):
-            return sleep(3)
+            print(f'Sleeping for {SLEEP} seconds due to debug mode.')
+            return sleep(SLEEP)
 
         self.system_id = setup(
             self.client,
