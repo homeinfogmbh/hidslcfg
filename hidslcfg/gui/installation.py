@@ -1,5 +1,6 @@
 """Installing window logic."""
 
+from threading import Thread
 from os import getenv
 from time import sleep
 
@@ -41,6 +42,10 @@ class InstallationForm(WindowMixin):
         self.window.connect('show', self.on_show)
         self.window.connect('destroy', self.on_destroy)
 
+    def on_show(self, *_) -> None:
+        """Perform the setup process when window is shown."""
+        Thread(daemon=True, target=self.safe_install).start()
+
     def on_destroy(self, *args, **kwargs) -> None:
         """Handle window destruction events."""
         if not self.installed:
@@ -53,21 +58,8 @@ class InstallationForm(WindowMixin):
         )
         completed_form.show()
 
-    def install(self) -> None:
-        """Runs the installation."""
-        if getenv('HIDSL_DEBUG'):
-            print(f'Sleeping for {SLEEP} seconds due to debug mode.')
-            return sleep(SLEEP)
-
-        self.system_id = setup(
-            self.client,
-            self.system_id,
-            self.serial_number,
-            self.model
-        )
-
-    def on_show(self, *_) -> None:
-        """Perform the setup process when window is shown."""
+    def safe_install(self) -> None:
+        """Run the installation with caught exceptions."""
         try:
             self.install()
         except ProgramError as error:
@@ -80,6 +72,19 @@ class InstallationForm(WindowMixin):
             self.installed = True
 
         self.window.destroy()
+
+    def install(self) -> None:
+        """Run the installation."""
+        if getenv('HIDSL_DEBUG'):
+            print(f'Sleeping for {SLEEP} seconds due to debug mode.')
+            return sleep(SLEEP)
+
+        self.system_id = setup(
+            self.client,
+            self.system_id,
+            self.serial_number,
+            self.model
+        )
 
 
 def setup(
