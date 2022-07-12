@@ -1,7 +1,8 @@
 """Installing window logic."""
 
-from threading import Thread
+from logging import getLogger
 from os import getenv
+from threading import Thread
 from time import sleep
 
 from hidslcfg.api import Client
@@ -16,6 +17,7 @@ from hidslcfg.wireguard import MTU, create, patch
 __all__ = ['InstallationForm']
 
 
+LOGGER = getLogger(__file__)
 SLEEP = 3
 
 
@@ -76,7 +78,7 @@ class InstallationForm(WindowMixin):
     def install(self) -> None:
         """Run the installation."""
         if getenv('HIDSL_DEBUG'):
-            print(f'Sleeping for {SLEEP} seconds due to debug mode.')
+            LOGGER.warning('Sleeping for %s seconds due to debug mode.', SLEEP)
             return sleep(SLEEP)
 
         self.system_id = setup(
