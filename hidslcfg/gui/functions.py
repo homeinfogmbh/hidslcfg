@@ -1,5 +1,6 @@
 """Helper functions."""
 
+from os import getenv
 from pathlib import Path
 
 
@@ -18,7 +19,7 @@ def get_asset(filename: str) -> Path:
 def get_base_dir() -> Path:
     """Return the assets base directory."""
 
-    if ASSETS_DIR.is_dir():
-        return ASSETS_DIR
+    if getenv('HIDSL_DEBUG'):
+        return Path(__file__).parent / 'assets'
 
-    return Path(__file__).parent / 'assets'
+    return ASSETS_DIR
