@@ -31,14 +31,17 @@ PARSER.add_argument(
 )
 PARSER.add_argument('-v', '--verbose', action='store_true', help='be gassy')
 PARSER.add_argument(
-    '-o', '--operating-system', default='Arch Linux',
+    '-o', '--operating-system', default='Arch Linux', metavar='os_name',
     help='the operating system to use'
 )
 PARSER.add_argument(
-    '-G', '--group', type=int, default=1, help='the system group'
+    '-G', '--group', type=int, default=1, metavar='group_id',
+    help='the system group'
 )
 MODELS = PARSER.add_mutually_exclusive_group(required=True)
-MODELS.add_argument('-m', '--model', help='the hardware model')
+MODELS.add_argument(
+    '-m', '--model', metavar='model_name', help='the hardware model'
+)
 MODELS.add_argument(
     '-S', '--standard24', action='store_true', help='MOStron TSPC 24"'
 )
