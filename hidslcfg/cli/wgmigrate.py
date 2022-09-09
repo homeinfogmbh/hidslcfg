@@ -15,7 +15,7 @@ __all__ = ['run']
 PARSER = ArgumentParser(description=__doc__)
 PARSER.add_argument('-u', '--user', metavar='user', help='user name')
 PARSER.add_argument(
-    '-g', '--grace-time', type=int, default=10, metavar='secs',
+    '-g', '--grace-time', type=int, default=10, metavar='seconds',
     help='seconds to wait for contacting the VPN servers'
 )
 PARSER.add_argument(

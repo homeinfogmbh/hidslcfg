@@ -18,7 +18,7 @@ PARSER.add_argument(
     '-s', '--serial-number', metavar='sn', help="the system's serial number"
 )
 PARSER.add_argument(
-    '-g', '--grace-time', type=int, default=3, metavar='secs',
+    '-g', '--grace-time', type=int, default=3, metavar='seconds',
     help='seconds to wait for contacting the VPN servers'
 )
 PARSER.add_argument(
