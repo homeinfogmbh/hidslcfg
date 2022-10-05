@@ -8,16 +8,21 @@ require_version('Gdk', '3.0')
 from gi.repository import Gdk, Gtk
 
 
-__all__ = ['Gtk', 'bind_keys']
+__all__ = ['Gtk', 'bind_button']
 
 
-def bind_keys(mapping: dict[int, Callable], *widgets: Gtk.Widget) -> None:
-    """Bind the pressing of keys to the respective widgets."""
+ENTER_KEY = 65293
 
-    def on_key_press(_: Gtk.Widget, event: Gdk.EventKey) -> None:
+EventHandler = Callable[[Gtk.Widget, Gdk.EventKey], None]
+
+
+def bind_button(button: Gtk.Button, function: EventHandler) -> None:
+    """Bind an event to a button activation."""
+
+    def on_key_press(widget: Gtk.Widget, event: Gdk.EventKey) -> None:
         """Run an action based on the pressed key."""
-        if function := mapping.get(event.keyval):
-            function()
+        if event.keyval == ENTER_KEY:
+            function(widget, event)
 
-    for widget in widgets:
-        widget.connect('key-press-event', on_key_press)
+    button.connect('key-press-event', on_key_press)
+    button.connect('button-release-event', function)

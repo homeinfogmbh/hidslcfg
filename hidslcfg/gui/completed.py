@@ -3,9 +3,8 @@
 from logging import getLogger
 from os import getenv
 
-from hidslcfg.gui.functions import get_asset
-from hidslcfg.gui.gtk import Gtk
-from hidslcfg.gui.mixins import WindowMixin
+from hidslcfg.gui.builder_window import BuilderWindow
+from hidslcfg.gui.gtk import Gtk, bind_button
 from hidslcfg.system import reboot
 
 
@@ -15,7 +14,7 @@ __all__ = ['CompletedForm']
 LOGGER = getLogger(__file__)
 
 
-class CompletedForm(WindowMixin):
+class CompletedForm(BuilderWindow, file='completed.glade'):
     """Installing form objects."""
 
     def __init__(
@@ -25,19 +24,15 @@ class CompletedForm(WindowMixin):
             model: str
     ):
         """Create the installing form."""
-        builder = Gtk.Builder()
-        builder.add_from_file(str(get_asset('completed.glade')))
-        self.window = builder.get_object('completed')
-        self.system_id_label = builder.get_object('system_id')
-        self.model_label = builder.get_object('model')
-        self.serial_number_label = builder.get_object('serial_number')
-        self.reboot_button = builder.get_object('reboot')
-        builder.connect_signals(self.window)
-        self.window.connect('destroy', Gtk.main_quit)
-        self.reboot_button.connect('button-press-event', on_reboot)
-        self.system_id_label.set_text(f'{system_id or "-"}')
-        self.model_label.set_text(model)
-        self.serial_number_label.set_text(f'{serial_number or "-"}')
+        super().__init__('completed')
+        self.system_id: Gtk.Label = self.build('system_id')
+        self.system_id.set_text(f'{system_id or "-"}')
+        self.model: Gtk.Label = self.build('model')
+        self.model.set_text(model)
+        self.serial_number: Gtk.Label = self.build('serial_number')
+        self.serial_number.set_text(f'{serial_number or "-"}')
+        self.reboot: Gtk.Button = self.build('reboot')
+        bind_button(self.reboot, on_reboot)
 
 
 def on_reboot(*_) -> None:

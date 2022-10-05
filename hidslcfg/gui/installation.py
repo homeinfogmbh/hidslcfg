@@ -7,10 +7,9 @@ from time import sleep
 
 from hidslcfg.api import Client
 from hidslcfg.exceptions import APIError, ProgramError
+from hidslcfg.gui.builder_window import BuilderWindow
 from hidslcfg.gui.completed import CompletedForm
-from hidslcfg.gui.functions import get_asset
 from hidslcfg.gui.gtk import Gtk
-from hidslcfg.gui.mixins import WindowMixin
 from hidslcfg.wireguard import MTU, create, patch
 
 
@@ -21,7 +20,7 @@ LOGGER = getLogger(__file__)
 SLEEP = 3
 
 
-class InstallationForm(WindowMixin):
+class InstallationForm(BuilderWindow, file='installation.glade'):
     """installation form objects."""
 
     def __init__(
@@ -32,26 +31,21 @@ class InstallationForm(WindowMixin):
             model: str
     ):
         """Create the installation form."""
+        super().__init__('installation')
         self.client = client
         self.system_id = system_id
         self.serial_number = serial_number
         self.model = model
         self.installed = False
-        builder = Gtk.Builder()
-        builder.add_from_file(str(get_asset('installation.glade')))
-        self.window = builder.get_object('installation')
-        builder.connect_signals(self.window)
-        self.window.connect('show', self.on_show)
-        self.window.connect('destroy', self.on_destroy)
 
     def on_show(self, *_) -> None:
         """Perform the setup process when window is shown."""
         Thread(daemon=True, target=self.safe_install).start()
 
-    def on_destroy(self, *args, **kwargs) -> None:
+    def on_destroy(self, *_) -> None:
         """Handle window destruction events."""
         if not self.installed:
-            return Gtk.main_quit(*args, **kwargs)
+            return Gtk.main_quit()
 
         completed_form = CompletedForm(
             self.system_id,

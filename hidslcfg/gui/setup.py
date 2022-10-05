@@ -1,81 +1,34 @@
 """Setup window logic."""
 
 from functools import partial
+from typing import Any, Callable
 
 from hidslcfg.api import Client
-from hidslcfg.gui.functions import get_asset
+from hidslcfg.gui.builder_window import BuilderWindow
 from hidslcfg.gui.installation import InstallationForm
-from hidslcfg.gui.mixins import WindowMixin
-from hidslcfg.gui.gtk import Gtk, bind_keys
+from hidslcfg.gui.gtk import Gtk, bind_button
 
 
 __all__ = ['SetupForm']
 
 
-class ModelOptions:
-    """Model options."""
-
-    def __init__(self, builder: Gtk.Builder):
-        """Create model options from the given builder."""
-        self.standard24 = builder.get_object('standard24')
-        self.standard24.connect('toggled', self.on_select)
-        self.standard32 = builder.get_object('standard32')
-        self.standard32.connect('toggled', self.on_select)
-        self.neptun = builder.get_object('neptun')
-        self.neptun.connect('toggled', self.on_select)
-        self.phoenix = builder.get_object('phoenix')
-        self.phoenix.connect('toggled', self.on_select)
-        self.concealed24 = builder.get_object('concealed24')
-        self.concealed24.connect('toggled', self.on_select)
-        self.concealed32 = builder.get_object('concealed32')
-        self.concealed32.connect('toggled', self.on_select)
-        self.other_model = builder.get_object('other_model')
-        self.other_model.connect('toggled', partial(self.on_select, None))
-        self.model = builder.get_object('model')
-        self._selected = self.standard24.get_label()
-
-    @property
-    def selected(self) -> str:
-        """Return the selected model name."""
-        if self._selected is None:
-            if text := self.model.get_text():
-                return text
-
-            raise ValueError('No model selected.')
-
-        return self._selected
-
-    def on_select(self, widget: Gtk.RadioButton | None, *_):
-        """Handle select events."""
-        self._selected = None if widget is None else widget.get_label()
-
-
-class SetupForm(WindowMixin):
+class SetupForm(BuilderWindow, file='setup.glade'):
     """Setup form objects."""
 
     def __init__(self, client: Client):
         """Create the setup form."""
+        super().__init__('setup')
         self.client = client
         self._installing = False
         self._system_id = None
         self._serial_number = None
         self._model = None
-        builder = Gtk.Builder()
-        builder.add_from_file(str(get_asset('setup.glade')))
-        self.window = builder.get_object('setup')
-        self.serial_number = builder.get_object('serial_number')
-        self.system_id = builder.get_object('system_id')
-        self.install = builder.get_object('install')
-        self.model_options = ModelOptions(builder)
-        bind_keys(
-            {65293: self.on_setup},
-            self.serial_number,
-            self.system_id,
-            self.model_options.model
-        )
-        builder.connect_signals(self.window)
-        self.window.connect('destroy', self.on_destroy)
-        self.install.connect('button-press-event', self.on_setup)
+
+        self.serial_number: Gtk.Entry = self.build('serial_number')
+        self.system_id: Gtk.Entry = self.build('system_id')
+        self.install: Gtk.Button = self.build('install')
+        self.model_options = ModelOptions(self.build)
+        bind_button(self.install, self.on_setup)
 
     def get_system_id(self) -> int | None:
         """Return the system ID."""
@@ -112,3 +65,41 @@ class SetupForm(WindowMixin):
         self._serial_number = self.serial_number.get_text() or None
         self._installing = True
         self.window.destroy()
+
+
+class ModelOptions:
+    """Model options."""
+
+    def __init__(self, build: Callable[[str], Any]):
+        """Create model options from the given builder."""
+        self.standard24: Gtk.RadioButton = build('standard24')
+        self.standard24.connect('toggled', self.on_select)
+        self.standard32: Gtk.RadioButton = build('standard32')
+        self.standard32.connect('toggled', self.on_select)
+        self.neptun: Gtk.RadioButton = build('neptun')
+        self.neptun.connect('toggled', self.on_select)
+        self.phoenix: Gtk.RadioButton = build('phoenix')
+        self.phoenix.connect('toggled', self.on_select)
+        self.concealed24: Gtk.RadioButton = build('concealed24')
+        self.concealed24.connect('toggled', self.on_select)
+        self.concealed32: Gtk.RadioButton = build('concealed32')
+        self.concealed32.connect('toggled', self.on_select)
+        self.other_model: Gtk.RadioButton = build('other_model')
+        self.other_model.connect('toggled', partial(self.on_select, None))
+        self.model: Gtk.Entry = build('model')
+        self._selected: Gtk.RadioButton = self.standard24
+
+    @property
+    def selected(self) -> str:
+        """Return the selected model name."""
+        if self._selected is None:
+            if text := self.model.get_text():
+                return text
+
+            raise ValueError('No model selected.')
+
+        return self._selected.get_label()
+
+    def on_select(self, widget: Gtk.RadioButton | None, *_):
+        """Handle select events."""
+        self._selected = None if widget is None else widget
