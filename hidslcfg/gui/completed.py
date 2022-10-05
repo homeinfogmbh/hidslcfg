@@ -5,6 +5,7 @@ from os import getenv
 
 from hidslcfg.gui.builder_window import BuilderWindow
 from hidslcfg.gui.gtk import Gtk, bind_button
+from hidslcfg.gui.main import MainBuilderWindow
 from hidslcfg.system import reboot
 
 
@@ -25,6 +26,8 @@ class CompletedForm(BuilderWindow, file='completed.glade'):
     ):
         """Create the installing form."""
         super().__init__('completed')
+        self.go_home = False
+
         self.system_id: Gtk.Label = self.build('system_id')
         self.system_id.set_text(f'{system_id or "-"}')
         self.model: Gtk.Label = self.build('model')
@@ -33,6 +36,20 @@ class CompletedForm(BuilderWindow, file='completed.glade'):
         self.serial_number.set_text(f'{serial_number or "-"}')
         self.reboot: Gtk.Button = self.build('reboot')
         bind_button(self.reboot, on_reboot)
+        self.home: Gtk.Label = self.build('home')
+        self.home.connect('button-release-event', self.on_go_home)
+
+    def on_go_home(self, *_):
+        """Set flag to return to home screen."""
+        self.go_home = True
+
+    def on_destroy(self, *args) -> None:
+        """Handle window destruction events."""
+        if self.go_home:
+            main_window = MainBuilderWindow()
+            main_window.show()
+        else:
+            Gtk.main_quit()
 
 
 def on_reboot(*_) -> None:

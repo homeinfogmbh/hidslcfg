@@ -187,7 +187,7 @@ CMS dem Standort Inhalte zugewiesen werden.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkImage">
+          <object class="GtkImage" id="home">
             <property name="name">img_home</property>
             <property name="visible">True</property>
             <property name="can-focus">False</property>
