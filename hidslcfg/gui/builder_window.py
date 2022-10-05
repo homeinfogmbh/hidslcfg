@@ -30,16 +30,16 @@ class BuilderWindow:
 
     def bind(
             self,
-            next_window: BuilderWindow,
             *,
-            home_window: BuilderWindow | None = None
+            next: BuilderWindow | None = None,
+            home: BuilderWindow | None = None
     ) -> BuilderWindow:
         """Bind the next an optionally the home window and
         returns the former allowing for a builder pattern.
         """
-        self.next_window = next_window
-        self.home_window = home_window
-        return next_window
+        self.next_window = next
+        self.home_window = home
+        return next
 
     def on_show(self, window: Gtk.ApplicationWindow) -> None:
         """Handle show event."""

@@ -29,15 +29,16 @@ def run() -> None:
     home_window = MainWindow(client)
 
     home_window.bind(
-        SetupForm(client, setup_parameters)
+        next=SetupForm(client, setup_parameters)
     ).bind(
-        InstallationForm(client, setup_parameters),
-        home_window=home_window
+        next=InstallationForm(client, setup_parameters),
+        home=home_window
     ).bind(
-        CompletedForm(setup_parameters),
-        home_window=home_window
+        next=CompletedForm(setup_parameters),
+        home=home_window
     ).bind(
-        None, home_window=home_window
+        next=None,
+        home=home_window
     )
 
     home_window.show()
