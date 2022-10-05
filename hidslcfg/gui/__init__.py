@@ -4,7 +4,8 @@ from os import getenv, geteuid
 from sys import stderr
 
 from hidslcfg.gui.gtk import Gtk
-from hidslcfg.gui.main import MainBuilderWindow
+from hidslcfg.gui.main import MainWindow
+from hidslcfg.gui.setup import SetupForm
 
 
 def run() -> None:
@@ -14,7 +15,7 @@ def run() -> None:
         print('This program requires root privileges.', file=stderr)
         raise SystemExit(1)
 
-    main_window = MainBuilderWindow()
+    main_window = MainWindow(SetupForm)
     main_window.show()
     Gtk.main()
 

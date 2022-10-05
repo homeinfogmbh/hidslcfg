@@ -3,12 +3,12 @@
 from contextlib import contextmanager
 from subprocess import CalledProcessError
 from threading import Thread
+from typing import Callable
 
 from hidslcfg.api import Client
 from hidslcfg.exceptions import APIError
 from hidslcfg.gui.builder_window import BuilderWindow
 from hidslcfg.gui.gtk import Gdk, Gtk, bind_button
-from hidslcfg.gui.setup import SetupForm
 from hidslcfg.system import ping
 from hidslcfg.wifi import MAX_PSK_LEN
 from hidslcfg.wifi import MIN_PSK_LEN
@@ -18,18 +18,19 @@ from hidslcfg.wifi import load_wifi_configs
 from hidslcfg.wifi import list_wifi_interfaces
 
 
-__all__ = ['MainBuilderWindow']
+__all__ = ['MainWindow']
 
 
 DEFAULT_HOST = 'wireguard.homeinfo.de'
 
 
-class MainBuilderWindow(BuilderWindow, file='main.glade'):
+class MainWindow(BuilderWindow, file='main.glade'):
     """Login form objects."""
 
-    def __init__(self):
+    def __init__(self, next_window: Callable[[Client], BuilderWindow]):
         """Create the login form."""
         super().__init__('main')
+        self.next_window = next_window
         self.client = Client()
         self.logged_in = False
         self.wifi_configs = load_wifi_configs()
@@ -167,7 +168,7 @@ class MainBuilderWindow(BuilderWindow, file='main.glade'):
     def on_destroy(self, *args) -> None:
         """Handle window destruction events."""
         if self.logged_in:
-            setup_form = SetupForm(self.client)
+            setup_form = self.next_window(self.client)
             setup_form.show()
         else:
             Gtk.main_quit()

@@ -5,7 +5,7 @@ from os import getenv
 
 from hidslcfg.gui.builder_window import BuilderWindow
 from hidslcfg.gui.gtk import Gtk, bind_button
-from hidslcfg.gui.main import MainBuilderWindow
+from hidslcfg.gui.main import MainWindow
 from hidslcfg.system import reboot
 
 
@@ -46,7 +46,7 @@ class CompletedForm(BuilderWindow, file='completed.glade'):
     def on_destroy(self, *args) -> None:
         """Handle window destruction events."""
         if self.go_home:
-            main_window = MainBuilderWindow()
+            main_window = MainWindow()
             main_window.show()
         else:
             Gtk.main_quit()
