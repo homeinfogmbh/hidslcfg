@@ -63,10 +63,7 @@ def system(*args: Any) -> CompletedProcess:
     """Invoke system commands."""
 
     output = DEVNULL if LOGGER.getEffectiveLevel() > DEBUG else None
-    cmd = tuple(map(str, args))
-    completed_process = run(cmd, check=True, stdout=output, stderr=output)
-    completed_process.check_returncode()
-    return completed_process
+    return run(tuple(map(str, args)), check=True, stdout=output, stderr=output)
 
 
 def ping(host: str, timeout: int = 1, count: int = 5) -> CompletedProcess:
