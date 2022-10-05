@@ -5,12 +5,12 @@ from sys import stderr
 
 from hidslcfg.api import Client
 from hidslcfg.common import HIDSL_DEBUG
-from hidslcfg.gui.completed import CompletedForm
 from hidslcfg.gui.gtk import Gtk
-from hidslcfg.gui.installation import InstallationForm
-from hidslcfg.gui.main import MainWindow
-from hidslcfg.gui.setup import SetupForm
 from hidslcfg.gui.setup_parameters import SetupParameters
+from hidslcfg.gui.windows import CompletedForm
+from hidslcfg.gui.windows import InstallationForm
+from hidslcfg.gui.windows import MainWindow
+from hidslcfg.gui.windows import SetupForm
 
 
 __all__ = ['run']
