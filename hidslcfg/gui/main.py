@@ -75,7 +75,8 @@ class MainWindow(BuilderWindow, file='main.glade'):
             index: int
     ) -> None:
         """Reset the tabs' content."""
-        self.ping_hostname.set_text(DEFAULT_HOST)
+        if index == 2:
+            self.ping_hostname.set_text(DEFAULT_HOST)
 
     def set_ping_result(self, result: bool) -> None:
         """Sets the ping result."""
