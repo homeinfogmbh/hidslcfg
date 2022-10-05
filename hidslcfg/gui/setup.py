@@ -1,34 +1,41 @@
 """Setup window logic."""
 
+from enum import Enum, auto
 from functools import partial
 from typing import Any, Callable
 
 from hidslcfg.api import Client
 from hidslcfg.gui.builder_window import BuilderWindow
-from hidslcfg.gui.installation import InstallationForm
-from hidslcfg.gui.gtk import Gtk, bind_button
+from hidslcfg.gui.gtk import Gtk, bind_action
+from hidslcfg.gui.setup_parameters import SetupParameters
 
 
 __all__ = ['SetupForm']
 
 
+class CloseAction(Enum):
+    """Close action to run."""
+
+    SETUP = auto()
+    GO_HOME = auto()
+
+
 class SetupForm(BuilderWindow, file='setup.glade'):
     """Setup form objects."""
 
-    def __init__(self, client: Client):
+    def __init__(self, client: Client, parameters: SetupParameters):
         """Create the setup form."""
         super().__init__('setup')
         self.client = client
-        self._installing = False
-        self._system_id = None
-        self._serial_number = None
-        self._model = None
+        self.parameters = parameters
 
         self.serial_number: Gtk.Entry = self.build('serial_number')
         self.system_id: Gtk.Entry = self.build('system_id')
-        self.install: Gtk.Button = self.build('install')
         self.model_options = ModelOptions(self.build)
-        bind_button(self.install, self.on_setup)
+        self.install: Gtk.Button = self.build('install')
+        bind_action(self.on_setup, self.install)
+        self.home: Gtk.Button = self.build('home')
+        bind_action(self.go_home, self.home)
 
     def get_system_id(self) -> int | None:
         """Return the system ID."""
@@ -37,34 +44,20 @@ class SetupForm(BuilderWindow, file='setup.glade'):
 
         return None
 
-    def on_destroy(self, *_) -> None:
-        """Handle window destruction events."""
-        if self._installing:
-            installation_form = InstallationForm(
-                self.client,
-                self._system_id,
-                self._serial_number,
-                self._model
-            )
-            installation_form.show()
-        else:
-            Gtk.main_quit()
-
     def on_setup(self, *_) -> None:
         """Perform the installation."""
         try:
-            self._system_id = self.get_system_id()
+            self.parameters.system_id = self.get_system_id()
         except ValueError:
             return self.show_error('Ungültige System ID.')
 
         try:
-            self._model = self.model_options.selected
+            self.parameters.model = self.model_options.selected
         except ValueError:
             return self.show_error('Kein Modell angegeben.')
 
-        self._serial_number = self.serial_number.get_text() or None
-        self._installing = True
-        self.window.destroy()
+        self.parameters.serial_number = self.serial_number.get_text() or None
+        self.switch_window(self.next_window)
 
 
 class ModelOptions:

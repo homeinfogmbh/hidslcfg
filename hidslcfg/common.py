@@ -2,7 +2,7 @@
 
 from argparse import Namespace
 from logging import DEBUG, INFO, basicConfig, getLogger
-from os import geteuid
+from os import getenv, geteuid
 from pathlib import Path
 from sys import argv
 from typing import Callable
@@ -13,6 +13,7 @@ from hidslcfg.exceptions import ProgramError
 __all__ = [
     'APPLICATION_SERVICE',
     'DIGSIG_DATA_DIR',
+    'HIDSL_DEBUG',
     'HTML5DS',
     'LOGGER',
     'LOG_FORMAT',
@@ -25,6 +26,7 @@ __all__ = [
 
 APPLICATION_SERVICE = 'application.service'
 DIGSIG_DATA_DIR = Path('/var/lib/digsig')
+HIDSL_DEBUG = getenv('HIDSL_DEBUG')
 HTML5DS = 'html5ds.service'
 LOG_FORMAT = '[%(levelname)s] %(name)s: %(message)s'
 LOGGER = getLogger(Path(argv[0]).name)

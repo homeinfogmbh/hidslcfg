@@ -3,7 +3,7 @@
 from typing import Any
 
 from hidslcfg.gui.functions import get_asset
-from hidslcfg.gui.gtk import Gdk, Gtk
+from hidslcfg.gui.gtk import Gtk
 from hidslcfg.gui.translation import translate
 
 
@@ -15,6 +15,8 @@ class BuilderWindow:
 
     def __init__(self, name: str):
         """Initialize builder and main window."""
+        self.next_window: Gtk.Window | None = None
+        self.home_window: Gtk.Window | None = None
         self.window: Gtk.Window = self.build(name)
         self.builder.connect_signals(self.window)
         self.window.connect('show', self.on_show)
@@ -29,7 +31,8 @@ class BuilderWindow:
         """Handle show event."""
         pass
 
-    def on_destroy(self, window: Gtk.ApplicationWindow) -> None:
+    @staticmethod
+    def on_destroy(_: Gtk.ApplicationWindow) -> None:
         """Handle destruction event."""
         return Gtk.main_quit()
 
@@ -40,6 +43,15 @@ class BuilderWindow:
     def show(self) -> None:
         """Shows the window."""
         self.window.show()
+
+    def switch_window(self, window: Gtk.Window) -> None:
+        """Switch to the given window."""
+        self.window.hide()
+        window.show()
+
+    def go_home(self, *_) -> None:
+        """Switch to the HOME window."""
+        self.switch_window(self.home_window)
 
     def show_message(
             self,

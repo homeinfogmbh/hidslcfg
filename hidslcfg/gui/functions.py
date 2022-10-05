@@ -1,7 +1,8 @@
 """Helper functions."""
 
-from os import getenv
 from pathlib import Path
+
+from hidslcfg.common import HIDSL_DEBUG
 
 
 __all__ = ['get_asset']
@@ -19,7 +20,7 @@ def get_asset(filename: str) -> Path:
 def get_base_dir() -> Path:
     """Return the assets base directory."""
 
-    if getenv('HIDSL_DEBUG'):
+    if HIDSL_DEBUG:
         return Path(__file__).parent / 'assets'
 
     return ASSETS_DIR

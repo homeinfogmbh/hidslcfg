@@ -3,12 +3,11 @@
 from contextlib import contextmanager
 from subprocess import CalledProcessError
 from threading import Thread
-from typing import Callable
 
 from hidslcfg.api import Client
 from hidslcfg.exceptions import APIError
 from hidslcfg.gui.builder_window import BuilderWindow
-from hidslcfg.gui.gtk import Gdk, Gtk, bind_button
+from hidslcfg.gui.gtk import Gdk, Gtk, bind_action
 from hidslcfg.system import ping
 from hidslcfg.wifi import MAX_PSK_LEN
 from hidslcfg.wifi import MIN_PSK_LEN
@@ -27,11 +26,10 @@ DEFAULT_HOST = 'wireguard.homeinfo.de'
 class MainWindow(BuilderWindow, file='main.glade'):
     """Login form objects."""
 
-    def __init__(self, next_window: Callable[[Client], BuilderWindow]):
+    def __init__(self, client: Client):
         """Create the login form."""
         super().__init__('main')
-        self.next_window = next_window
-        self.client = Client()
+        self.client = client
         self.logged_in = False
         self.wifi_configs = load_wifi_configs()
 
@@ -43,7 +41,7 @@ class MainWindow(BuilderWindow, file='main.glade'):
         self.user_name: Gtk.Entry = self.build('user_name')
         self.password: Gtk.Entry = self.build('password')
         self.login: Gtk.Button = self.build('login')
-        bind_button(self.login, self.on_login)
+        bind_action(self.on_login, self.user_name, self.password, self.login)
 
         # WIFI tab
         self.interfaces: Gtk.ComboBoxText = self.build('interfaces')
@@ -52,14 +50,14 @@ class MainWindow(BuilderWindow, file='main.glade'):
         self.ssid: Gtk.Entry = self.build('ssid')
         self.psk: Gtk.Entry = self.build('psk')
         self.configure_wifi: Gtk.Button = self.build('configure_wifi')
-        bind_button(self.configure_wifi, self.on_configure_wifi)
+        bind_action(self.on_configure_wifi, self.configure_wifi)
 
         # Connection test
         self.ping_hostname: Gtk.Entry = self.build('ping_hostname')
         self.ping_spinner: Gtk.Spinner = self.build('ping_spinner')
         self.ping_host: Gtk.Button = self.build('ping_host')
         self.ping_result: Gtk.Label = self.build('ping_result')
-        bind_button(self.ping_host, self.on_ping_host)
+        bind_action(self.on_ping_host, self.ping_hostname, self.ping_host)
 
     def populate_interfaces(self) -> None:
         """Populate interfaces combo box."""
@@ -68,12 +66,7 @@ class MainWindow(BuilderWindow, file='main.glade'):
 
         self.interfaces.set_active(0)
 
-    def reset_tabs(
-            self,
-            notebook: Gtk.Notebook,
-            page: Gtk.Widget,
-            index: int
-    ) -> None:
+    def reset_tabs(self, _: Gtk.Notebook, __: Gtk.Widget, index: int) -> None:
         """Reset the tabs' content."""
         if index == 2:
             self.ping_hostname.set_text(DEFAULT_HOST)
@@ -122,8 +115,7 @@ class MainWindow(BuilderWindow, file='main.glade'):
         except APIError as error:
             return self.show_error(error.json.get('message'))
 
-        self.logged_in = True
-        self.window.destroy()
+        self.switch_window(self.next_window)
 
     def on_interface_select(self, *_):
         """Set configuration for selected interface."""
@@ -158,18 +150,7 @@ class MainWindow(BuilderWindow, file='main.glade'):
             return self.show_error('Konnte WLAN Verbindung nicht einrichten.')
 
         disable(set(list_wifi_interfaces()) - {interface})
-        self.window.destroy()
 
     def on_ping_host(self, *_):
         """Ping the set host."""
-        self.ping_result.modify_fg(Gtk.StateFlags.NORMAL, Gdk.color_parse(
-            "red"))
         Thread(daemon=True, target=self.ping_thread).start()
-
-    def on_destroy(self, *args) -> None:
-        """Handle window destruction events."""
-        if self.logged_in:
-            setup_form = self.next_window(self.client)
-            setup_form.show()
-        else:
-            Gtk.main_quit()

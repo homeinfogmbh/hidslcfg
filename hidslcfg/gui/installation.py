@@ -1,15 +1,14 @@
 """Installing window logic."""
 
 from logging import getLogger
-from os import getenv
 from threading import Thread
 from time import sleep
 
 from hidslcfg.api import Client
+from hidslcfg.common import HIDSL_DEBUG
 from hidslcfg.exceptions import APIError, ProgramError
 from hidslcfg.gui.builder_window import BuilderWindow
-from hidslcfg.gui.completed import CompletedForm
-from hidslcfg.gui.gtk import Gtk
+from hidslcfg.gui.setup_parameters import SetupParameters
 from hidslcfg.wireguard import MTU, create, patch
 
 
@@ -23,36 +22,15 @@ SLEEP = 3
 class InstallationForm(BuilderWindow, file='installation.glade'):
     """installation form objects."""
 
-    def __init__(
-            self,
-            client: Client,
-            system_id: int | None,
-            serial_number: str | None,
-            model: str
-    ):
+    def __init__(self, client: Client, setup_parameters: SetupParameters):
         """Create the installation form."""
         super().__init__('installation')
         self.client = client
-        self.system_id = system_id
-        self.serial_number = serial_number
-        self.model = model
-        self.installed = False
+        self.setup_parameters = setup_parameters
 
     def on_show(self, *_) -> None:
         """Perform the setup process when window is shown."""
         Thread(daemon=True, target=self.safe_install).start()
-
-    def on_destroy(self, *_) -> None:
-        """Handle window destruction events."""
-        if not self.installed:
-            return Gtk.main_quit()
-
-        completed_form = CompletedForm(
-            self.system_id,
-            self.serial_number,
-            self.model
-        )
-        completed_form.show()
 
     def safe_install(self) -> None:
         """Run the installation with caught exceptions."""
@@ -64,22 +42,20 @@ class InstallationForm(BuilderWindow, file='installation.glade'):
             self.show_error(error.json.get('message'))
         except Exception as error:
             self.show_error(str(error))
-        else:
-            self.installed = True
 
-        self.window.destroy()
+        self.switch_window(self.next_window)
 
     def install(self) -> None:
         """Run the installation."""
-        if getenv('HIDSL_DEBUG'):
+        if HIDSL_DEBUG:
             LOGGER.warning('Sleeping for %s seconds due to debug mode.', SLEEP)
             return sleep(SLEEP)
 
-        self.system_id = setup(
+        self.setup_parameters.system_id = setup(
             self.client,
-            self.system_id,
-            self.serial_number,
-            self.model
+            self.setup_parameters.system_id,
+            self.setup_parameters.serial_number,
+            self.setup_parameters.model
         )
 
 
