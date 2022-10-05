@@ -20,9 +20,9 @@ __all__ = [
     'system',
     'systemctl',
     'ping',
-    'hostname',
     'reboot',
     'rmsubtree',
+    'set_hostname',
     'get_system_id',
     'CalledProcessErrorHandler',
     'ProgramErrorHandler',
@@ -72,12 +72,6 @@ def ping(host: str, timeout: int = 1, count: int = 5) -> CompletedProcess:
     return system(PING, '-W', timeout, '-c', count, host)
 
 
-def hostname(hostname: str) -> CompletedProcess:
-    """Sets the respective host name or deletes the host name file."""
-
-    return system(HOSTNAMECTL, 'set-hostname', hostname)
-
-
 def systemctl(*args: Any) -> CompletedProcess:
     """Invokes systemctl."""
 
@@ -99,6 +93,12 @@ def rmsubtree(path: Path) -> None:
             inode.rmdir()
         else:
             inode.unlink()
+
+
+def set_hostname(hostname: str) -> CompletedProcess:
+    """Sets the respective host name or deletes the host name file."""
+
+    return system(HOSTNAMECTL, 'set-hostname', hostname)
 
 
 def get_system_id() -> int:

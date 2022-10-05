@@ -7,7 +7,7 @@ from hidslcfg.common import LOGGER, UNCONFIGURED_WARNING_SERVICE
 from hidslcfg.exceptions import ProgramError
 from hidslcfg.hosts import set_ip
 from hidslcfg.pacman import set_server
-from hidslcfg.system import hostname, systemctl
+from hidslcfg.system import set_hostname, systemctl
 from hidslcfg.termio import ask, Table
 
 
@@ -80,7 +80,7 @@ def configure(system: int, server: IPv4Address | IPv6Address) -> None:
     """Configures the system with the given ID."""
 
     LOGGER.debug('Configuring host name.')
-    hostname(str(system))
+    set_hostname(str(system))
     LOGGER.debug('Updating /etc/hosts.')
     set_ip(APPCMD_HOSTNAME, server)
     LOGGER.debug('Updating /etc/pacman.conf.')
