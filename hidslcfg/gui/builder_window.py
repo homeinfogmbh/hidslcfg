@@ -1,5 +1,6 @@
 """Common mixins."""
 
+from __future__ import annotations
 from typing import Any
 
 from hidslcfg.gui.functions import get_asset
@@ -26,6 +27,19 @@ class BuilderWindow:
         """Set builder file and window name."""
         cls.builder = builder = Gtk.Builder()
         builder.add_from_file(str(get_asset(file)))
+
+    def bind(
+            self,
+            next_window: BuilderWindow,
+            *,
+            home_window: BuilderWindow | None = None
+    ) -> BuilderWindow:
+        """Bind the next an optionally the home window and
+        returns the former allowing for a builder pattern.
+        """
+        self.next_window = next_window
+        self.home_window = home_window
+        return next_window
 
     def on_show(self, window: Gtk.ApplicationWindow) -> None:
         """Handle show event."""

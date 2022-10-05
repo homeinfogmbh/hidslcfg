@@ -26,21 +26,21 @@ def run() -> None:
     client = Client()
     setup_parameters = SetupParameters()
 
-    main_window = MainWindow(client)
+    home_window = MainWindow(client)
 
-    setup_form = SetupForm(client, setup_parameters)
-    setup_form.home_window = main_window
-    main_window.next_window = setup_form
+    home_window.bind(
+        SetupForm(client, setup_parameters)
+    ).bind(
+        InstallationForm(client, setup_parameters),
+        home_window=home_window
+    ).bind(
+        CompletedForm(setup_parameters),
+        home_window=home_window
+    ).bind(
+        None, home_window=home_window
+    )
 
-    installation_form = InstallationForm(client, setup_parameters)
-    installation_form.home_window = main_window
-    setup_form.next_window = installation_form
-
-    completed_form = CompletedForm(setup_parameters)
-    completed_form.home_window = main_window
-    installation_form.next_window = completed_form
-
-    main_window.show()
+    home_window.show()
     Gtk.main()
 
 
