@@ -24,15 +24,18 @@ class CompletedForm(BuilderWindow, file='completed.glade'):
         self.setup_parameters = setup_parameters
 
         self.system_id: Gtk.Label = self.build('system_id')
-        self.system_id.set_text(setup_parameters.system_id or '-')
         self.model: Gtk.Label = self.build('model')
-        self.model.set_text(setup_parameters.model or '-')
         self.serial_number: Gtk.Label = self.build('serial_number')
-        self.serial_number.set_text(setup_parameters.serial_number or '-')
         self.reboot: Gtk.Button = self.build('reboot')
         bind_action(on_reboot, self.reboot)
         self.home: Gtk.Button = self.build('home')
         bind_action(self.go_home, self.home)
+
+    def on_show(self, *_) -> None:
+        """Perform the setup process when window is shown."""
+        self.system_id.set_text(self.setup_parameters.system_id or '-')
+        self.model.set_text(self.setup_parameters.model or '-')
+        self.serial_number.set_text(self.setup_parameters.serial_number or '-')
 
 
 def on_reboot(*_) -> None:
