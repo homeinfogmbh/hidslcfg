@@ -1,13 +1,15 @@
 """Login window logic."""
 
+from logging import getLogger
 from subprocess import CalledProcessError
 from threading import Thread
 
 from hidslcfg.api import Client
+from hidslcfg.common import HIDSL_DEBUG
 from hidslcfg.exceptions import APIError
 from hidslcfg.gui.builder_window import BuilderWindow
 from hidslcfg.gui.gtk import Gtk, bind_action
-from hidslcfg.system import ping
+from hidslcfg.system import ping, reboot
 from hidslcfg.wifi import MAX_PSK_LEN
 from hidslcfg.wifi import MIN_PSK_LEN
 from hidslcfg.wifi import configure
@@ -20,6 +22,7 @@ __all__ = ['MainWindow']
 
 
 DEFAULT_HOST = 'wireguard.homeinfo.de'
+LOGGER = getLogger(__file__)
 
 
 class MainWindow(BuilderWindow, file='main.glade'):
@@ -32,6 +35,7 @@ class MainWindow(BuilderWindow, file='main.glade'):
         self.logged_in = False
         self.ping_host_label: str | None = None
         self.ping_successful: bool | None = None
+        self.reboot_response = None
         self.wifi_configs = load_wifi_configs()
 
         # Tabs
@@ -57,9 +61,12 @@ class MainWindow(BuilderWindow, file='main.glade'):
         self.ping_hostname: Gtk.Entry = self.build('ping_hostname')
         self.ping_spinner: Gtk.Spinner = self.build('ping_spinner')
         self.ping_host: Gtk.Button = self.build('ping_host')
-        self.ping_result: Gtk.Label = self.build('ping_result')
+        self.ping_result: Gtk.Image = self.build('ping_result')
         bind_action(self.on_ping_host, self.ping_hostname, self.ping_host)
         self.new_signal('ping-host-completed', self.on_ping_completed)
+
+        self.btn_quit: Gtk.Button = self.build('quit')
+        bind_action(self.on_quit, self.btn_quit)
 
     def populate_interfaces(self) -> None:
         """Populate interfaces combo box."""
@@ -136,7 +143,10 @@ class MainWindow(BuilderWindow, file='main.glade'):
     def on_ping_host(self, *_):
         """Ping the set host."""
         self.ping_hostname.set_text(self.ping_hostname.get_text().strip())
-        self.ping_result.set_text('')
+        self.ping_result.set_from_icon_name(
+            'face-plain-symbolic',
+            Gtk.IconSize.DIALOG
+        )
         self.ping_host_label = self.ping_host.get_label()
         self.ping_host.set_label('')
         self.ping_spinner.start()
@@ -148,6 +158,31 @@ class MainWindow(BuilderWindow, file='main.glade'):
         self.ping_host.set_label(self.ping_host_label)
 
         if self.ping_successful:
-            self.ping_result.set_text('Verbindungstest erfolgreich.')
+            self.ping_result.set_from_icon_name(
+                'face-smirk-symbolic',
+                Gtk.IconSize.DIALOG
+            )
         else:
-            self.ping_result.set_text('Verbindungstest fehlgeschlagen.')
+            self.ping_result.set_from_icon_name(
+                'face-sad-symbolic',
+                Gtk.IconSize.DIALOG
+            )
+
+    def on_quit(self, *_) -> None:
+        """Handles the quit button."""
+        message_dialog = Gtk.MessageDialog(
+            transient_for=self.window,
+            message_type=Gtk.MessageType.QUESTION,
+            buttons=Gtk.ButtonsType.YES_NO,
+            text='Wollen Sie das System neu starten?'
+        )
+        response = message_dialog.run()
+        message_dialog.destroy()
+
+        if response == Gtk.ResponseType.YES:
+            if not HIDSL_DEBUG:
+                reboot()
+
+            LOGGER.warning('Not rebooting due to debug mode.')
+
+        Gtk.main_quit()
