@@ -11,7 +11,7 @@ from hidslcfg.common import UNCONFIGURED_WARNING_SERVICE
 from hidslcfg.exceptions import ProgramError
 from hidslcfg.openvpn.common import DEFAULT_SERVICE
 from hidslcfg.openvpn.disable import clean
-from hidslcfg.system import systemctl, hostname, rmsubtree
+from hidslcfg.system import systemctl, set_hostname, rmsubtree
 from hidslcfg.wireguard.disable import remove
 
 
@@ -37,7 +37,7 @@ def gracefully_disable_service(service: str) -> None:
 
 # Oder matters here!
 RESET_OPERATIONS = (
-    ResetOperation('reset hostname', partial(hostname, 'unconfigured')),
+    ResetOperation('reset hostname', partial(set_hostname, 'unconfigured')),
     ResetOperation(
         'remove digital signage data',
         partial(rmsubtree, DIGSIG_DATA_DIR)
