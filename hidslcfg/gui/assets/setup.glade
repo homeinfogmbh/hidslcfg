@@ -14,6 +14,7 @@
     <property name="modal">True</property>
     <property name="window-position">center</property>
     <property name="urgency-hint">True</property>
+    <property name="deletable">False</property>
     <child>
       <!-- n-columns=2 n-rows=6 -->
       <object class="GtkGrid">

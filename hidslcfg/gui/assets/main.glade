@@ -9,6 +9,7 @@
     <property name="modal">True</property>
     <property name="window-position">center</property>
     <property name="urgency-hint">True</property>
+    <property name="deletable">False</property>
     <child>
       <!-- n-columns=1 n-rows=3 -->
       <object class="GtkGrid">
@@ -278,12 +279,12 @@
         </child>
         <child>
           <object class="GtkButton" id="quit">
-            <property name="label" translatable="yes">Beenden und neu starten</property>
+            <property name="label" translatable="yes">Beenden</property>
             <property name="visible">True</property>
             <property name="can-focus">True</property>
             <property name="receives-default">True</property>
-            <property name="margin-start">120</property>
-            <property name="margin-end">120</property>
+            <property name="margin-start">150</property>
+            <property name="margin-end">150</property>
             <property name="margin-top">25</property>
             <property name="margin-bottom">25</property>
           </object>
