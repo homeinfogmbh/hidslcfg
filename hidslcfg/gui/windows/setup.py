@@ -34,8 +34,10 @@ class SetupForm(BuilderWindow, file='setup.glade'):
         self.model_options = ModelOptions(self.build)
         self.install: Gtk.Button = self.build('install')
         self.install.connect('activate', self.on_setup)
+        self.install.connect('clicked', self.on_setup)
         self.home: Gtk.Button = self.build('home')
         self.home.connect('activate', self.go_home)
+        self.home.connect('clicked', self.go_home)
 
     def get_system_id(self) -> int | None:
         """Return the system ID."""

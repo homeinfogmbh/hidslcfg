@@ -49,6 +49,7 @@ class MainWindow(BuilderWindow, file='main.glade'):
         self.password.connect('activate', self.on_login)
         self.login: Gtk.Button = self.build('login')
         self.login.connect('activate', self.on_login)
+        self.login.connect('clicked', self.on_login)
 
         # WIFI tab
         self.interfaces: Gtk.ComboBoxText = self.build('interfaces')
@@ -58,17 +59,20 @@ class MainWindow(BuilderWindow, file='main.glade'):
         self.psk: Gtk.Entry = self.build('psk')
         self.configure_wifi: Gtk.Button = self.build('configure_wifi')
         self.configure_wifi.connect('activate', self.on_configure_wifi)
+        self.configure_wifi.connect('clicked', self.on_configure_wifi)
 
         # Ping tab
         self.ping_hostname: Gtk.Entry = self.build('ping_hostname')
         self.ping_spinner: Gtk.Spinner = self.build('ping_spinner')
         self.ping_host: Gtk.Button = self.build('ping_host')
-        self.ping_result: Gtk.Image = self.build('ping_result')
         self.ping_host.connect('activate', self.on_ping_host)
+        self.ping_host.connect('clicked', self.on_ping_host)
+        self.ping_result: Gtk.Image = self.build('ping_result')
         self.new_signal('ping-host-completed', self.on_ping_completed)
 
         self.btn_quit: Gtk.Button = self.build('quit')
         self.btn_quit.connect('activate', self.on_quit)
+        self.btn_quit.connect('clicked', self.on_quit)
 
     def populate_interfaces(self) -> None:
         """Populate interfaces combo box."""

@@ -30,8 +30,10 @@ class CompletedForm(BuilderWindow, file='completed.glade'):
         self.serial_number: Gtk.Label = self.build('serial_number')
         self.reboot: Gtk.Button = reboot_btn
         self.reboot.connect('activate', on_reboot)
+        self.reboot.connect('clicked', on_reboot)
         self.home: Gtk.Button = self.build('home')
         self.home.connect('activate', self.go_home)
+        self.home.connect('clicked', self.go_home)
 
     def on_show(self, *_) -> None:
         """Perform the setup process when window is shown."""
