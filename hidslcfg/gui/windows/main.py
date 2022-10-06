@@ -153,7 +153,7 @@ class MainWindow(BuilderWindow, file='main.glade'):
         self.ping_spinner.start()
         Thread(daemon=True, target=self.ping_thread).start()
 
-    def on_ping_completed(self, _: Gtk.Window, __: Gtk.Widget) -> None:
+    def on_ping_completed(self, *_) -> None:
         """Sets the ping result."""
         self.ping_spinner.stop()
         self.ping_host.set_label(self.ping_host_label)
