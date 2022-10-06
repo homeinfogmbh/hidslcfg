@@ -62,7 +62,7 @@ class MainWindow(BuilderWindow, file='main.glade'):
         self.ping_spinner: Gtk.Spinner = self.build('ping_spinner')
         self.ping_host: Gtk.Button = self.build('ping_host')
         self.ping_result: Gtk.Image = self.build('ping_result')
-        bind_action(self.on_ping_host, self.ping_hostname, self.ping_host)
+        bind_action(self.on_ping_host, self.ping_host)
         self.new_signal('ping-host-completed', self.on_ping_completed)
 
         self.btn_quit: Gtk.Button = self.build('quit')
