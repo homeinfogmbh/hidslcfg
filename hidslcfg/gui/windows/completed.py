@@ -22,6 +22,7 @@ class CompletedForm(BuilderWindow, file='completed.glade'):
         """Create the installing form."""
         super().__init__('completed')
         self.setup_parameters = setup_parameters
+        self.primary_widget: Gtk.Widget = self.build('reboot')
 
         self.system_id: Gtk.Label = self.build('system_id')
         self.model: Gtk.Label = self.build('model')

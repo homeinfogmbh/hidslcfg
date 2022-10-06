@@ -46,6 +46,7 @@ class MainWindow(BuilderWindow, file='main.glade'):
         self.user_name: Gtk.Entry = self.build('user_name')
         self.password: Gtk.Entry = self.build('password')
         self.login: Gtk.Button = self.build('login')
+        self.primary_widget = self.login
         bind_action(self.on_login, self.user_name, self.password, self.login)
 
         # WIFI tab

@@ -16,8 +16,9 @@ class BuilderWindow:
 
     def __init__(self, name: str):
         """Initialize builder and main window."""
-        self.next_window: Gtk.Window | None = None
-        self.home_window: Gtk.Window | None = None
+        self.primary_widget: Gtk.Widget | None = None
+        self.next_window: BuilderWindow | None = None
+        self.home_window: BuilderWindow | None = None
         self.window: Gtk.Window = self.build(name)
         self.builder.connect_signals(self.window)
         self.window.connect('show', self.on_show)
@@ -74,7 +75,10 @@ class BuilderWindow:
         """Shows the window."""
         self.window.show()
 
-    def switch_window(self, window: Gtk.Window) -> None:
+        if self.primary_widget is not None:
+            self.window.set_focus(self.primary_widget)
+
+    def switch_window(self, window: BuilderWindow) -> None:
         """Switch to the given window."""
         self.window.hide()
         window.show()
