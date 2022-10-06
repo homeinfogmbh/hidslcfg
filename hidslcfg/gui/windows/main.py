@@ -33,7 +33,6 @@ class MainWindow(BuilderWindow, file='main.glade'):
         super().__init__('main', primary=self.build('tab_system_config'))
         self.client = client
         self.logged_in = False
-        self.ping_host_label: str | None = None
         self.ping_successful: bool | None = None
         self.reboot_response = None
         self.wifi_configs = load_wifi_configs()
@@ -65,6 +64,7 @@ class MainWindow(BuilderWindow, file='main.glade'):
         self.ping_hostname: Gtk.Entry = self.build('ping_hostname')
         self.ping_spinner: Gtk.Spinner = self.build('ping_spinner')
         self.ping_host: Gtk.Button = self.build('ping_host')
+        self.ping_host_label: str = self.ping_host.get_label()
         self.ping_host.connect('activate', self.on_ping_host)
         self.ping_host.connect('clicked', self.on_ping_host)
         self.ping_result: Gtk.Image = self.build('ping_result')
@@ -154,7 +154,6 @@ class MainWindow(BuilderWindow, file='main.glade'):
             'face-plain-symbolic',
             Gtk.IconSize.DIALOG
         )
-        self.ping_host_label = self.ping_host.get_label()
         self.ping_host.set_label('')
         self.ping_spinner.start()
         Thread(daemon=True, target=self.ping_thread).start()
