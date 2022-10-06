@@ -13,7 +13,7 @@ __all__ = ['EventHandler', 'Gdk', 'Gtk', 'GObject', 'bind_action']
 
 ENTER_KEY = 65293
 
-EventHandler = Callable[[Gtk.Widget, Gdk.EventKey], None]
+EventHandler = Callable[[Gtk.Widget, Gdk.Event | Gdk.EventKey], None]
 
 
 def bind_action(action: EventHandler, *widgets: Gtk.Widget) -> None:

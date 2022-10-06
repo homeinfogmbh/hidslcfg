@@ -110,7 +110,7 @@ class MainWindow(BuilderWindow, file='main.glade'):
 
         self.switch_window(self.next_window)
 
-    def on_interface_select(self, *_):
+    def on_interface_select(self, *_) -> None:
         """Set configuration for selected interface."""
         config = self.wifi_configs.get(self.interfaces.get_active_text(), {})
         self.ssid.set_text(config.get('ssid', ''))
@@ -144,8 +144,9 @@ class MainWindow(BuilderWindow, file='main.glade'):
 
         disable(set(list_wifi_interfaces()) - {interface})
 
-    def on_ping_host(self, *_):
+    def on_ping_host(self, *_) -> None:
         """Ping the set host."""
+        self.ping_host.set_property('sensitive', False)
         self.ping_hostname.set_text(self.ping_hostname.get_text().strip())
         self.ping_result.set_from_icon_name(
             'face-plain-symbolic',
@@ -156,10 +157,11 @@ class MainWindow(BuilderWindow, file='main.glade'):
         self.ping_spinner.start()
         Thread(daemon=True, target=self.ping_thread).start()
 
-    def on_ping_completed(self, *_) -> None:
+    def on_ping_completed(self, _: Gtk.Window, __: Gtk.Widget) -> None:
         """Sets the ping result."""
         self.ping_spinner.stop()
         self.ping_host.set_label(self.ping_host_label)
+        self.ping_host.set_property('sensitive', True)
 
         if self.ping_successful:
             self.ping_result.set_from_icon_name(
