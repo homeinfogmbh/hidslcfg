@@ -79,10 +79,6 @@ class MainWindow(BuilderWindow, file='main.glade'):
         """Reset the tabs' content."""
         if index == 2:
             self.ping_hostname.set_text(DEFAULT_HOST)
-            self.ping_result.set_from_icon_name(
-                'face-plain-symbolic',
-                Gtk.IconSize.DIALOG
-            )
 
     def ping_thread(self) -> None:
         """Ping the host."""
