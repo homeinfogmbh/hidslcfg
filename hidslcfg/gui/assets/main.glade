@@ -108,20 +108,6 @@
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <child>
-                  <object class="GtkComboBoxText" id="interfaces">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="margin-start">50</property>
-                    <property name="margin-end">50</property>
-                    <property name="margin-top">20</property>
-                    <property name="margin-bottom">10</property>
-                  </object>
-                  <packing>
-                    <property name="left-attach">0</property>
-                    <property name="top-attach">0</property>
-                  </packing>
-                </child>
-                <child>
                   <object class="GtkEntry" id="ssid">
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
@@ -172,6 +158,20 @@
                     <property name="top-attach">3</property>
                   </packing>
                 </child>
+                <child>
+                  <object class="GtkComboBoxText" id="interfaces">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="margin-start">50</property>
+                    <property name="margin-end">50</property>
+                    <property name="margin-top">20</property>
+                    <property name="margin-bottom">10</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">0</property>
+                  </packing>
+                </child>
               </object>
               <packing>
                 <property name="position">1</property>
@@ -195,17 +195,50 @@
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <child>
-                  <object class="GtkEntry" id="ping_hostname">
+                  <object class="GtkSpinner" id="ping_spinner">
                     <property name="visible">True</property>
-                    <property name="can-focus">True</property>
+                    <property name="can-focus">False</property>
                     <property name="margin-start">50</property>
                     <property name="margin-end">50</property>
                     <property name="margin-top">30</property>
+                    <property name="margin-bottom">30</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="ping_host">
+                    <property name="label" translatable="yes">Verbindung testen</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">True</property>
+                    <property name="margin-start">50</property>
+                    <property name="margin-end">50</property>
+                    <property name="margin-top">25</property>
+                    <property name="margin-bottom">25</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkComboBoxText" id="ping_hostname">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="margin-start">50</property>
+                    <property name="margin-end">50</property>
+                    <property name="margin-top">25</property>
                     <property name="margin-bottom">25</property>
                     <property name="hexpand">True</property>
-                    <property name="text" translatable="yes">wireguard.homeinfo.de</property>
-                    <property name="primary-icon-name">network-server-symbolic</property>
-                    <property name="placeholder-text" translatable="yes">Hostname oder IP Adresse</property>
+                    <property name="active">0</property>
+                    <items>
+                      <item id="www.homeinfo.de" translatable="yes">HOMEINFO Website</item>
+                      <item id="appcmd.homeinfo.intra" translatable="yes">VPN (System muss konfiguriert sein)</item>
+                      <item id="google.com" translatable="yes">Google</item>
+                    </items>
                   </object>
                   <packing>
                     <property name="left-attach">0</property>
@@ -213,46 +246,47 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkSpinner" id="ping_spinner">
+                  <!-- n-columns=2 n-rows=1 -->
+                  <object class="GtkGrid">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="margin-start">50</property>
                     <property name="margin-end">50</property>
-                    <property name="margin-top">5</property>
-                    <property name="margin-bottom">5</property>
+                    <property name="margin-top">25</property>
+                    <property name="margin-bottom">25</property>
+                    <child>
+                      <object class="GtkImage" id="ping_result">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="halign">start</property>
+                        <property name="margin-start">10</property>
+                        <property name="hexpand">True</property>
+                        <property name="icon-name">face-plain-symbolic</property>
+                        <property name="icon_size">3</property>
+                      </object>
+                      <packing>
+                        <property name="left-attach">1</property>
+                        <property name="top-attach">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="halign">end</property>
+                        <property name="margin-left">85</property>
+                        <property name="margin-end">10</property>
+                        <property name="label" translatable="yes">Testergebnis:</property>
+                      </object>
+                      <packing>
+                        <property name="left-attach">0</property>
+                        <property name="top-attach">0</property>
+                      </packing>
+                    </child>
                   </object>
                   <packing>
                     <property name="left-attach">0</property>
                     <property name="top-attach">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkButton" id="ping_host">
-                    <property name="label" translatable="yes">Host anpingen</property>
-                    <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <property name="receives-default">True</property>
-                    <property name="margin-start">50</property>
-                    <property name="margin-end">50</property>
-                  </object>
-                  <packing>
-                    <property name="left-attach">0</property>
-                    <property name="top-attach">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkImage" id="ping_result">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="margin-start">50</property>
-                    <property name="margin-end">50</property>
-                    <property name="margin-top">35</property>
-                    <property name="icon-name">face-plain-symbolic</property>
-                    <property name="icon_size">6</property>
-                  </object>
-                  <packing>
-                    <property name="left-attach">0</property>
-                    <property name="top-attach">2</property>
                   </packing>
                 </child>
               </object>

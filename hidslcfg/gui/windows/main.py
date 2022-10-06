@@ -37,10 +37,6 @@ class MainWindow(BuilderWindow, file='main.glade'):
         self.reboot_response = None
         self.wifi_configs = load_wifi_configs()
 
-        # Tabs
-        self.tabs: Gtk.Notebook = self.build('tabs')
-        self.tabs.connect('switch-page', self.reset_tabs)
-
         # Login tab
         self.user_name: Gtk.Entry = self.build('user_name')
         self.user_name.connect('activate', self.on_login)
@@ -61,7 +57,8 @@ class MainWindow(BuilderWindow, file='main.glade'):
         self.configure_wifi.connect('clicked', self.on_configure_wifi)
 
         # Ping tab
-        self.ping_hostname: Gtk.Entry = self.build('ping_hostname')
+        self.ping_hostname: Gtk.ComboBoxText = self.build('ping_hostname')
+        self.ping_hostname.connect("changed", self.on_ping_hostname_change)
         self.ping_spinner: Gtk.Spinner = self.build('ping_spinner')
         self.ping_host: Gtk.Button = self.build('ping_host')
         self.ping_host_label: str = self.ping_host.get_label()
@@ -81,15 +78,10 @@ class MainWindow(BuilderWindow, file='main.glade'):
 
         self.interfaces.set_active(0)
 
-    def reset_tabs(self, _: Gtk.Notebook, __: Gtk.Widget, index: int) -> None:
-        """Reset the tabs' content."""
-        if index == 2:
-            self.ping_hostname.set_text(DEFAULT_HOST)
-
     def ping_thread(self) -> None:
         """Ping the host."""
         try:
-            ping(self.ping_hostname.get_text())
+            ping(self.ping_hostname.get_active_id())
         except CalledProcessError:
             self.ping_successful = False
         else:
@@ -146,14 +138,18 @@ class MainWindow(BuilderWindow, file='main.glade'):
 
         disable(set(list_wifi_interfaces()) - {interface})
 
-    def on_ping_host(self, *_) -> None:
+    def on_ping_hostname_change(self, *_) -> None:
         """Ping the set host."""
-        self.ping_host.set_property('sensitive', False)
-        self.ping_hostname.set_text(self.ping_hostname.get_text().strip())
         self.ping_result.set_from_icon_name(
             'face-plain-symbolic',
-            Gtk.IconSize.DIALOG
+            Gtk.IconSize.LARGE_TOOLBAR
         )
+
+    def on_ping_host(self, *args) -> None:
+        """Ping the set host."""
+        self.ping_host.set_property('sensitive', False)
+        self.ping_hostname.set_property('sensitive', False)
+        self.on_ping_hostname_change(*args)
         self.ping_host.set_label('')
         self.ping_spinner.start()
         Thread(daemon=True, target=self.ping_thread).start()
@@ -162,17 +158,18 @@ class MainWindow(BuilderWindow, file='main.glade'):
         """Sets the ping result."""
         self.ping_spinner.stop()
         self.ping_host.set_label(self.ping_host_label)
+        self.ping_hostname.set_property('sensitive', True)
         self.ping_host.set_property('sensitive', True)
 
         if self.ping_successful:
             self.ping_result.set_from_icon_name(
                 'face-smirk-symbolic',
-                Gtk.IconSize.DIALOG
+                Gtk.IconSize.LARGE_TOOLBAR
             )
         else:
             self.ping_result.set_from_icon_name(
                 'face-sad-symbolic',
-                Gtk.IconSize.DIALOG
+                Gtk.IconSize.LARGE_TOOLBAR
             )
 
     def on_quit(self, *_) -> None:
