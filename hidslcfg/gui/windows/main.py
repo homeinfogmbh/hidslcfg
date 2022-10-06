@@ -105,7 +105,7 @@ class MainWindow(BuilderWindow, file='main.glade'):
         except APIError as error:
             return self.show_error(error.json.get('message'))
 
-        self.switch_window(self.next_window)
+        self.next_window()
 
     def on_interface_select(self, *_) -> None:
         """Set configuration for selected interface."""

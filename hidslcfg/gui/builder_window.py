@@ -16,9 +16,9 @@ class BuilderWindow:
 
     def __init__(self, name: str):
         """Initialize builder and main window."""
-        self.primary_widget: Gtk.Widget | None = None
-        self.next_window: BuilderWindow | None = None
-        self.home_window: BuilderWindow | None = None
+        self._primary_widget: Gtk.Widget | None = None
+        self._next_window: BuilderWindow | None = None
+        self._home_window: BuilderWindow | None = None
         self.window: Gtk.Window = self.build(name)
         self.builder.connect_signals(self.window)
         self.window.connect('show', self.on_show)
@@ -54,8 +54,8 @@ class BuilderWindow:
         """Bind the next an optionally the home window and
         returns the former allowing for a builder pattern.
         """
-        self.next_window = next
-        self.home_window = home
+        self._next_window = next
+        self._home_window = home
         return next
 
     def on_show(self, window: Gtk.ApplicationWindow) -> None:
@@ -75,8 +75,8 @@ class BuilderWindow:
         """Shows the window."""
         self.window.show()
 
-        if self.primary_widget is not None:
-            self.window.set_focus(self.primary_widget)
+        if self._primary_widget is not None:
+            self.window.set_focus(self._primary_widget)
 
     def switch_window(self, window: BuilderWindow) -> None:
         """Switch to the given window."""
@@ -85,7 +85,11 @@ class BuilderWindow:
 
     def go_home(self, *_) -> None:
         """Switch to the HOME window."""
-        self.switch_window(self.home_window)
+        self.switch_window(self._home_window)
+
+    def next_window(self) -> None:
+        """Go to the next window."""
+        self.switch_window(self._next_window)
 
     def show_message(
             self,

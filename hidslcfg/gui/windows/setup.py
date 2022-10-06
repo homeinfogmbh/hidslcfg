@@ -58,7 +58,7 @@ class SetupForm(BuilderWindow, file='setup.glade'):
             return self.show_error('Kein Modell angegeben.')
 
         self.parameters.serial_number = self.serial_number.get_text() or None
-        self.switch_window(self.next_window)
+        self.next_window()
 
 
 class ModelOptions:

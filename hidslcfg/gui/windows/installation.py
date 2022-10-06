@@ -61,7 +61,7 @@ class InstallationForm(BuilderWindow, file='installation.glade'):
 
     def continue_to_next_window(self, *_) -> None:
         """Continue to the next window."""
-        self.switch_window(self.next_window)
+        self.next_window()
 
 
 def setup(
