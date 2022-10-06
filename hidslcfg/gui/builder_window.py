@@ -14,11 +14,11 @@ __all__ = ['BuilderWindow']
 class BuilderWindow:
     """A window mixin."""
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, *, primary: Gtk.Widget | None = None):
         """Initialize builder and main window."""
-        self._primary_widget: Gtk.Widget | None = None
         self._next_window: BuilderWindow | None = None
         self._home_window: BuilderWindow | None = None
+        self._primary_widget: Gtk.Widget | None = primary
         self.window: Gtk.Window = self.build(name)
         self.builder.connect_signals(self.window)
         self.window.connect('show', self.on_show)

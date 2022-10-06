@@ -30,7 +30,7 @@ class MainWindow(BuilderWindow, file='main.glade'):
 
     def __init__(self, client: Client):
         """Create the login form."""
-        super().__init__('main')
+        super().__init__('main', primary=self.build('tab_system_config'))
         self.client = client
         self.logged_in = False
         self.ping_host_label: str | None = None
@@ -46,7 +46,6 @@ class MainWindow(BuilderWindow, file='main.glade'):
         self.user_name: Gtk.Entry = self.build('user_name')
         self.password: Gtk.Entry = self.build('password')
         self.login: Gtk.Button = self.build('login')
-        self.primary_widget = self.login
         bind_action(self.on_login, self.user_name, self.password, self.login)
 
         # WIFI tab

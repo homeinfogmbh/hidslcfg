@@ -25,10 +25,9 @@ class SetupForm(BuilderWindow, file='setup.glade'):
 
     def __init__(self, client: Client, parameters: SetupParameters):
         """Create the setup form."""
-        super().__init__('setup')
+        super().__init__('setup', primary=self.build('standard24'))
         self.client = client
         self.parameters = parameters
-        self.primary_widget: Gtk.Widget = self.build('standard24')
 
         self.serial_number: Gtk.Entry = self.build('serial_number')
         self.system_id: Gtk.Entry = self.build('system_id')

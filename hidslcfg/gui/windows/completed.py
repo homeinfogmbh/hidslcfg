@@ -20,14 +20,15 @@ class CompletedForm(BuilderWindow, file='completed.glade'):
 
     def __init__(self, setup_parameters: SetupParameters):
         """Create the installing form."""
-        super().__init__('completed')
+        super().__init__(
+            'completed',
+            primary=(reboot_btn := self.build('reboot'))
+        )
         self.setup_parameters = setup_parameters
-        self.primary_widget: Gtk.Widget = self.build('reboot')
-
         self.system_id: Gtk.Label = self.build('system_id')
         self.model: Gtk.Label = self.build('model')
         self.serial_number: Gtk.Label = self.build('serial_number')
-        self.reboot: Gtk.Button = self.build('reboot')
+        self.reboot: Gtk.Button = reboot_btn
         bind_action(on_reboot, self.reboot)
         self.home: Gtk.Button = self.build('home')
         bind_action(self.go_home, self.home)
