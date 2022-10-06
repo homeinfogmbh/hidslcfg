@@ -36,7 +36,7 @@
             <property name="can-focus">False</property>
             <property name="margin-start">50</property>
             <property name="margin-end">50</property>
-            <property name="margin-top">15</property>
+            <property name="margin-top">35</property>
             <property name="margin-bottom">50</property>
             <property name="label" translatable="yes">Die Installation hat begonnen. Bitte schalten Sie das Gerät
 nicht ab bis die Installation abgeschlossen ist.</property>
@@ -50,11 +50,11 @@ nicht ab bis die Installation abgeschlossen ist.</property>
         </child>
         <child>
           <object class="GtkSpinner">
+            <property name="height-request">60</property>
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <property name="margin-start">50</property>
             <property name="margin-end">50</property>
-            <property name="margin-bottom">20</property>
             <property name="active">True</property>
           </object>
           <packing>
