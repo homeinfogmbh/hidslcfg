@@ -283,6 +283,7 @@ z.B. "ZOTAC ZBOX Nano"</property>
             <property name="margin-top">10</property>
             <property name="margin-bottom">15</property>
             <property name="image">img_go_home</property>
+            <property name="relief">none</property>
           </object>
           <packing>
             <property name="left-attach">0</property>

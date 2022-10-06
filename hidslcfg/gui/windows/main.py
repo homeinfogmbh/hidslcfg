@@ -1,13 +1,12 @@
 """Login window logic."""
 
-from contextlib import contextmanager
 from subprocess import CalledProcessError
 from threading import Thread
 
 from hidslcfg.api import Client
 from hidslcfg.exceptions import APIError
 from hidslcfg.gui.builder_window import BuilderWindow
-from hidslcfg.gui.gtk import Gdk, Gtk, bind_action
+from hidslcfg.gui.gtk import Gtk, bind_action
 from hidslcfg.system import ping
 from hidslcfg.wifi import MAX_PSK_LEN
 from hidslcfg.wifi import MIN_PSK_LEN
@@ -31,6 +30,8 @@ class MainWindow(BuilderWindow, file='main.glade'):
         super().__init__('main')
         self.client = client
         self.logged_in = False
+        self.ping_host_label: str | None = None
+        self.ping_successful: bool | None = None
         self.wifi_configs = load_wifi_configs()
 
         # Tabs
@@ -52,12 +53,13 @@ class MainWindow(BuilderWindow, file='main.glade'):
         self.configure_wifi: Gtk.Button = self.build('configure_wifi')
         bind_action(self.on_configure_wifi, self.configure_wifi)
 
-        # Connection test
+        # Ping tab
         self.ping_hostname: Gtk.Entry = self.build('ping_hostname')
         self.ping_spinner: Gtk.Spinner = self.build('ping_spinner')
         self.ping_host: Gtk.Button = self.build('ping_host')
         self.ping_result: Gtk.Label = self.build('ping_result')
         bind_action(self.on_ping_host, self.ping_hostname, self.ping_host)
+        self.new_signal('ping-host-completed', self.on_ping_completed)
 
     def populate_interfaces(self) -> None:
         """Populate interfaces combo box."""
@@ -71,36 +73,16 @@ class MainWindow(BuilderWindow, file='main.glade'):
         if index == 2:
             self.ping_hostname.set_text(DEFAULT_HOST)
 
-    def set_ping_result(self, result: bool) -> None:
-        """Sets the ping result."""
-        if result:
-            self.ping_result.modify_fg(
-                Gtk.StateFlags.NORMAL, Gdk.color_parse('green')
-            )
-            self.ping_result.set_text('Verbindungstest erfolgreich.')
-        else:
-            self.ping_result.modify_fg(
-                Gtk.StateFlags.NORMAL, Gdk.color_parse('red')
-            )
-            self.ping_result.set_text('Verbindungstest fehlgeschlagen.')
-
-    @contextmanager
-    def ping_context(self):
-        """Context manager to reset the ping interface."""
-        self.ping_result.set_text('')
-        self.ping_spinner.start()
-        yield
-        self.ping_spinner.stop()
-
     def ping_thread(self) -> None:
         """Ping the host."""
-        with self.ping_context():
-            try:
-                ping(self.ping_hostname.get_text())
-            except CalledProcessError:
-                self.set_ping_result(False)
-            else:
-                self.set_ping_result(True)
+        try:
+            ping(self.ping_hostname.get_text())
+        except CalledProcessError:
+            self.ping_successful = False
+        else:
+            self.ping_successful = True
+
+        self.window.emit('ping-host-completed', None)
 
     def on_login(self, *_) -> None:
         """Perform the login."""
@@ -153,4 +135,19 @@ class MainWindow(BuilderWindow, file='main.glade'):
 
     def on_ping_host(self, *_):
         """Ping the set host."""
+        self.ping_hostname.set_text(self.ping_hostname.get_text().strip())
+        self.ping_result.set_text('')
+        self.ping_host_label = self.ping_host.get_label()
+        self.ping_host.set_label('')
+        self.ping_spinner.start()
         Thread(daemon=True, target=self.ping_thread).start()
+
+    def on_ping_completed(self, *_) -> None:
+        """Sets the ping result."""
+        self.ping_spinner.stop()
+        self.ping_host.set_label(self.ping_host_label)
+
+        if self.ping_successful:
+            self.ping_result.set_text('Verbindungstest erfolgreich.')
+        else:
+            self.ping_result.set_text('Verbindungstest fehlgeschlagen.')

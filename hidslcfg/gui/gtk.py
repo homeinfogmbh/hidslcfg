@@ -5,10 +5,10 @@ from typing import Callable
 from gi import require_version
 require_version('Gtk', '3.0')
 require_version('Gdk', '3.0')
-from gi.repository import Gdk, Gtk
+from gi.repository import Gdk, Gtk, GObject
 
 
-__all__ = ['Gtk', 'bind_action']
+__all__ = ['EventHandler', 'Gdk', 'Gtk', 'GObject', 'bind_action']
 
 
 ENTER_KEY = 65293

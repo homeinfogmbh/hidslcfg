@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 from hidslcfg.gui.functions import get_asset
-from hidslcfg.gui.gtk import Gtk
+from hidslcfg.gui.gtk import EventHandler, Gtk, GObject
 from hidslcfg.gui.translation import translate
 
 
@@ -27,6 +27,22 @@ class BuilderWindow:
         """Set builder file and window name."""
         cls.builder = builder = Gtk.Builder()
         builder.add_from_file(str(get_asset(file)))
+
+    def new_signal(
+            self,
+            name: str,
+            action: EventHandler,
+            *,
+            signal: int = GObject.SIGNAL_RUN_LAST
+    ) -> None:
+        """Register a new signal."""
+        GObject.signal_new(
+            name, self.window,
+            signal,
+            GObject.TYPE_PYOBJECT,
+            [GObject.TYPE_PYOBJECT]
+        )
+        self.window.connect(name, action)
 
     def bind(
             self,

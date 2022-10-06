@@ -26,7 +26,8 @@ class InstallationForm(BuilderWindow, file='installation.glade'):
         """Create the installation form."""
         super().__init__('installation')
         self.client = client
-        self.setup_parameters = setup_parameters
+        self.setup_parameters: SetupParameters = setup_parameters
+        self.new_signal('installation-completed', self.continue_to_next_window)
 
     def on_show(self, *_) -> None:
         """Perform the setup process when window is shown."""
@@ -43,7 +44,7 @@ class InstallationForm(BuilderWindow, file='installation.glade'):
         except Exception as error:
             self.show_error(str(error))
 
-        self.switch_window(self.next_window)
+        self.window.emit('installation-completed', None)
 
     def install(self) -> None:
         """Run the installation."""
@@ -57,6 +58,10 @@ class InstallationForm(BuilderWindow, file='installation.glade'):
             self.setup_parameters.serial_number,
             self.setup_parameters.model
         )
+
+    def continue_to_next_window(self, *_) -> None:
+        """Continue to the next window."""
+        self.switch_window(self.next_window)
 
 
 def setup(
