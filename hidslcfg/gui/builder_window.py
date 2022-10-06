@@ -1,10 +1,10 @@
 """Common mixins."""
 
 from __future__ import annotations
-from typing import Any
+from typing import Any, Callable
 
 from hidslcfg.gui.functions import get_asset
-from hidslcfg.gui.gtk import EventHandler, Gtk, GObject
+from hidslcfg.gui.gtk import Gdk, Gtk, GObject
 from hidslcfg.gui.translation import translate
 
 
@@ -32,7 +32,7 @@ class BuilderWindow:
     def new_signal(
             self,
             name: str,
-            action: EventHandler,
+            action: Callable[[Gtk.Widget, Gdk.Event | Gdk.EventKey], None],
             *,
             signal: int = GObject.SIGNAL_RUN_LAST
     ) -> None:

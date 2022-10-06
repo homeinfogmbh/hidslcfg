@@ -8,7 +8,7 @@ from hidslcfg.api import Client
 from hidslcfg.common import HIDSL_DEBUG
 from hidslcfg.exceptions import APIError
 from hidslcfg.gui.builder_window import BuilderWindow
-from hidslcfg.gui.gtk import Gtk, bind_action
+from hidslcfg.gui.gtk import Gtk
 from hidslcfg.system import ping, reboot
 from hidslcfg.wifi import MAX_PSK_LEN
 from hidslcfg.wifi import MIN_PSK_LEN
@@ -44,9 +44,11 @@ class MainWindow(BuilderWindow, file='main.glade'):
 
         # Login tab
         self.user_name: Gtk.Entry = self.build('user_name')
+        self.user_name.connect('activate', self.on_login)
         self.password: Gtk.Entry = self.build('password')
+        self.password.connect('activate', self.on_login)
         self.login: Gtk.Button = self.build('login')
-        bind_action(self.on_login, self.user_name, self.password, self.login)
+        self.login.connect('activate', self.on_login)
 
         # WIFI tab
         self.interfaces: Gtk.ComboBoxText = self.build('interfaces')
@@ -55,18 +57,18 @@ class MainWindow(BuilderWindow, file='main.glade'):
         self.ssid: Gtk.Entry = self.build('ssid')
         self.psk: Gtk.Entry = self.build('psk')
         self.configure_wifi: Gtk.Button = self.build('configure_wifi')
-        bind_action(self.on_configure_wifi, self.configure_wifi)
+        self.configure_wifi.connect('activate', self.on_configure_wifi)
 
         # Ping tab
         self.ping_hostname: Gtk.Entry = self.build('ping_hostname')
         self.ping_spinner: Gtk.Spinner = self.build('ping_spinner')
         self.ping_host: Gtk.Button = self.build('ping_host')
         self.ping_result: Gtk.Image = self.build('ping_result')
-        bind_action(self.on_ping_host, self.ping_host)
+        self.ping_host.connect('activate', self.on_ping_host)
         self.new_signal('ping-host-completed', self.on_ping_completed)
 
         self.btn_quit: Gtk.Button = self.build('quit')
-        bind_action(self.on_quit, self.btn_quit)
+        self.btn_quit.connect('activate', self.on_quit)
 
     def populate_interfaces(self) -> None:
         """Populate interfaces combo box."""

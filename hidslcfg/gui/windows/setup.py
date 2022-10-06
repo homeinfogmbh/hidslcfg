@@ -6,7 +6,7 @@ from typing import Any, Callable
 
 from hidslcfg.api import Client
 from hidslcfg.gui.builder_window import BuilderWindow
-from hidslcfg.gui.gtk import Gtk, bind_action
+from hidslcfg.gui.gtk import Gtk
 from hidslcfg.gui.setup_parameters import SetupParameters
 
 
@@ -33,9 +33,9 @@ class SetupForm(BuilderWindow, file='setup.glade'):
         self.system_id: Gtk.Entry = self.build('system_id')
         self.model_options = ModelOptions(self.build)
         self.install: Gtk.Button = self.build('install')
-        bind_action(self.on_setup, self.install)
+        self.install.connect('activate', self.on_setup)
         self.home: Gtk.Button = self.build('home')
-        bind_action(self.go_home, self.home)
+        self.home.connect('activate', self.go_home)
 
     def get_system_id(self) -> int | None:
         """Return the system ID."""

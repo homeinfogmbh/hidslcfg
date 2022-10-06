@@ -4,7 +4,7 @@ from logging import getLogger
 
 from hidslcfg.common import HIDSL_DEBUG
 from hidslcfg.gui.builder_window import BuilderWindow
-from hidslcfg.gui.gtk import Gtk, bind_action
+from hidslcfg.gui.gtk import Gtk
 from hidslcfg.gui.setup_parameters import SetupParameters
 from hidslcfg.system import reboot
 
@@ -29,9 +29,9 @@ class CompletedForm(BuilderWindow, file='completed.glade'):
         self.model: Gtk.Label = self.build('model')
         self.serial_number: Gtk.Label = self.build('serial_number')
         self.reboot: Gtk.Button = reboot_btn
-        bind_action(on_reboot, self.reboot)
+        self.reboot.connect('activate', on_reboot)
         self.home: Gtk.Button = self.build('home')
-        bind_action(self.go_home, self.home)
+        self.home.connect('activate', self.go_home)
 
     def on_show(self, *_) -> None:
         """Perform the setup process when window is shown."""
