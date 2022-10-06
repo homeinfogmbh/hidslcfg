@@ -25,7 +25,7 @@ def bind_action(action: EventHandler, *widgets: Gtk.Widget) -> None:
             action(caller, event)
 
     for widget in widgets:
-        widget.connect('key-press-event', on_key_press)
+        widget.connect('key-release-event', on_key_press)
 
         if isinstance(widget, Gtk.Button):
             widget.connect('button-release-event', action)
