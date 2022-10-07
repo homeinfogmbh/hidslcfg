@@ -186,7 +186,7 @@
                         <property name="margin-end">39</property>
                         <property name="margin-top">7</property>
                         <property name="relief">none</property>
-                        <property name="uri">http://glade.gnome.org</property>
+                        <property name="uri">:</property>
                       </object>
                       <packing>
                         <property name="left-attach">1</property>
