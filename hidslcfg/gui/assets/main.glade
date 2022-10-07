@@ -159,13 +159,40 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkComboBoxText" id="interfaces">
+                  <!-- n-columns=2 n-rows=1 -->
+                  <object class="GtkGrid">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="margin-start">50</property>
-                    <property name="margin-end">50</property>
-                    <property name="margin-top">20</property>
-                    <property name="margin-bottom">10</property>
+                    <child>
+                      <object class="GtkComboBoxText" id="interfaces">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="margin-start">50</property>
+                        <property name="margin-top">20</property>
+                        <property name="margin-bottom">10</property>
+                        <property name="hexpand">True</property>
+                      </object>
+                      <packing>
+                        <property name="left-attach">0</property>
+                        <property name="top-attach">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLinkButton" id="load_wifi_config">
+                        <property name="label" translatable="yes">von USB Stick laden</property>
+                        <property name="visible">True</property>
+                        <property name="can-focus">True</property>
+                        <property name="receives-default">True</property>
+                        <property name="margin-end">39</property>
+                        <property name="margin-top">7</property>
+                        <property name="relief">none</property>
+                        <property name="uri">http://glade.gnome.org</property>
+                      </object>
+                      <packing>
+                        <property name="left-attach">1</property>
+                        <property name="top-attach">0</property>
+                      </packing>
+                    </child>
                   </object>
                   <packing>
                     <property name="left-attach">0</property>
