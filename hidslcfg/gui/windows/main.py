@@ -14,6 +14,7 @@ from hidslcfg.wifi import MAX_PSK_LEN
 from hidslcfg.wifi import MIN_PSK_LEN
 from hidslcfg.wifi import configure
 from hidslcfg.wifi import disable
+from hidslcfg.wifi import from_magic_usb_key
 from hidslcfg.wifi import load_wifi_configs
 from hidslcfg.wifi import list_wifi_interfaces
 
@@ -49,6 +50,11 @@ class MainWindow(BuilderWindow, file='main.glade'):
         # WIFI tab
         self.interfaces: Gtk.ComboBoxText = self.build('interfaces')
         self.populate_interfaces()
+        self.load_wifi_config: Gtk.LinkButton = self.build('load_wifi_config')
+        self.load_wifi_config.connect(
+            'activate-link',
+            self.on_load_wifi_config
+        )
         self.interfaces.connect("changed", self.on_interface_select)
         self.ssid: Gtk.Entry = self.build('ssid')
         self.psk: Gtk.Entry = self.build('psk')
@@ -108,6 +114,22 @@ class MainWindow(BuilderWindow, file='main.glade'):
     def on_interface_select(self, *_) -> None:
         """Set configuration for selected interface."""
         config = self.wifi_configs.get(self.interfaces.get_active_text(), {})
+        self.ssid.set_text(config.get('ssid', ''))
+        self.psk.set_text(config.get('psk', ''))
+
+    def on_load_wifi_config(self, *_) -> None:
+        """Attempt to load Wi-Fi config from USB."""
+        try:
+            config = from_magic_usb_key()
+        except CalledProcessError:
+            return self.show_error('Konnte USB-Stick nicht einhängen.')
+        except FileNotFoundError:
+            return self.show_error('Keine WLAN Konfigurationsdatei gefunden.')
+        except PermissionError:
+            return self.show_error(
+                'Keine Berechtigung WLAN Konfigurationsdatei zu lesen.'
+            )
+
         self.ssid.set_text(config.get('ssid', ''))
         self.psk.set_text(config.get('psk', ''))
 
