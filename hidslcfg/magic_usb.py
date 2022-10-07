@@ -40,10 +40,18 @@ class MagicUSBKey:
 def mount(device: str | Path, mountpoint: str | Path) -> CompletedProcess:
     """Mount a device."""
 
-    return run(['/usr/bin/mount', str(device), str(mountpoint)])
+    return run(
+        ['/usr/bin/mount', str(device), str(mountpoint)],
+        check=True,
+        text=True
+    )
 
 
 def umount(mountpoint_or_device: str | Path) -> CompletedProcess:
     """Umount a mountpoint."""
 
-    return run(['/usr/bin/umount', str(mountpoint_or_device)])
+    return run(
+        ['/usr/bin/umount', str(mountpoint_or_device)],
+        check=True,
+        text=True
+    )
