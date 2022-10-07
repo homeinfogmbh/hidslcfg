@@ -9,6 +9,7 @@ from typing import Iterable, Iterator
 from netifaces import interfaces
 
 from hidslcfg.common import SYSTEMD_NETWORKD
+from hidslcfg.magic_usb import MagicUSBKey
 from hidslcfg.system import systemctl
 
 
@@ -17,6 +18,7 @@ __all__ = [
     'MIN_PSK_LEN',
     'configure',
     'disable',
+    'from_magic_usb_key',
     'list_wifi_interfaces',
     'load_wifi_configs'
 ]
@@ -34,6 +36,13 @@ WPA_CONFIG_PARSER = {
     'psk': r'^\s*#psk="(.+)"$',
     'psk_encoded': r'^\s*psk=(.+)$'
 }
+
+
+def from_magic_usb_key() -> dict[str, str]:
+    """Loads a wpa_supplicant configuration from the magic USB key."""
+
+    with MagicUSBKey() as mountpoint:
+        return load_wifi_config(mountpoint / 'wpa_supplicant.conf')
 
 
 def list_wifi_interfaces() -> Iterator[str]:
