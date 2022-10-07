@@ -38,6 +38,26 @@ WPA_CONFIG_PARSER = {
 }
 
 
+def configure(interface: str, ssid: str, psk: str):
+    """Configure the given interface for WPA."""
+
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    filename = CONFIG_DIR / CONFIG_FILE_TEMPLATE.format(interface=interface)
+
+    with filename.open('w') as file:
+        file.write(wpa_passphrase(ssid, psk))
+
+    start_and_enable(SERVICE_TEMPLATE.format(interface=interface))
+    systemctl('restart', SYSTEMD_NETWORKD)
+
+
+def disable(interfaces_to_disable: Iterable[str]) -> None:
+    """Remove configuration for the given interfaces."""
+
+    for interface in interfaces_to_disable:
+        stop_and_disable(SERVICE_TEMPLATE.format(interface=interface))
+
+
 def from_magic_usb_key() -> dict[str, str]:
     """Loads a wpa_supplicant configuration from the magic USB key."""
 
@@ -82,26 +102,6 @@ def load_wifi_config(file: Path) -> dict[str, str]:
                     continue
 
     return config
-
-
-def configure(interface: str, ssid: str, psk: str):
-    """Configure the given interface for WPA."""
-
-    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-    filename = CONFIG_DIR / CONFIG_FILE_TEMPLATE.format(interface=interface)
-
-    with filename.open('w') as file:
-        file.write(wpa_passphrase(ssid, psk))
-
-    start_and_enable(SERVICE_TEMPLATE.format(interface=interface))
-    systemctl('restart', SYSTEMD_NETWORKD)
-
-
-def disable(interfaces_to_disable: Iterable[str]) -> None:
-    """Remove configuration for the given interfaces."""
-
-    for interface in interfaces_to_disable:
-        stop_and_disable(SERVICE_TEMPLATE.format(interface=interface))
 
 
 def wpa_passphrase(ssid: str, psk: str) -> str:
