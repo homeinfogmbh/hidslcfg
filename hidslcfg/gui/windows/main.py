@@ -77,6 +77,7 @@ class MainWindow(BuilderWindow, file='main.glade'):
             self.interfaces.append_text(interface)
 
         self.interfaces.set_active(0)
+        self.on_interface_select()
 
     def ping_thread(self) -> None:
         """Ping the host."""
