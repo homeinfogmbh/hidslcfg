@@ -94,7 +94,7 @@ def load_wifi_config(file: Path) -> dict[str, str]:
 
     config = {}
 
-    with file.open('r') as file:
+    with file.open('r', encoding='utf-8') as file:
         for line in file:
             for key, regex in WPA_CONFIG_PARSER.items():
                 if regex_match := fullmatch(regex, line.strip()):
