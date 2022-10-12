@@ -3,7 +3,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from gi import require_version
 require_version('Gtk', '3.0')
@@ -56,22 +56,6 @@ class BuilderWindow:
         """Set builder file and window name."""
         cls.builder = builder = Gtk.Builder()
         builder.add_from_file(str(get_asset(file)))
-
-    def new_signal(
-            self,
-            name: str,
-            action: Callable[[Gtk.Widget, Gdk.Event | Gdk.EventKey], None],
-            *,
-            signal: int = GObject.SIGNAL_RUN_LAST
-    ) -> None:
-        """Register a new signal."""
-        GObject.signal_new(
-            name, self.window,
-            signal,
-            GObject.TYPE_PYOBJECT,
-            [GObject.TYPE_PYOBJECT]
-        )
-        self.window.connect(name, action)
 
     def bind(
             self,
