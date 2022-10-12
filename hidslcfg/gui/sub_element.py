@@ -12,7 +12,7 @@ class SubElement:
     """Window sub-element."""
 
     def __init__(self, window: BuilderWindow):
-        self.window: BuilderWindow = window
+        self.builder_window: BuilderWindow = window
 
     def __getattr__(self, item):
-        return getattr(self.window, item)
+        return getattr(self.builder_window, item)
