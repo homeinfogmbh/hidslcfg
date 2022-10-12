@@ -10,10 +10,9 @@ __all__ = ['LoginTab']
 
 
 class LoginTab(SubElement):
-    """Login form objects."""
+    """Login tab."""
 
     def __init__(self, window: BuilderWindow):
-        """Create the login form."""
         super().__init__(window)
         self.user_name: Gtk.Entry = self.build('user_name')
         self.user_name.connect('activate', self.on_login)

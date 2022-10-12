@@ -1,6 +1,5 @@
 """Login window logic."""
 
-from logging import getLogger
 from subprocess import CalledProcessError
 from threading import Thread
 
@@ -19,15 +18,10 @@ from hidslcfg.wifi import list_wifi_interfaces
 __all__ = ['WifiTab']
 
 
-DEFAULT_HOST = 'wireguard.homeinfo.de'
-LOGGER = getLogger(__file__)
-
-
 class WifiTab(SubElement):
-    """Login form objects."""
+    """Wi-Fi setup tab."""
 
     def __init__(self, window: BuilderWindow):
-        """Wi-Fi tab in the main window."""
         super().__init__(window)
         self.wifi_configs = load_wifi_configs()
         self.error_message: str | None = None
