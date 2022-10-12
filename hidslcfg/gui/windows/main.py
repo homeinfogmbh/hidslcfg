@@ -1,5 +1,6 @@
 """Login window logic."""
 
+from contextlib import contextmanager
 from logging import getLogger
 from subprocess import CalledProcessError
 from threading import Thread
@@ -103,6 +104,17 @@ class MainWindow(BuilderWindow, file='main.glade'):
 
         self.window.emit('ping-host-completed', None)
 
+    @contextmanager
+    def wifi_gui_lock(self) -> None:
+        """Context manager to lock the Wi-Fi GUI."""
+        for widget in self.wifi_interface:
+            widget.set_property('sensitive', False)
+
+        yield
+
+        for widget in self.wifi_interface:
+            widget.set_property('sensitive', True)
+
     def on_login(self, *_) -> None:
         """Perform the login."""
         if not (user_name := self.user_name.get_text()):
@@ -126,6 +138,11 @@ class MainWindow(BuilderWindow, file='main.glade'):
 
     def on_load_wifi_config(self, *_) -> None:
         """Attempt to load Wi-Fi config from USB."""
+        with self.wifi_gui_lock():
+            self.do_load_wifi_config()
+
+    def do_load_wifi_config(self) -> None:
+        """Perform actual Wi-Fi config loading."""
         try:
             config = from_magic_usb_key()
         except CalledProcessError:
@@ -142,6 +159,11 @@ class MainWindow(BuilderWindow, file='main.glade'):
 
     def on_configure_wifi(self, *_) -> None:
         """Configure the selected Wi-Fi interface."""
+        with self.wifi_gui_lock():
+            self.do_configure_wifi()
+
+    def do_configure_wifi(self) -> None:
+        """Perform actual Wi-Fi configuration."""
         if not (interface := self.interfaces.get_active_text()):
             return self.show_error('Keine WLAN Karte ausgewählt.')
 
