@@ -127,7 +127,7 @@ def start_and_enable(service: str) -> None:
     except CalledProcessError:
         systemctl('start', service)
     else:
-        systemctl('start', service)
+        systemctl('restart', service)
 
 
 def stop_and_disable(service: str) -> None:
