@@ -71,10 +71,15 @@ class WifiTab(SubElement):
 
         self.window.emit('load-wifi-config-done', error)
 
-    def on_load_wifi_config_done(self, *args) -> None:
+    def on_load_wifi_config_done(
+            self, _: Gtk.ApplicationWindow,
+            message: str | None
+    ) -> None:
         """After Wi-Fi config processing."""
         self.wifi_gui_unlock()
-        print(*args)
+
+        if message is not None:
+            self.show_error(message)
 
     def on_configure_wifi(self, *_) -> None:
         """Perform Wi-Fi configuration."""
