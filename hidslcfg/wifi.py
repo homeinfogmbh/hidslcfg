@@ -1,4 +1,4 @@
-"""WPA setup functions."""
+"""Wi-Fi setup functions."""
 
 from functools import partial
 from pathlib import Path
@@ -59,7 +59,7 @@ def disable(interfaces_to_disable: Iterable[str]) -> None:
 
 
 def from_magic_usb_key() -> dict[str, str]:
-    """Loads a wpa_supplicant configuration from the magic USB key."""
+    """Load a wpa_supplicant configuration from the magic USB key."""
 
     with MagicUSBKey() as mountpoint:
         return load_wifi_config(mountpoint / 'wpa_supplicant.conf')

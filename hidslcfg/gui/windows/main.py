@@ -47,7 +47,7 @@ class MainWindow(BuilderWindow, file='main.glade'):
         self.login.connect('activate', self.on_login)
         self.login.connect('clicked', self.on_login)
 
-        # WIFI tab
+        # Wi-Fi tab
         self.interfaces: Gtk.ComboBoxText = self.build('interfaces')
         self.load_wifi_config: Gtk.LinkButton = self.build('load_wifi_config')
         self.load_wifi_config.connect(
@@ -134,7 +134,7 @@ class MainWindow(BuilderWindow, file='main.glade'):
         self.psk.set_text(config.get('psk', ''))
 
     def on_configure_wifi(self, *_) -> None:
-        """Configure the selected WIFI interface."""
+        """Configure the selected Wi-Fi interface."""
         if not (interface := self.interfaces.get_active_text()):
             return self.show_error('Keine WLAN Karte ausgewählt.')
 
