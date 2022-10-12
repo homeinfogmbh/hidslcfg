@@ -1,7 +1,9 @@
 """Login window logic."""
 
+from threading import Thread
+
 from hidslcfg.exceptions import APIError
-from hidslcfg.gui.api import Gtk, BuilderWindow, SubElement
+from hidslcfg.gui.api import GLib, Gtk, BuilderWindow, SubElement
 
 
 __all__ = ['LoginTab']
@@ -28,9 +30,26 @@ class LoginTab(SubElement):
         if not (password := self.password.get_text()):
             return self.show_error('Kein Passwort angegeben.')
 
+        Thread(
+            daemon=True,
+            target=self.login_thread,
+            args=(user_name, password)
+        ).start()
+
+    def login_thread(self, user_name: str, password: str) -> None:
+        """Login thread."""
         try:
             self.client.login(user_name, password)
-        except APIError as error:
-            return self.show_error(str(error))
+        except APIError as api_error:
+            error = str(api_error)
+        else:
+            error = None
+
+        GLib.idle_add(lambda: self.on_login_done(error))
+
+    def on_login_done(self, error: str | None) -> None:
+        """Run after login is done."""
+        if error:
+            return self.show_error(error)
 
         self.next_window()
