@@ -1,14 +1,41 @@
 """Common mixins."""
 
 from __future__ import annotations
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Callable
 
-from hidslcfg.gui.functions import get_asset
-from hidslcfg.gui.gtk import Gdk, Gtk, GObject
-from hidslcfg.gui.translation import translate
+from gi import require_version
+require_version('Gtk', '3.0')
+require_version('Gdk', '3.0')
+from gi.repository import Gdk, Gtk, GObject
+
+from hidslcfg.common import HIDSL_DEBUG
 
 
-__all__ = ['BuilderWindow']
+__all__ = [
+    'Gdk',
+    'Gtk',
+    'GObject',
+    'SetupParameters',
+    'BuilderWindow',
+    'SubElement'
+]
+
+
+ASSETS_DIR = Path('/usr/share/hidslcfg')
+TRANSLATIONS = {
+    'Invalid credentials.': 'Ungültige Anmeldedaten.'
+}
+
+
+@dataclass
+class SetupParameters:
+    """Setup parameters."""
+
+    model: str | None = None
+    system_id: int | None = None
+    serial_number: str | None = None
 
 
 class BuilderWindow:
@@ -101,7 +128,7 @@ class BuilderWindow:
             transient_for=self.window,
             message_type=message_type,
             buttons=Gtk.ButtonsType.OK,
-            text=translate(message)
+            text=TRANSLATIONS.get(message, message or 'NO_TEXT')
         )
         message_dialog.run()
         message_dialog.destroy()
@@ -109,3 +136,28 @@ class BuilderWindow:
     def show_error(self, message: str) -> None:
         """Shows an error message."""
         self.show_message(message, message_type=Gtk.MessageType.ERROR)
+
+
+class SubElement:
+    """Window sub-element."""
+
+    def __init__(self, window: BuilderWindow):
+        self.builder_window: BuilderWindow = window
+
+    def __getattr__(self, item):
+        return getattr(self.builder_window, item)
+
+
+def get_asset(filename: str) -> Path:
+    """Return the path to an asset file."""
+
+    return get_base_dir() / filename
+
+
+def get_base_dir() -> Path:
+    """Return the assets base directory."""
+
+    if HIDSL_DEBUG:
+        return Path(__file__).parent / 'assets'
+
+    return ASSETS_DIR

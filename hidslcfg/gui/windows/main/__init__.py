@@ -4,8 +4,7 @@ from logging import getLogger
 
 from hidslcfg.api import Client
 from hidslcfg.common import HIDSL_DEBUG
-from hidslcfg.gui.builder_window import BuilderWindow
-from hidslcfg.gui.gtk import Gtk
+from hidslcfg.gui.api import Gtk, BuilderWindow
 from hidslcfg.gui.windows.main.login_tab import LoginTab
 from hidslcfg.gui.windows.main.ping_tab import PingTab
 from hidslcfg.gui.windows.main.wifi_tab import WifiTab

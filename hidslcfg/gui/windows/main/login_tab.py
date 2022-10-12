@@ -1,9 +1,7 @@
 """Login window logic."""
 
 from hidslcfg.exceptions import APIError
-from hidslcfg.gui.builder_window import BuilderWindow
-from hidslcfg.gui.sub_element import SubElement
-from hidslcfg.gui.gtk import Gtk
+from hidslcfg.gui.api import Gtk, BuilderWindow, SubElement
 
 
 __all__ = ['LoginTab']

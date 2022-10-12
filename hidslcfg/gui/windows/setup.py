@@ -5,9 +5,7 @@ from functools import partial
 from typing import Any, Callable
 
 from hidslcfg.api import Client
-from hidslcfg.gui.builder_window import BuilderWindow
-from hidslcfg.gui.gtk import Gtk
-from hidslcfg.gui.setup_parameters import SetupParameters
+from hidslcfg.gui.api import Gtk, BuilderWindow, SetupParameters
 
 
 __all__ = ['SetupForm']

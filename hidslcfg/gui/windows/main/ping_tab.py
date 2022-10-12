@@ -3,9 +3,7 @@
 from subprocess import CalledProcessError
 from threading import Thread
 
-from hidslcfg.gui.builder_window import BuilderWindow
-from hidslcfg.gui.sub_element import SubElement
-from hidslcfg.gui.gtk import Gtk
+from hidslcfg.gui.api import Gtk, BuilderWindow, SubElement
 from hidslcfg.system import ping
 
 

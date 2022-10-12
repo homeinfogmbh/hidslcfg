@@ -7,8 +7,7 @@ from time import sleep
 from hidslcfg.api import Client
 from hidslcfg.common import HIDSL_DEBUG
 from hidslcfg.exceptions import APIError, ProgramError
-from hidslcfg.gui.builder_window import BuilderWindow
-from hidslcfg.gui.setup_parameters import SetupParameters
+from hidslcfg.gui.api import BuilderWindow, SetupParameters
 from hidslcfg.wireguard import MTU, create, patch
 
 
