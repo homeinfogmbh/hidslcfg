@@ -1,7 +1,6 @@
 """Login window logic."""
 
 from subprocess import CalledProcessError
-from threading import Thread
 
 from hidslcfg.gui.api import Gtk, BuilderWindow, SubElement
 from hidslcfg.wifi import MAX_PSK_LEN
@@ -29,12 +28,7 @@ class WifiTab(SubElement):
         self.psk: Gtk.Entry = self.build('psk')
         self.configure: Gtk.Button = self.build('configure_wifi')
         self.populate_interfaces()
-        self.new_signal('load-wifi-config-done', self.on_load_config_done)
-        self.new_signal('configure-wifi-done', self.unlock_gui)
-        self.load_config.connect(
-            'activate-link',
-            self.on_load_config
-        )
+        self.load_config.connect('activate-link', self.on_load_config)
         self.interfaces.connect("changed", self.on_interface_select)
         self.configure.connect('activate', self.on_configure)
         self.configure.connect('clicked', self.on_configure)
@@ -58,48 +52,27 @@ class WifiTab(SubElement):
         self.interfaces.set_active(0)
         self.on_interface_select()
 
-    def lock_gui(self) -> None:
-        """Lock the Wi-Fi GUI."""
-        for widget in self.widgets:
-            widget.set_property('sensitive', False)
-
-    def unlock_gui(self, *_) -> None:
-        """Unlock the Wi-Fi GUI."""
-        for widget in self.widgets:
-            widget.set_property('sensitive', True)
+    def on_interface_select(self, *_) -> None:
+        """Set configuration for selected interface."""
+        config = self.wifi_configs.get(self.interfaces.get_active_text(), {})
+        self.ssid.set_text(config.get('ssid', ''))
+        self.psk.set_text(config.get('psk', ''))
 
     def on_load_config(self, *_) -> None:
         """After Wi-Fi config processing."""
-        self.lock_gui()
-        Thread(daemon=True, target=self.load_config_thread).start()
-
-    def load_config_thread(self) -> None:
-        """Perform actual Wi-Fi config loading."""
-        error = None
-
         try:
             config = from_magic_usb_key()
         except CalledProcessError:
-            error = 'Konnte USB-Stick nicht einhängen.'
+            return self.show_error('Konnte USB-Stick nicht einhängen.')
         except FileNotFoundError:
-            error = 'Keine WLAN Konfigurationsdatei gefunden.'
+            return self.show_error('Keine WLAN Konfigurationsdatei gefunden.')
         except PermissionError:
-            error = 'Keine Berechtigung WLAN Konfigurationsdatei zu lesen.'
-        else:
-            self.ssid.set_text(config.get('ssid', ''))
-            self.psk.set_text(config.get('psk', ''))
+            return self.show_error(
+                'Keine Berechtigung WLAN Konfigurationsdatei zu lesen.'
+            )
 
-        self.window.emit('load-wifi-config-done', error)
-
-    def on_load_config_done(
-            self, _: Gtk.ApplicationWindow,
-            message: str | None
-    ) -> None:
-        """After Wi-Fi config processing."""
-        self.unlock_gui()
-
-        if message is not None:
-            self.show_error(message)
+        self.ssid.set_text(config.get('ssid', ''))
+        self.psk.set_text(config.get('psk', ''))
 
     def on_configure(self, *_) -> None:
         """Perform Wi-Fi configuration."""
@@ -122,32 +95,9 @@ class WifiTab(SubElement):
                 f'Schlüssel darf maximal {MAX_PSK_LEN} Zeichen lang sein.'
             )
 
-        self.lock_gui()
-        Thread(
-            daemon=True,
-            target=self.configure_thread,
-            args=(interface, ssid, psk)
-        ).start()
-
-    def configure_thread(
-            self, interface: str,
-            ssid: str,
-            psk: str
-    ) -> None:
-        """Thread to configure Wi-Fi."""
         try:
             configure(interface, ssid, psk)
         except (CalledProcessError, PermissionError):
-            self.window.emit(
-                'configure-wifi-done',
-                'Konnte WLAN Verbindung nicht einrichten.'
-            )
-        else:
-            disable(set(list_wifi_interfaces()) - {interface})
-            self.window.emit('configure-wifi-done', None)
+            return self.show_error('Konnte WLAN Verbindung nicht einrichten.')
 
-    def on_interface_select(self, *_) -> None:
-        """Set configuration for selected interface."""
-        config = self.wifi_configs.get(self.interfaces.get_active_text(), {})
-        self.ssid.set_text(config.get('ssid', ''))
-        self.psk.set_text(config.get('psk', ''))
+        disable(set(list_wifi_interfaces()) - {interface})
