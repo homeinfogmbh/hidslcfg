@@ -6,9 +6,9 @@ from threading import Thread
 
 from hidslcfg.api import Client
 from hidslcfg.common import HIDSL_DEBUG
-from hidslcfg.exceptions import APIError
 from hidslcfg.gui.builder_window import BuilderWindow
 from hidslcfg.gui.gtk import Gtk
+from hidslcfg.gui.windows.login_tab import LoginTab
 from hidslcfg.gui.windows.wifi_tab import WifiTab
 from hidslcfg.system import ping, reboot
 
@@ -32,13 +32,7 @@ class MainWindow(BuilderWindow, file='main.glade'):
         self.reboot_response = None
 
         # Login tab
-        self.user_name: Gtk.Entry = self.build('user_name')
-        self.user_name.connect('activate', self.on_login)
-        self.password: Gtk.Entry = self.build('password')
-        self.password.connect('activate', self.on_login)
-        self.login: Gtk.Button = self.build('login')
-        self.login.connect('activate', self.on_login)
-        self.login.connect('clicked', self.on_login)
+        self.login_tab = LoginTab(self)
 
         # Wi-Fi tab
         self.wifi_tab = WifiTab(self)
@@ -68,21 +62,6 @@ class MainWindow(BuilderWindow, file='main.glade'):
             self.ping_successful = True
 
         self.window.emit('ping-host-completed', None)
-
-    def on_login(self, *_) -> None:
-        """Perform the login."""
-        if not (user_name := self.user_name.get_text()):
-            return self.show_error('Kein Benutzername angegeben.')
-
-        if not (password := self.password.get_text()):
-            return self.show_error('Kein Passwort angegeben.')
-
-        try:
-            self.client.login(user_name, password)
-        except APIError as error:
-            return self.show_error(str(error))
-
-        self.next_window()
 
     def on_ping_hostname_change(self, *_) -> None:
         """Ping the set host."""
