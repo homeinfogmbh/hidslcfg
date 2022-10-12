@@ -50,17 +50,24 @@ class MainWindow(BuilderWindow, file='main.glade'):
         # Wi-Fi tab
         self.interfaces: Gtk.ComboBoxText = self.build('interfaces')
         self.load_wifi_config: Gtk.LinkButton = self.build('load_wifi_config')
+        self.ssid: Gtk.Entry = self.build('ssid')
+        self.psk: Gtk.Entry = self.build('psk')
+        self.configure_wifi: Gtk.Button = self.build('configure_wifi')
+        self.wifi_interface = (
+            self.interfaces,
+            self.load_wifi_config,
+            self.ssid,
+            self.psk,
+            self.configure_wifi
+        )
+        self.populate_interfaces()
         self.load_wifi_config.connect(
             'activate-link',
             self.on_load_wifi_config
         )
         self.interfaces.connect("changed", self.on_interface_select)
-        self.ssid: Gtk.Entry = self.build('ssid')
-        self.psk: Gtk.Entry = self.build('psk')
-        self.configure_wifi: Gtk.Button = self.build('configure_wifi')
         self.configure_wifi.connect('activate', self.on_configure_wifi)
         self.configure_wifi.connect('clicked', self.on_configure_wifi)
-        self.populate_interfaces()
 
         # Ping tab
         self.ping_hostname: Gtk.ComboBoxText = self.build('ping_hostname')
