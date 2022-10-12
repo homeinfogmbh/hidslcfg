@@ -1,6 +1,5 @@
 """Login window logic."""
 
-from contextlib import contextmanager
 from logging import getLogger
 from subprocess import CalledProcessError
 from threading import Thread
@@ -62,6 +61,8 @@ class MainWindow(BuilderWindow, file='main.glade'):
             self.configure_wifi
         )
         self.populate_interfaces()
+        self.new_signal('load-wifi-config-completed', self.wifi_gui_unlock)
+        self.new_signal('configure-wifi-completed', self.wifi_gui_unlock)
         self.load_wifi_config.connect(
             'activate-link',
             self.on_load_wifi_config
@@ -104,14 +105,13 @@ class MainWindow(BuilderWindow, file='main.glade'):
 
         self.window.emit('ping-host-completed', None)
 
-    @contextmanager
     def wifi_gui_lock(self) -> None:
-        """Context manager to lock the Wi-Fi GUI."""
+        """Lock the Wi-Fi GUI."""
         for widget in self.wifi_interface:
             widget.set_property('sensitive', False)
 
-        yield
-
+    def wifi_gui_unlock(self, *_) -> None:
+        """Unlock the Wi-Fi GUI."""
         for widget in self.wifi_interface:
             widget.set_property('sensitive', True)
 
@@ -138,8 +138,8 @@ class MainWindow(BuilderWindow, file='main.glade'):
 
     def on_load_wifi_config(self, *_) -> None:
         """Attempt to load Wi-Fi config from USB."""
-        with self.wifi_gui_lock():
-            self.do_load_wifi_config()
+        self.wifi_gui_lock()
+        Thread(daemon=True, target=self.do_load_wifi_config).start()
 
     def do_load_wifi_config(self) -> None:
         """Perform actual Wi-Fi config loading."""
@@ -156,11 +156,12 @@ class MainWindow(BuilderWindow, file='main.glade'):
 
         self.ssid.set_text(config.get('ssid', ''))
         self.psk.set_text(config.get('psk', ''))
+        self.window.emit('load-wifi-config-completed', None)
 
     def on_configure_wifi(self, *_) -> None:
         """Configure the selected Wi-Fi interface."""
-        with self.wifi_gui_lock():
-            self.do_configure_wifi()
+        self.wifi_gui_lock()
+        Thread(daemon=True, target=self.do_configure_wifi).start()
 
     def do_configure_wifi(self) -> None:
         """Perform actual Wi-Fi configuration."""
@@ -189,6 +190,7 @@ class MainWindow(BuilderWindow, file='main.glade'):
             return self.show_error('Konnte WLAN Verbindung nicht einrichten.')
 
         disable(set(list_wifi_interfaces()) - {interface})
+        self.window.emit('configure-wifi-completed', None)
 
     def on_ping_hostname_change(self, *_) -> None:
         """Ping the set host."""
