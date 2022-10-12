@@ -7,7 +7,7 @@ from time import sleep
 from hidslcfg.api import Client
 from hidslcfg.common import HIDSL_DEBUG
 from hidslcfg.exceptions import APIError, ProgramError
-from hidslcfg.gui.api import BuilderWindow, SetupParameters
+from hidslcfg.gui.api import GLib, Gtk, BuilderWindow, SetupParameters
 from hidslcfg.wireguard import MTU, create, patch
 
 
@@ -26,24 +26,27 @@ class InstallationForm(BuilderWindow, file='installation.glade'):
         super().__init__('installation')
         self.client = client
         self.setup_parameters: SetupParameters = setup_parameters
-        self.new_signal('installation-completed', self.continue_to_next_window)
+        self.spinner: Gtk.Spinner = self.build('spinner')
 
     def on_show(self, *_) -> None:
         """Perform the setup process when window is shown."""
+        self.spinner.start()
         Thread(daemon=True, target=self.safe_install).start()
 
     def safe_install(self) -> None:
         """Run the installation with caught exceptions."""
         try:
             self.install()
-        except ProgramError as error:
-            self.show_error(str(error))
-        except APIError as error:
-            self.show_error(error.json.get('message'))
-        except Exception as error:
-            self.show_error(str(error))
+        except ProgramError as program_error:
+            error = str(program_error)
+        except APIError as api_error:
+            error = str(api_error)
+        except Exception as exception:
+            error = str(exception)
+        else:
+            error = None
 
-        self.window.emit('installation-completed', None)
+        GLib.idle_add(lambda: self.on_installation_completed(error))
 
     def install(self) -> None:
         """Run the installation."""
@@ -58,8 +61,13 @@ class InstallationForm(BuilderWindow, file='installation.glade'):
             self.setup_parameters.model
         )
 
-    def continue_to_next_window(self, *_) -> None:
+    def on_installation_completed(self, error: str | None) -> None:
         """Continue to the next window."""
+        self.spinner.stop()
+
+        if error:
+            self.show_error(error)
+
         self.next_window()
 
 
