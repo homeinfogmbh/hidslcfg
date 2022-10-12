@@ -3,7 +3,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TypeVar
 
 from gi import require_version
 require_version('Gtk', '3.0')
@@ -18,6 +18,7 @@ __all__ = [
     'GLib',
     'Gtk',
     'GObject',
+    'GObjectT',
     'SetupParameters',
     'BuilderWindow',
     'SubElement'
@@ -28,6 +29,7 @@ ASSETS_DIR = Path('/usr/share/hidslcfg')
 TRANSLATIONS = {
     'Invalid credentials.': 'Ungültige Anmeldedaten.'
 }
+GObjectT = TypeVar('GObjectT', bound=GObject.Object)
 
 
 @dataclass
@@ -79,7 +81,7 @@ class BuilderWindow:
         """Handle destruction event."""
         return Gtk.main_quit()
 
-    def build(self, name: str) -> Any:
+    def build(self, name: str) -> GObjectT:
         """Build the requested object."""
         return self.builder.get_object(name)
 
@@ -133,7 +135,7 @@ class SubElement:
     def __getattr__(self, item):
         return getattr(self.builder_window, item)
 
-    def build(self, name: str) -> Any:
+    def build(self, name: str) -> GObjectT:
         """Wi-Fi widgets."""
         widget = self.builder_window.build(name)
         self.widgets.append(widget)

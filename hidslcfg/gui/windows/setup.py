@@ -2,10 +2,10 @@
 
 from enum import Enum, auto
 from functools import partial
-from typing import Any, Callable
+from typing import Callable
 
 from hidslcfg.api import Client
-from hidslcfg.gui.api import Gtk, BuilderWindow, SetupParameters
+from hidslcfg.gui.api import Gtk, GObjectT, BuilderWindow, SetupParameters
 
 
 __all__ = ['SetupForm']
@@ -63,7 +63,7 @@ class SetupForm(BuilderWindow, file='setup.glade'):
 class ModelOptions:
     """Model options."""
 
-    def __init__(self, build: Callable[[str], Any]):
+    def __init__(self, build: Callable[[str], GObjectT]):
         """Create model options from the given builder."""
         self.standard24: Gtk.RadioButton = build('standard24')
         self.standard24.connect('toggled', self.on_select)
