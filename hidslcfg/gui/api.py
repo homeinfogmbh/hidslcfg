@@ -8,13 +8,14 @@ from typing import Any, Callable
 from gi import require_version
 require_version('Gtk', '3.0')
 require_version('Gdk', '3.0')
-from gi.repository import Gdk, Gtk, GObject
+from gi.repository import Gdk, GLib, Gtk, GObject
 
 from hidslcfg.common import HIDSL_DEBUG
 
 
 __all__ = [
     'Gdk',
+    'GLib',
     'Gtk',
     'GObject',
     'SetupParameters',

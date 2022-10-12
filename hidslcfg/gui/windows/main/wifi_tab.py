@@ -1,8 +1,9 @@
 """Login window logic."""
 
 from subprocess import CalledProcessError
+from threading import Thread
 
-from hidslcfg.gui.api import Gtk, BuilderWindow, SubElement
+from hidslcfg.gui.api import GLib, Gtk, BuilderWindow, SubElement
 from hidslcfg.wifi import MAX_PSK_LEN
 from hidslcfg.wifi import MIN_PSK_LEN
 from hidslcfg.wifi import configure
@@ -21,7 +22,6 @@ class WifiTab(SubElement):
     def __init__(self, window: BuilderWindow):
         super().__init__(window)
         self.wifi_configs = load_wifi_configs()
-        self.error_message: str | None = None
         self.interfaces: Gtk.ComboBoxText = self.build('interfaces')
         self.load_config: Gtk.LinkButton = self.build('load_wifi_config')
         self.ssid: Gtk.Entry = self.build('ssid')
@@ -44,6 +44,16 @@ class WifiTab(SubElement):
             self.configure
         ]
 
+    def lock_gui(self) -> None:
+        """Lock the GUI widgets."""
+        for widget in self.widgets:
+            widget.set_property('sensitive', False)
+
+    def unlock_gui(self) -> None:
+        """Unlock the GUI widgets."""
+        for widget in self.widgets:
+            widget.set_property('sensitive', True)
+
     def populate_interfaces(self) -> None:
         """Populate interfaces combo box."""
         for interface in list_wifi_interfaces():
@@ -60,19 +70,33 @@ class WifiTab(SubElement):
 
     def on_load_config(self, *_) -> None:
         """After Wi-Fi config processing."""
+        self.lock_gui()
+        Thread(daemon=True, target=self.load_config_thread).start()
+
+    def load_config_thread(self) -> None:
+        """Load the configuration from the magic USB key."""
+        config = {}
+        error = None
+
         try:
             config = from_magic_usb_key()
         except CalledProcessError:
-            return self.show_error('Konnte USB-Stick nicht einhängen.')
+            error = 'Konnte USB-Stick nicht einhängen.'
         except FileNotFoundError:
-            return self.show_error('Keine WLAN Konfigurationsdatei gefunden.')
+            error = 'Keine WLAN Konfigurationsdatei gefunden.'
         except PermissionError:
-            return self.show_error(
-                'Keine Berechtigung WLAN Konfigurationsdatei zu lesen.'
-            )
+            error = 'Keine Berechtigung WLAN Konfigurationsdatei zu lesen.'
 
+        GLib.idle_add(lambda: self.on_load_config_done(config, error))
+
+    def on_load_config_done(self, config: dict, error: str | None) -> None:
+        """Run when configuration is done."""
         self.ssid.set_text(config.get('ssid', ''))
         self.psk.set_text(config.get('psk', ''))
+        self.unlock_gui()
+
+        if error:
+            self.show_error(error)
 
     def on_configure(self, *_) -> None:
         """Perform Wi-Fi configuration."""
@@ -95,9 +119,29 @@ class WifiTab(SubElement):
                 f'Schlüssel darf maximal {MAX_PSK_LEN} Zeichen lang sein.'
             )
 
+        self.lock_gui()
+        Thread(
+            daemon=True,
+            target=self.configure_thread,
+            args=(interface, ssid, psk)
+        ).start()
+
+    def configure_thread(self, interface: str, ssid: str, psk: str) -> None:
+        """Actually perform the configuration."""
+        error = None
+
         try:
             configure(interface, ssid, psk)
         except (CalledProcessError, PermissionError):
-            return self.show_error('Konnte WLAN Verbindung nicht einrichten.')
+            error = 'Konnte WLAN Verbindung nicht einrichten.'
+        else:
+            disable(set(list_wifi_interfaces()) - {interface})
 
-        disable(set(list_wifi_interfaces()) - {interface})
+        GLib.idle_add(lambda: self.on_configure_done(error))
+
+    def on_configure_done(self, error: str | None) -> None:
+        """Callback when configuration is done."""
+        self.unlock_gui()
+
+        if error:
+            return self.show_error(error)
