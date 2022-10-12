@@ -24,6 +24,7 @@ setup(
         'hidslcfg.cli',
         'hidslcfg.gui',
         'hidslcfg.gui.windows',
+        'hidslcfg.gui.windows.main',
         'hidslcfg.openvpn',
         'hidslcfg.wireguard'
     ],

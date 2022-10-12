@@ -6,9 +6,9 @@ from hidslcfg.api import Client
 from hidslcfg.common import HIDSL_DEBUG
 from hidslcfg.gui.builder_window import BuilderWindow
 from hidslcfg.gui.gtk import Gtk
-from hidslcfg.gui.windows.login_tab import LoginTab
-from hidslcfg.gui.windows.ping_tab import PingTab
-from hidslcfg.gui.windows.wifi_tab import WifiTab
+from hidslcfg.gui.windows.main.login_tab import LoginTab
+from hidslcfg.gui.windows.main.ping_tab import PingTab
+from hidslcfg.gui.windows.main.wifi_tab import WifiTab
 from hidslcfg.system import reboot
 
 
