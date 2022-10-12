@@ -9,14 +9,8 @@ from hidslcfg.common import HIDSL_DEBUG
 from hidslcfg.exceptions import APIError
 from hidslcfg.gui.builder_window import BuilderWindow
 from hidslcfg.gui.gtk import Gtk
+from hidslcfg.gui.windows.wifi_tab import WifiTab
 from hidslcfg.system import ping, reboot
-from hidslcfg.wifi import MAX_PSK_LEN
-from hidslcfg.wifi import MIN_PSK_LEN
-from hidslcfg.wifi import configure
-from hidslcfg.wifi import disable
-from hidslcfg.wifi import from_magic_usb_key
-from hidslcfg.wifi import load_wifi_configs
-from hidslcfg.wifi import list_wifi_interfaces
 
 
 __all__ = ['MainWindow']
@@ -36,7 +30,6 @@ class MainWindow(BuilderWindow, file='main.glade'):
         self.logged_in = False
         self.ping_successful: bool | None = None
         self.reboot_response = None
-        self.wifi_configs = load_wifi_configs()
 
         # Login tab
         self.user_name: Gtk.Entry = self.build('user_name')
@@ -48,28 +41,7 @@ class MainWindow(BuilderWindow, file='main.glade'):
         self.login.connect('clicked', self.on_login)
 
         # Wi-Fi tab
-        self.interfaces: Gtk.ComboBoxText = self.build('interfaces')
-        self.load_wifi_config: Gtk.LinkButton = self.build('load_wifi_config')
-        self.ssid: Gtk.Entry = self.build('ssid')
-        self.psk: Gtk.Entry = self.build('psk')
-        self.configure_wifi: Gtk.Button = self.build('configure_wifi')
-        self.wifi_interface = (
-            self.interfaces,
-            self.load_wifi_config,
-            self.ssid,
-            self.psk,
-            self.configure_wifi
-        )
-        self.populate_interfaces()
-        self.new_signal('load-wifi-config-completed', self.wifi_gui_unlock)
-        self.new_signal('configure-wifi-completed', self.wifi_gui_unlock)
-        self.load_wifi_config.connect(
-            'activate-link',
-            self.on_load_wifi_config
-        )
-        self.interfaces.connect("changed", self.on_interface_select)
-        self.configure_wifi.connect('activate', self.on_configure_wifi)
-        self.configure_wifi.connect('clicked', self.on_configure_wifi)
+        self.wifi_tab = WifiTab(self)
 
         # Ping tab
         self.ping_hostname: Gtk.ComboBoxText = self.build('ping_hostname')
@@ -86,14 +58,6 @@ class MainWindow(BuilderWindow, file='main.glade'):
         self.btn_quit.connect('activate', self.on_quit)
         self.btn_quit.connect('clicked', self.on_quit)
 
-    def populate_interfaces(self) -> None:
-        """Populate interfaces combo box."""
-        for interface in list_wifi_interfaces():
-            self.interfaces.append_text(interface)
-
-        self.interfaces.set_active(0)
-        self.on_interface_select()
-
     def ping_thread(self) -> None:
         """Ping the host."""
         try:
@@ -104,16 +68,6 @@ class MainWindow(BuilderWindow, file='main.glade'):
             self.ping_successful = True
 
         self.window.emit('ping-host-completed', None)
-
-    def wifi_gui_lock(self) -> None:
-        """Lock the Wi-Fi GUI."""
-        for widget in self.wifi_interface:
-            widget.set_property('sensitive', False)
-
-    def wifi_gui_unlock(self, *_) -> None:
-        """Unlock the Wi-Fi GUI."""
-        for widget in self.wifi_interface:
-            widget.set_property('sensitive', True)
 
     def on_login(self, *_) -> None:
         """Perform the login."""
@@ -129,68 +83,6 @@ class MainWindow(BuilderWindow, file='main.glade'):
             return self.show_error(str(error))
 
         self.next_window()
-
-    def on_interface_select(self, *_) -> None:
-        """Set configuration for selected interface."""
-        config = self.wifi_configs.get(self.interfaces.get_active_text(), {})
-        self.ssid.set_text(config.get('ssid', ''))
-        self.psk.set_text(config.get('psk', ''))
-
-    def on_load_wifi_config(self, *_) -> None:
-        """Attempt to load Wi-Fi config from USB."""
-        self.wifi_gui_lock()
-        Thread(daemon=True, target=self.do_load_wifi_config).start()
-
-    def do_load_wifi_config(self) -> None:
-        """Perform actual Wi-Fi config loading."""
-        try:
-            config = from_magic_usb_key()
-        except CalledProcessError:
-            return self.show_error('Konnte USB-Stick nicht einhängen.')
-        except FileNotFoundError:
-            return self.show_error('Keine WLAN Konfigurationsdatei gefunden.')
-        except PermissionError:
-            return self.show_error(
-                'Keine Berechtigung WLAN Konfigurationsdatei zu lesen.'
-            )
-
-        self.ssid.set_text(config.get('ssid', ''))
-        self.psk.set_text(config.get('psk', ''))
-        self.window.emit('load-wifi-config-completed', None)
-
-    def on_configure_wifi(self, *_) -> None:
-        """Configure the selected Wi-Fi interface."""
-        self.wifi_gui_lock()
-        Thread(daemon=True, target=self.do_configure_wifi).start()
-
-    def do_configure_wifi(self) -> None:
-        """Perform actual Wi-Fi configuration."""
-        if not (interface := self.interfaces.get_active_text()):
-            return self.show_error('Keine WLAN Karte ausgewählt.')
-
-        if not (ssid := self.ssid.get_text()):
-            return self.show_error('Kein Netzwerkname angegeben.')
-
-        if not (psk := self.psk.get_text()):
-            return self.show_error('Kein Schlüssel angegeben.')
-
-        if (psk_len := len(psk)) < MIN_PSK_LEN:
-            return self.show_error(
-                f'Schlüssel muss mindestens {MIN_PSK_LEN} Zeichen lang sein.'
-            )
-
-        if psk_len > MAX_PSK_LEN:
-            return self.show_error(
-                f'Schlüssel darf maximal {MAX_PSK_LEN} Zeichen lang sein.'
-            )
-
-        try:
-            configure(interface, ssid, psk)
-        except (CalledProcessError, PermissionError):
-            return self.show_error('Konnte WLAN Verbindung nicht einrichten.')
-
-        disable(set(list_wifi_interfaces()) - {interface})
-        self.window.emit('configure-wifi-completed', None)
 
     def on_ping_hostname_change(self, *_) -> None:
         """Ping the set host."""
