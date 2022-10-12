@@ -88,7 +88,7 @@ class MainWindow(BuilderWindow, file='main.glade'):
 
     def populate_interfaces(self) -> None:
         """Populate interfaces combo box."""
-        for index, interface in enumerate(list_wifi_interfaces()):
+        for interface in list_wifi_interfaces():
             self.interfaces.append_text(interface)
 
         self.interfaces.set_active(0)
