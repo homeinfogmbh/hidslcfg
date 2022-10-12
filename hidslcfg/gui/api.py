@@ -144,9 +144,26 @@ class SubElement:
 
     def __init__(self, window: BuilderWindow):
         self.builder_window: BuilderWindow = window
+        self.widgets: list[Gtk.Widget] = []
 
     def __getattr__(self, item):
         return getattr(self.builder_window, item)
+
+    def build(self, name: str) -> Any:
+        """Wi-Fi widgets."""
+        widget = self.builder_window.build(name)
+        self.widgets.append(widget)
+        return widget
+
+    def lock_gui(self) -> None:
+        """Lock the GUI widgets."""
+        for widget in self.widgets:
+            widget.set_property('sensitive', False)
+
+    def unlock_gui(self) -> None:
+        """Unlock the GUI widgets."""
+        for widget in self.widgets:
+            widget.set_property('sensitive', True)
 
 
 def get_asset(filename: str) -> Path:

@@ -33,8 +33,7 @@ class PingTab(SubElement):
 
     def on_ping(self, *args) -> None:
         """Ping the set host."""
-        self.host.set_property('sensitive', False)
-        self.hostname.set_property('sensitive', False)
+        self.lock_gui()
         self.on_hostname_change(*args)
         self.host.set_label('')
         self.spinner.start()
@@ -55,8 +54,7 @@ class PingTab(SubElement):
         """Set the ping result."""
         self.spinner.stop()
         self.host.set_label(self.host_label)
-        self.hostname.set_property('sensitive', True)
-        self.host.set_property('sensitive', True)
+        self.unlock_gui()
 
         if success:
             self.result.set_from_icon_name(

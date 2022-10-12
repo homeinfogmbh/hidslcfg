@@ -33,27 +33,6 @@ class WifiTab(SubElement):
         self.configure.connect('activate', self.on_configure)
         self.configure.connect('clicked', self.on_configure)
 
-    @property
-    def widgets(self) -> list[Gtk.Widget]:
-        """Wi-Fi widgets."""
-        return [
-            self.interfaces,
-            self.load_config,
-            self.ssid,
-            self.psk,
-            self.configure
-        ]
-
-    def lock_gui(self) -> None:
-        """Lock the GUI widgets."""
-        for widget in self.widgets:
-            widget.set_property('sensitive', False)
-
-    def unlock_gui(self) -> None:
-        """Unlock the GUI widgets."""
-        for widget in self.widgets:
-            widget.set_property('sensitive', True)
-
     def populate_interfaces(self) -> None:
         """Populate interfaces combo box."""
         for interface in list_wifi_interfaces():

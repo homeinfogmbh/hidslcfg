@@ -30,6 +30,7 @@ class LoginTab(SubElement):
         if not (password := self.password.get_text()):
             return self.show_error('Kein Passwort angegeben.')
 
+        self.lock_gui()
         Thread(
             daemon=True,
             target=self.login_thread,
@@ -49,6 +50,8 @@ class LoginTab(SubElement):
 
     def on_login_done(self, error: str | None) -> None:
         """Run after login is done."""
+        self.unlock_gui()
+
         if error:
             return self.show_error(error)
 
