@@ -107,7 +107,7 @@ class MainWindow(BuilderWindow, file='main.glade'):
         try:
             self.client.login(user_name, password)
         except APIError as error:
-            return self.show_error(error.json.get('message'))
+            return self.show_error(str(error))
 
         self.next_window()
 
