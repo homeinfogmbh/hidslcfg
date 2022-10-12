@@ -24,34 +24,56 @@ class WifiTab(SubElement):
         self.wifi_configs = load_wifi_configs()
         self.error_message: str | None = None
         self.interfaces: Gtk.ComboBoxText = self.build('interfaces')
-        self.load_wifi_config: Gtk.LinkButton = self.build('load_wifi_config')
+        self.load_config: Gtk.LinkButton = self.build('load_wifi_config')
         self.ssid: Gtk.Entry = self.build('ssid')
         self.psk: Gtk.Entry = self.build('psk')
-        self.configure_wifi: Gtk.Button = self.build('configure_wifi')
-        self.wifi_interface = (
-            self.interfaces,
-            self.load_wifi_config,
-            self.ssid,
-            self.psk,
-            self.configure_wifi
-        )
+        self.configure: Gtk.Button = self.build('configure_wifi')
         self.populate_interfaces()
-        self.new_signal('load-wifi-config-done', self.on_load_wifi_config_done)
-        self.new_signal('configure-wifi-done', self.wifi_gui_unlock)
-        self.load_wifi_config.connect(
+        self.new_signal('load-wifi-config-done', self.on_load_config_done)
+        self.new_signal('configure-wifi-done', self.unlock_gui)
+        self.load_config.connect(
             'activate-link',
-            self.on_load_wifi_config
+            self.on_load_config
         )
         self.interfaces.connect("changed", self.on_interface_select)
-        self.configure_wifi.connect('activate', self.on_configure_wifi)
-        self.configure_wifi.connect('clicked', self.on_configure_wifi)
+        self.configure.connect('activate', self.on_configure)
+        self.configure.connect('clicked', self.on_configure)
 
-    def on_load_wifi_config(self, *_) -> None:
+    @property
+    def widgets(self) -> list[Gtk.Widget]:
+        """Wi-Fi widgets."""
+        return [
+            self.interfaces,
+            self.load_config,
+            self.ssid,
+            self.psk,
+            self.configure
+        ]
+
+    def populate_interfaces(self) -> None:
+        """Populate interfaces combo box."""
+        for interface in list_wifi_interfaces():
+            self.interfaces.append_text(interface)
+
+        self.interfaces.set_active(0)
+        self.on_interface_select()
+
+    def lock_gui(self) -> None:
+        """Lock the Wi-Fi GUI."""
+        for widget in self.widgets:
+            widget.set_property('sensitive', False)
+
+    def unlock_gui(self, *_) -> None:
+        """Unlock the Wi-Fi GUI."""
+        for widget in self.widgets:
+            widget.set_property('sensitive', True)
+
+    def on_load_config(self, *_) -> None:
         """After Wi-Fi config processing."""
-        self.wifi_gui_lock()
-        Thread(daemon=True, target=self.load_wifi_config_thread).start()
+        self.lock_gui()
+        Thread(daemon=True, target=self.load_config_thread).start()
 
-    def load_wifi_config_thread(self) -> None:
+    def load_config_thread(self) -> None:
         """Perform actual Wi-Fi config loading."""
         error = None
 
@@ -69,17 +91,17 @@ class WifiTab(SubElement):
 
         self.window.emit('load-wifi-config-done', error)
 
-    def on_load_wifi_config_done(
+    def on_load_config_done(
             self, _: Gtk.ApplicationWindow,
             message: str | None
     ) -> None:
         """After Wi-Fi config processing."""
-        self.wifi_gui_unlock()
+        self.unlock_gui()
 
         if message is not None:
             self.show_error(message)
 
-    def on_configure_wifi(self, *_) -> None:
+    def on_configure(self, *_) -> None:
         """Perform Wi-Fi configuration."""
         if not (interface := self.interfaces.get_active_text()):
             return self.show_error('Keine WLAN Karte ausgewählt.')
@@ -100,14 +122,14 @@ class WifiTab(SubElement):
                 f'Schlüssel darf maximal {MAX_PSK_LEN} Zeichen lang sein.'
             )
 
-        self.wifi_gui_lock()
+        self.lock_gui()
         Thread(
             daemon=True,
-            target=self.configure_wifi_thread,
+            target=self.configure_thread,
             args=(interface, ssid, psk)
         ).start()
 
-    def configure_wifi_thread(
+    def configure_thread(
             self, interface: str,
             ssid: str,
             psk: str
@@ -124,26 +146,8 @@ class WifiTab(SubElement):
             disable(set(list_wifi_interfaces()) - {interface})
             self.window.emit('configure-wifi-done', None)
 
-    def wifi_gui_lock(self) -> None:
-        """Lock the Wi-Fi GUI."""
-        for widget in self.wifi_interface:
-            widget.set_property('sensitive', False)
-
-    def wifi_gui_unlock(self, *_) -> None:
-        """Unlock the Wi-Fi GUI."""
-        for widget in self.wifi_interface:
-            widget.set_property('sensitive', True)
-
     def on_interface_select(self, *_) -> None:
         """Set configuration for selected interface."""
         config = self.wifi_configs.get(self.interfaces.get_active_text(), {})
         self.ssid.set_text(config.get('ssid', ''))
         self.psk.set_text(config.get('psk', ''))
-
-    def populate_interfaces(self) -> None:
-        """Populate interfaces combo box."""
-        for interface in list_wifi_interfaces():
-            self.interfaces.append_text(interface)
-
-        self.interfaces.set_active(0)
-        self.on_interface_select()
