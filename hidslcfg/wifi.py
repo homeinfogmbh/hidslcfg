@@ -61,7 +61,10 @@ def disable(interfaces_to_disable: Iterable[str]) -> None:
 
 
 def from_magic_usb_key(*, filename: str = MAGIC_FILE_NAME) -> dict[str, str]:
-    """Load a wpa_supplicant configuration from the magic USB key."""
+    """Load Wi-Fi configuration from the magic USB key.
+
+    UTF-8 text file. First line is the SSID, second line is the PSK.
+    """
 
     with MagicUSBKey() as mountpoint:
         with (mountpoint / filename).open('r', encoding='utf-8') as file:
