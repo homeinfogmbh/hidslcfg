@@ -27,6 +27,8 @@ __all__ = [
 CONFIG_DIR = Path('/etc/wpa_supplicant')
 CONFIG_FILE_TEMPLATE = 'wpa_supplicant-{interface}.conf'
 CONFIG_FILE_REGEX = CONFIG_FILE_TEMPLATE.format(interface='(.+)')
+KEYS = ('ssid', 'psk')
+MAGIC_FILE_NAME = 'wifi.txt'
 MAX_PSK_LEN = 63
 MIN_PSK_LEN = 8
 SERVICE_TEMPLATE = 'wpa_supplicant@{interface}.service'
@@ -58,11 +60,14 @@ def disable(interfaces_to_disable: Iterable[str]) -> None:
         stop_and_disable(SERVICE_TEMPLATE.format(interface=interface))
 
 
-def from_magic_usb_key() -> dict[str, str]:
+def from_magic_usb_key(*, filename: str = MAGIC_FILE_NAME) -> dict[str, str]:
     """Load a wpa_supplicant configuration from the magic USB key."""
 
     with MagicUSBKey() as mountpoint:
-        return load_wifi_config(mountpoint / 'wpa_supplicant.conf')
+        with (mountpoint / filename).open('r', encoding='utf-8') as file:
+            return {
+                key: value for key, value in zip(KEYS, map(str.rstrip, file))
+            }
 
 
 def list_wifi_interfaces() -> Iterator[str]:
