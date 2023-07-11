@@ -28,15 +28,6 @@ setup(
         'hidslcfg.openvpn',
         'hidslcfg.wireguard'
     ],
-    data_files=[
-        ('/usr/share/hidslcfg', [
-            'hidslcfg/gui/assets/completed.glade',
-            'hidslcfg/gui/assets/HI_logo_installer.png',
-            'hidslcfg/gui/assets/installation.glade',
-            'hidslcfg/gui/assets/main.glade',
-            'hidslcfg/gui/assets/setup.glade'
-        ])
-    ],
     entry_points={
         'console_scripts': [
             'hidslcfg = hidslcfg.cli.hidslcfg:run',

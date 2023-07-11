@@ -162,6 +162,6 @@ def get_base_dir() -> Path:
     """Return the assets base directory."""
 
     if HIDSL_DEBUG:
-        return Path(__file__).parent / 'assets'
+        return Path(__file__).parent.parent.parent / 'assets'
 
     return ASSETS_DIR
