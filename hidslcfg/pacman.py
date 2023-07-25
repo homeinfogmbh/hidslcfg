@@ -7,18 +7,18 @@ from re import fullmatch, sub
 from typing import Callable, Iterable, Iterator
 
 
-__all__ = ['set_server']
+__all__ = ["set_server"]
 
 
-PACMAN_CONF = Path('/etc/pacman.conf')
-URL_PATTERN = '(http://).*(:8080/)'
-SECTION_PATTERN = r'^\[(.*)\]'
+PACMAN_CONF = Path("/etc/pacman.conf")
+URL_PATTERN = "(http://).*(:8080/)"
+SECTION_PATTERN = r"^\[(.*)\]"
 
 
 def read_lines() -> Iterator[str]:
     """Reads the file's lines."""
 
-    with PACMAN_CONF.open('r', encoding='ascii') as file:
+    with PACMAN_CONF.open("r", encoding="ascii") as file:
         for line in file:
             yield line.strip()
 
@@ -41,7 +41,7 @@ def write_lines(lines: Iterable[str]) -> None:
     # Generate text before opening the file to prevent r/w race condition.
     text = linesep.join(lines)
 
-    with PACMAN_CONF.open('w', encoding='ascii') as file:
+    with PACMAN_CONF.open("w", encoding="ascii") as file:
         file.write(text)
         file.write(linesep)
 
@@ -50,14 +50,14 @@ def get_modifier(repo: str, address: IPv4Address | IPv6Address) -> Callable:
     """Sets the line to the server string."""
 
     if isinstance(address, IPv6Address):
-        address = f'[{address}]'
+        address = f"[{address}]"
 
     def modifier(item: tuple[str | None, str]) -> str:
         """Modifies a line within a section."""
         section, line = item
 
         if section == repo:
-            return sub(URL_PATTERN, fr'\g<1>{address}\g<2>', line)
+            return sub(URL_PATTERN, rf"\g<1>{address}\g<2>", line)
 
         return line
 

@@ -9,20 +9,28 @@ from hidslcfg.termio import read_credentials
 from hidslcfg.wireguard import MTU, migrate
 
 
-__all__ = ['run']
+__all__ = ["run"]
 
 
 PARSER = ArgumentParser(description=__doc__)
-PARSER.add_argument('-u', '--user', metavar='user', help='user name')
+PARSER.add_argument("-u", "--user", metavar="user", help="user name")
 PARSER.add_argument(
-    '-g', '--grace-time', type=int, default=10, metavar='seconds',
-    help='seconds to wait for contacting the VPN servers'
+    "-g",
+    "--grace-time",
+    type=int,
+    default=10,
+    metavar="seconds",
+    help="seconds to wait for contacting the VPN servers",
 )
 PARSER.add_argument(
-    '-M', '--mtu', type=int, default=MTU, metavar='bytes',
-    help='MTU in bytes for the WireGuard interface'
+    "-M",
+    "--mtu",
+    type=int,
+    default=MTU,
+    metavar="bytes",
+    help="MTU in bytes for the WireGuard interface",
 )
-PARSER.add_argument('-v', '--verbose', action='store_true', help='be gassy')
+PARSER.add_argument("-v", "--verbose", action="store_true", help="be gassy")
 
 
 def main() -> None:
@@ -34,9 +42,9 @@ def main() -> None:
         client.login(*read_credentials(args.user))
 
         if migrate(client, gracetime=args.grace_time, mtu=args.mtu):
-            LOGGER.info('System migrated to WireGuard.')
+            LOGGER.info("System migrated to WireGuard.")
         else:
-            LOGGER.error('Could not migrate system to WireGuard.')
+            LOGGER.error("Could not migrate system to WireGuard.")
 
 
 def run() -> None:

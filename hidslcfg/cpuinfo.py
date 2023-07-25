@@ -5,11 +5,11 @@ from pathlib import Path
 from typing import Iterator
 
 
-__all__ = ['cpuinfo']
+__all__ = ["cpuinfo"]
 
 
-CPUINFO = Path('/proc/cpuinfo')
-LIST_KEYS = {'flags', 'bugs'}
+CPUINFO = Path("/proc/cpuinfo")
+LIST_KEYS = {"flags", "bugs"}
 CPUInfoValue = str | int | float | list[str]
 
 
@@ -33,10 +33,10 @@ def cpuinfo() -> Iterator[dict[str, CPUInfoValue]]:
 
     core = {}
 
-    with CPUINFO.open('r', encoding='ascii') as file:
+    with CPUINFO.open("r", encoding="ascii") as file:
         for line in file:
             if line := line.strip():
-                key, value = map(str.strip, line.split(':'))
+                key, value = map(str.strip, line.split(":"))
                 core[key] = parse(key, value)
             else:
                 yield core

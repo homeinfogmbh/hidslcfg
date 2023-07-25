@@ -15,7 +15,7 @@ from hidslcfg.system import systemctl, set_hostname, rmsubtree
 from hidslcfg.wireguard.disable import remove
 
 
-__all__ = ['reset']
+__all__ = ["reset"]
 
 
 class ResetOperation(NamedTuple):
@@ -29,7 +29,7 @@ def gracefully_disable_service(service: str) -> None:
     """Disables a service."""
 
     try:
-        systemctl('disable', service)
+        systemctl("disable", service)
     except CalledProcessError as cpe:
         if cpe.returncode != 1:
             raise
@@ -37,29 +37,21 @@ def gracefully_disable_service(service: str) -> None:
 
 # Oder matters here!
 RESET_OPERATIONS = (
-    ResetOperation('reset hostname', partial(set_hostname, 'unconfigured')),
+    ResetOperation("reset hostname", partial(set_hostname, "unconfigured")),
+    ResetOperation("remove digital signage data", partial(rmsubtree, DIGSIG_DATA_DIR)),
     ResetOperation(
-        'remove digital signage data',
-        partial(rmsubtree, DIGSIG_DATA_DIR)
+        "disable OpenVPN service", partial(systemctl, "disable", DEFAULT_SERVICE)
     ),
+    ResetOperation("remove OpenVPN configuration", clean),
+    ResetOperation("remove WireGuard configuration", remove),
     ResetOperation(
-        'disable OpenVPN service',
-        partial(systemctl, 'disable', DEFAULT_SERVICE)
+        "disable application", partial(gracefully_disable_service, APPLICATION_SERVICE)
     ),
-    ResetOperation('remove OpenVPN configuration', clean),
-    ResetOperation('remove WireGuard configuration', remove),
+    ResetOperation("disable html5ds", partial(gracefully_disable_service, HTML5DS)),
     ResetOperation(
-        'disable application',
-        partial(gracefully_disable_service, APPLICATION_SERVICE)
+        "enable not-configured warning message",
+        partial(systemctl, "enable", UNCONFIGURED_WARNING_SERVICE),
     ),
-    ResetOperation(
-        'disable html5ds',
-        partial(gracefully_disable_service, HTML5DS)
-    ),
-    ResetOperation(
-        'enable not-configured warning message',
-        partial(systemctl, 'enable', UNCONFIGURED_WARNING_SERVICE)
-    )
 )
 
 
@@ -70,4 +62,4 @@ def reset() -> None:
         try:
             function()
         except CalledProcessError:
-            raise ProgramError(f'Could not {description}.') from None
+            raise ProgramError(f"Could not {description}.") from None

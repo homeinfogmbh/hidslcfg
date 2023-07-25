@@ -8,7 +8,7 @@ from hidslcfg.openvpn.common import DEFAULT_SERVICE, SERVER
 from hidslcfg.openvpn.disable import disable
 
 
-__all__ = ['OpenVPNGuard']
+__all__ = ["OpenVPNGuard"]
 
 
 class OpenVPNGuard:
@@ -18,12 +18,12 @@ class OpenVPNGuard:
         self.success = False
 
     def __enter__(self):
-        LOGGER.info('Disabling and stopping OpenVPN.')
+        LOGGER.info("Disabling and stopping OpenVPN.")
         disable()
         return self
 
     def __exit__(self, *args):
         if not self.success:
-            LOGGER.info('Enabling and starting OpenVPN.')
-            systemctl('enable', '--now', DEFAULT_SERVICE)
+            LOGGER.info("Enabling and starting OpenVPN.")
+            systemctl("enable", "--now", DEFAULT_SERVICE)
             configure(get_system_id(), SERVER)

@@ -8,11 +8,11 @@ from hidslcfg.reset import reset
 from hidslcfg.system import ProgramErrorHandler
 
 
-__all__ = ['run']
+__all__ = ["run"]
 
 
 PARSER = ArgumentParser(description=__doc__)
-PARSER.add_argument('-v', '--verbose', action='store_true', help='be gassy')
+PARSER.add_argument("-v", "--verbose", action="store_true", help="be gassy")
 
 
 def main() -> None:
@@ -24,7 +24,7 @@ def main() -> None:
         reset()
     except KeyboardInterrupt:
         print()
-        raise ProgramError('Reset aborted by user.') from None
+        raise ProgramError("Reset aborted by user.") from None
 
 
 def run() -> None:

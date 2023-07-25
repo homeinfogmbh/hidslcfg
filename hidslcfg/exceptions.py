@@ -5,7 +5,7 @@ from json import JSONDecodeError
 from os import linesep
 
 
-__all__ = ['APIError', 'ProgramError']
+__all__ = ["APIError", "ProgramError"]
 
 
 class APIError(Exception):
@@ -21,7 +21,7 @@ class APIError(Exception):
         """Returns the respective message text."""
         if self.json:
             with suppress(TypeError, KeyError):
-                return self.json['message']
+                return self.json["message"]
 
         return self.text
 

@@ -13,7 +13,7 @@ from hidslcfg.wireguard.setup import patch
 from hidslcfg.wireguard.disable import disable
 
 
-__all__ = ['migrate']
+__all__ = ["migrate"]
 
 
 class WireGuardMigrater:
@@ -25,20 +25,20 @@ class WireGuardMigrater:
         self.success = False
 
     def __enter__(self):
-        LOGGER.info('Configuring WireGuard.')
+        LOGGER.info("Configuring WireGuard.")
         patch(self.client, get_system_id(), mtu=self.mtu)
         return self
 
     def __exit__(self, *args):
         if not self.success:
-            LOGGER.info('Rolling back WireGuard configuration.')
+            LOGGER.info("Rolling back WireGuard configuration.")
             disable()
 
 
 def test_connection(gracetime: int = 10) -> bool:
     """Tests whether the WireGuard connection works."""
 
-    LOGGER.info('Testing connection. Please wait %i seconds.', gracetime)
+    LOGGER.info("Testing connection. Please wait %i seconds.", gracetime)
     sleep(gracetime)
 
     try:

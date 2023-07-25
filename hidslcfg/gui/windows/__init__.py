@@ -6,4 +6,4 @@ from hidslcfg.gui.windows.main import MainWindow
 from hidslcfg.gui.windows.setup import SetupForm
 
 
-__all__ = ['CompletedForm', 'InstallationForm', 'MainWindow', 'SetupForm']
+__all__ = ["CompletedForm", "InstallationForm", "MainWindow", "SetupForm"]

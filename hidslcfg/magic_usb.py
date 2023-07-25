@@ -5,11 +5,11 @@ from subprocess import CompletedProcess, run
 from tempfile import TemporaryDirectory
 
 
-__all__ = ['MagicUSBKey']
+__all__ = ["MagicUSBKey"]
 
 
-LABEL = 'DDBCFG'
-SEARCH_DIR = Path('/dev/disk/by-label')
+LABEL = "DDBCFG"
+SEARCH_DIR = Path("/dev/disk/by-label")
 
 
 class MagicUSBKey:
@@ -40,18 +40,10 @@ class MagicUSBKey:
 def mount(device: str | Path, mountpoint: str | Path) -> CompletedProcess:
     """Mount a device."""
 
-    return run(
-        ['/usr/bin/mount', str(device), str(mountpoint)],
-        check=True,
-        text=True
-    )
+    return run(["/usr/bin/mount", str(device), str(mountpoint)], check=True, text=True)
 
 
 def umount(mountpoint_or_device: str | Path) -> CompletedProcess:
     """Umount a mountpoint."""
 
-    return run(
-        ['/usr/bin/umount', str(mountpoint_or_device)],
-        check=True,
-        text=True
-    )
+    return run(["/usr/bin/umount", str(mountpoint_or_device)], check=True, text=True)

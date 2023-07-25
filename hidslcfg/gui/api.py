@@ -6,30 +6,29 @@ from pathlib import Path
 from typing import TypeVar
 
 from gi import require_version
-require_version('Gtk', '3.0')
-require_version('Gdk', '3.0')
+
+require_version("Gtk", "3.0")
+require_version("Gdk", "3.0")
 from gi.repository import Gdk, GLib, Gtk, GObject
 
 from hidslcfg.common import HIDSL_DEBUG
 
 
 __all__ = [
-    'Gdk',
-    'GLib',
-    'Gtk',
-    'GObject',
-    'GObjectT',
-    'SetupParameters',
-    'BuilderWindow',
-    'SubElement'
+    "Gdk",
+    "GLib",
+    "Gtk",
+    "GObject",
+    "GObjectT",
+    "SetupParameters",
+    "BuilderWindow",
+    "SubElement",
 ]
 
 
-ASSETS_DIR = Path('/usr/share/hidslcfg')
-TRANSLATIONS = {
-    'Invalid credentials.': 'Ungültige Anmeldedaten.'
-}
-GObjectT = TypeVar('GObjectT', bound=GObject.Object)
+ASSETS_DIR = Path("/usr/share/hidslcfg")
+TRANSLATIONS = {"Invalid credentials.": "Ungültige Anmeldedaten."}
+GObjectT = TypeVar("GObjectT", bound=GObject.Object)
 
 
 @dataclass
@@ -51,8 +50,8 @@ class BuilderWindow:
         self._primary_widget: Gtk.Widget | None = primary
         self.window: Gtk.Window = self.build(name)
         self.builder.connect_signals(self.window)
-        self.window.connect('show', self.on_show)
-        self.window.connect('destroy', self.on_destroy)
+        self.window.connect("show", self.on_show)
+        self.window.connect("destroy", self.on_destroy)
 
     def __init_subclass__(cls, file: str, **kwargs):
         """Set builder file and window name."""
@@ -60,10 +59,7 @@ class BuilderWindow:
         builder.add_from_file(str(get_asset(file)))
 
     def bind(
-            self,
-            *,
-            next: BuilderWindow | None = None,
-            home: BuilderWindow | None = None
+        self, *, next: BuilderWindow | None = None, home: BuilderWindow | None = None
     ) -> BuilderWindow:
         """Bind the next an optionally the home window and
         returns the former allowing for a builder pattern.
@@ -106,16 +102,14 @@ class BuilderWindow:
         self.switch_window(self._next_window)
 
     def show_message(
-            self,
-            message: str,
-            message_type: Gtk.MessageType = Gtk.MessageType.INFO
+        self, message: str, message_type: Gtk.MessageType = Gtk.MessageType.INFO
     ) -> None:
         """Shows an error message."""
         message_dialog = Gtk.MessageDialog(
             transient_for=self.window,
             message_type=message_type,
             buttons=Gtk.ButtonsType.OK,
-            text=TRANSLATIONS.get(message, message or 'NO_TEXT')
+            text=TRANSLATIONS.get(message, message or "NO_TEXT"),
         )
         message_dialog.run()
         message_dialog.destroy()
@@ -144,12 +138,12 @@ class SubElement:
     def lock_gui(self) -> None:
         """Lock the GUI widgets."""
         for widget in self.widgets:
-            widget.set_property('sensitive', False)
+            widget.set_property("sensitive", False)
 
     def unlock_gui(self) -> None:
         """Unlock the GUI widgets."""
         for widget in self.widgets:
-            widget.set_property('sensitive', True)
+            widget.set_property("sensitive", True)
 
 
 def get_asset(filename: str) -> Path:
@@ -162,6 +156,6 @@ def get_base_dir() -> Path:
     """Return the assets base directory."""
 
     if HIDSL_DEBUG:
-        return Path(__file__).parent.parent.parent / 'assets'
+        return Path(__file__).parent.parent.parent / "assets"
 
     return ASSETS_DIR

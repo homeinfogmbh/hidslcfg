@@ -11,18 +11,18 @@ from hidslcfg.gui.windows.main.wifi_tab import WifiTab
 from hidslcfg.system import reboot
 
 
-__all__ = ['MainWindow']
+__all__ = ["MainWindow"]
 
 
 LOGGER = getLogger(__file__)
 
 
-class MainWindow(BuilderWindow, file='main.glade'):
+class MainWindow(BuilderWindow, file="main.glade"):
     """Login form objects."""
 
     def __init__(self, client: Client):
         """Create the login form."""
-        super().__init__('main', primary=self.build('tab_system_config'))
+        super().__init__("main", primary=self.build("tab_system_config"))
         self.client = client
 
         # Login tab
@@ -34,9 +34,9 @@ class MainWindow(BuilderWindow, file='main.glade'):
         # Ping tab
         self.ping_tab = PingTab(self)
 
-        self.btn_quit: Gtk.Button = self.build('quit')
-        self.btn_quit.connect('activate', self.on_quit)
-        self.btn_quit.connect('clicked', self.on_quit)
+        self.btn_quit: Gtk.Button = self.build("quit")
+        self.btn_quit.connect("activate", self.on_quit)
+        self.btn_quit.connect("clicked", self.on_quit)
 
     def on_quit(self, *_) -> None:
         """Handles the quit button."""
@@ -44,7 +44,7 @@ class MainWindow(BuilderWindow, file='main.glade'):
             transient_for=self.window,
             message_type=Gtk.MessageType.QUESTION,
             buttons=Gtk.ButtonsType.YES_NO,
-            text='Wollen Sie das System neu starten?'
+            text="Wollen Sie das System neu starten?",
         )
         response = message_dialog.run()
         message_dialog.destroy()
@@ -53,6 +53,6 @@ class MainWindow(BuilderWindow, file='main.glade'):
             if not HIDSL_DEBUG:
                 reboot()
 
-            LOGGER.warning('Not rebooting due to debug mode.')
+            LOGGER.warning("Not rebooting due to debug mode.")
 
         Gtk.main_quit()

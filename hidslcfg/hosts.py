@@ -8,10 +8,10 @@ from pathlib import Path
 from typing import Iterable, Iterator
 
 
-__all__ = ['set_ip']
+__all__ = ["set_ip"]
 
 
-HOSTS = Path('/etc/hosts')
+HOSTS = Path("/etc/hosts")
 
 
 @dataclass
@@ -28,7 +28,7 @@ class HostsEntry:
         if self.short_name is not None:
             items.append(self.short_name)
 
-        return '\t'.join(items)
+        return "\t".join(items)
 
     @classmethod
     def from_string(cls, line: str) -> HostsEntry:
@@ -45,9 +45,9 @@ class HostsEntry:
 def read_hosts() -> Iterator[str | HostsEntry]:
     """Yields host entries."""
 
-    with HOSTS.open('r', encoding='ascii') as file:
+    with HOSTS.open("r", encoding="ascii") as file:
         for line in file:
-            if not (line := line.strip()) or line.startswith('#'):
+            if not (line := line.strip()) or line.startswith("#"):
                 yield line
             else:
                 yield HostsEntry.from_string(line)
@@ -59,7 +59,7 @@ def write_hosts(entries: Iterable[str | HostsEntry]) -> None:
     # Generate text before opening the file to prevent r/w race condition.
     text = linesep.join(map(str, entries))
 
-    with HOSTS.open('w', encoding='ascii') as file:
+    with HOSTS.open("w", encoding="ascii") as file:
         file.write(text)
         file.write(linesep)
 

@@ -6,7 +6,7 @@ from hidslcfg.system import CalledProcessErrorHandler
 from hidslcfg.openvpn.common import CLIENT_DIR, DEFAULT_SERVICE
 
 
-__all__ = ['clean', 'disable']
+__all__ = ["clean", "disable"]
 
 
 def clean() -> None:
@@ -20,5 +20,5 @@ def clean() -> None:
 def disable() -> None:
     """Disables OpenVPN."""
 
-    with CalledProcessErrorHandler('Disabling of OpenVPN client failed.'):
-        systemctl('disable', '--now', DEFAULT_SERVICE)
+    with CalledProcessErrorHandler("Disabling of OpenVPN client failed."):
+        systemctl("disable", "--now", DEFAULT_SERVICE)

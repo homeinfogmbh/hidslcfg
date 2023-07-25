@@ -15,34 +15,30 @@ from hidslcfg.exceptions import ProgramError
 
 
 __all__ = [
-    'chown',
-    'efi_booted',
-    'system',
-    'systemctl',
-    'ping',
-    'reboot',
-    'rmsubtree',
-    'set_hostname',
-    'get_system_id',
-    'CalledProcessErrorHandler',
-    'ProgramErrorHandler',
-    'SystemdUnit'
+    "chown",
+    "efi_booted",
+    "system",
+    "systemctl",
+    "ping",
+    "reboot",
+    "rmsubtree",
+    "set_hostname",
+    "get_system_id",
+    "CalledProcessErrorHandler",
+    "ProgramErrorHandler",
+    "SystemdUnit",
 ]
 
 
-HOSTNAME = Path('/etc/hostname')
-HOSTNAMECTL = Path('/usr/bin/hostnamectl')
-PING = Path('/usr/bin/ping')
-SYSTEMCTL = Path('/usr/bin/systemctl')
-efi_booted = Path('/sys/firmware/efi').is_dir
+HOSTNAME = Path("/etc/hostname")
+HOSTNAMECTL = Path("/usr/bin/hostnamectl")
+PING = Path("/usr/bin/ping")
+SYSTEMCTL = Path("/usr/bin/systemctl")
+efi_booted = Path("/sys/firmware/efi").is_dir
 
 
 def chown(
-        path: Path,
-        uid: int | str,
-        gid: int | str,
-        *,
-        recursive: bool = False
+    path: Path, uid: int | str, gid: int | str, *, recursive: bool = False
 ) -> None:
     """Performs a recursive chown on the given path."""
 
@@ -69,7 +65,7 @@ def system(*args: Any) -> CompletedProcess:
 def ping(host: str, timeout: int = 1, count: int = 5) -> CompletedProcess:
     """Pings the respective host."""
 
-    return system(PING, '-W', timeout, '-c', count, host)
+    return system(PING, "-W", timeout, "-c", count, host)
 
 
 def systemctl(*args: Any) -> CompletedProcess:
@@ -81,7 +77,7 @@ def systemctl(*args: Any) -> CompletedProcess:
 def reboot() -> CompletedProcess:
     """Reboots the system."""
 
-    return systemctl('reboot')
+    return systemctl("reboot")
 
 
 def rmsubtree(path: Path) -> None:
@@ -98,13 +94,13 @@ def rmsubtree(path: Path) -> None:
 def set_hostname(hostname: str) -> CompletedProcess:
     """Sets the respective host name or deletes the host name file."""
 
-    return system(HOSTNAMECTL, 'set-hostname', hostname)
+    return system(HOSTNAMECTL, "set-hostname", hostname)
 
 
 def get_system_id() -> int:
     """Returns the system id."""
 
-    with HOSTNAME.open('r', encoding='ascii') as file:
+    with HOSTNAME.open("r", encoding="ascii") as file:
         return int(file.read().strip())
 
 
@@ -121,7 +117,7 @@ class CalledProcessErrorHandler:
     def __exit__(self, _, exception, __):
         """Handles called process error."""
         if isinstance(exception, CalledProcessError):
-            raise ProgramError('SUBPROCESS ERROR', *self.messages, exit_code=3)
+            raise ProgramError("SUBPROCESS ERROR", *self.messages, exit_code=3)
 
 
 class ProgramErrorHandler:

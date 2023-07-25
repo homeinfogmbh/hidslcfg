@@ -8,34 +8,34 @@ from hidslcfg.system import CalledProcessErrorHandler
 
 
 __all__ = [
-    'DEVNAME',
-    'DESCRIPTION',
-    'MTU',
-    'NETDEV_UNIT_FILE',
-    'NETWORK_UNIT_FILE',
-    'NETDEV_OWNER',
-    'NETDEV_GROUP',
-    'NETDEV_MODE',
-    'SERVER',
-    'load'
+    "DEVNAME",
+    "DESCRIPTION",
+    "MTU",
+    "NETDEV_UNIT_FILE",
+    "NETWORK_UNIT_FILE",
+    "NETDEV_OWNER",
+    "NETDEV_GROUP",
+    "NETDEV_MODE",
+    "SERVER",
+    "load",
 ]
 
 
-DEVNAME = 'terminals'
-DESCRIPTION = 'Terminal maintenance VPN.'
+DEVNAME = "terminals"
+DESCRIPTION = "Terminal maintenance VPN."
 MTU = 1280  # bytes
-NETDEV_UNIT_FILE = SYSTEMD_NETWORK_DIR / f'{DEVNAME}.netdev'
-NETWORK_UNIT_FILE = SYSTEMD_NETWORK_DIR / f'{DEVNAME}.network'
-NETDEV_OWNER = 'root'
-NETDEV_GROUP = 'systemd-network'
+NETDEV_UNIT_FILE = SYSTEMD_NETWORK_DIR / f"{DEVNAME}.netdev"
+NETWORK_UNIT_FILE = SYSTEMD_NETWORK_DIR / f"{DEVNAME}.network"
+NETDEV_OWNER = "root"
+NETDEV_GROUP = "systemd-network"
 NETDEV_MODE = 0o640
-SERVER = IPv6Address('fd56:1dda:8794:cb90:ffff:ffff:ffff:fffe')
+SERVER = IPv6Address("fd56:1dda:8794:cb90:ffff:ffff:ffff:fffe")
 
 
 def load() -> None:
     """Establishes the connection to the WireGuard server."""
 
-    LOGGER.debug('Restarting %s.', SYSTEMD_NETWORKD)
+    LOGGER.debug("Restarting %s.", SYSTEMD_NETWORKD)
 
-    with CalledProcessErrorHandler(f'Restart of {SYSTEMD_NETWORKD} failed.'):
-        systemctl('restart', SYSTEMD_NETWORKD)
+    with CalledProcessErrorHandler(f"Restart of {SYSTEMD_NETWORKD} failed."):
+        systemctl("restart", SYSTEMD_NETWORKD)

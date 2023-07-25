@@ -6,4 +6,4 @@ from hidslcfg.wireguard.migrate import migrate
 from hidslcfg.wireguard.setup import create, patch, setup
 
 
-__all__ = ['MTU', 'create', 'disable', 'migrate', 'patch', 'setup']
+__all__ = ["MTU", "create", "disable", "migrate", "patch", "setup"]

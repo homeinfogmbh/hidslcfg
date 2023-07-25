@@ -14,29 +14,29 @@ from hidslcfg.system import systemctl
 
 
 __all__ = [
-    'MAX_PSK_LEN',
-    'MIN_PSK_LEN',
-    'configure',
-    'disable',
-    'from_magic_usb_key',
-    'list_wifi_interfaces',
-    'load_wifi_configs'
+    "MAX_PSK_LEN",
+    "MIN_PSK_LEN",
+    "configure",
+    "disable",
+    "from_magic_usb_key",
+    "list_wifi_interfaces",
+    "load_wifi_configs",
 ]
 
 
-CONFIG_DIR = Path('/etc/wpa_supplicant')
-CONFIG_FILE_TEMPLATE = 'wpa_supplicant-{interface}.conf'
-CONFIG_FILE_REGEX = CONFIG_FILE_TEMPLATE.format(interface='(.+)')
-KEYS = ('ssid', 'psk')
-MAGIC_FILE_NAME = 'wifi.txt'
+CONFIG_DIR = Path("/etc/wpa_supplicant")
+CONFIG_FILE_TEMPLATE = "wpa_supplicant-{interface}.conf"
+CONFIG_FILE_REGEX = CONFIG_FILE_TEMPLATE.format(interface="(.+)")
+KEYS = ("ssid", "psk")
+MAGIC_FILE_NAME = "wifi.txt"
 MAX_PSK_LEN = 63
 MIN_PSK_LEN = 8
-SERVICE_TEMPLATE = 'wpa_supplicant@{interface}.service'
-WIFI_INTERFACE_REGEX = r'^wlp'
+SERVICE_TEMPLATE = "wpa_supplicant@{interface}.service"
+WIFI_INTERFACE_REGEX = r"^wlp"
 WPA_CONFIG_PARSER = {
-    'ssid':  r'^\s*ssid="(.+)"$',
-    'psk': r'^\s*#psk="(.+)"$',
-    'psk_encoded': r'^\s*psk=(.+)$'
+    "ssid": r'^\s*ssid="(.+)"$',
+    "psk": r'^\s*#psk="(.+)"$',
+    "psk_encoded": r"^\s*psk=(.+)$",
 }
 
 
@@ -46,11 +46,11 @@ def configure(interface: str, ssid: str, psk: str):
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     filename = CONFIG_DIR / CONFIG_FILE_TEMPLATE.format(interface=interface)
 
-    with filename.open('w') as file:
+    with filename.open("w") as file:
         file.write(wpa_passphrase(ssid, psk))
 
     start_and_enable(SERVICE_TEMPLATE.format(interface=interface))
-    systemctl('restart', SYSTEMD_NETWORKD)
+    systemctl("restart", SYSTEMD_NETWORKD)
 
 
 def disable(interfaces_to_disable: Iterable[str]) -> None:
@@ -67,10 +67,8 @@ def from_magic_usb_key(*, filename: str = MAGIC_FILE_NAME) -> dict[str, str]:
     """
 
     with MagicUSBKey() as mountpoint:
-        with (mountpoint / filename).open('r', encoding='utf-8') as file:
-            return {
-                key: value for key, value in zip(KEYS, map(str.rstrip, file))
-            }
+        with (mountpoint / filename).open("r", encoding="utf-8") as file:
+            return {key: value for key, value in zip(KEYS, map(str.rstrip, file))}
 
 
 def list_wifi_interfaces() -> Iterator[str]:
@@ -94,7 +92,7 @@ def load_wifi_configs() -> dict[str, dict[str, str]]:
 def iter_wifi_configs() -> Iterator[Path]:
     """Yield paths to available wpa_supplicant configuration files."""
 
-    return CONFIG_DIR.glob(CONFIG_FILE_TEMPLATE.format(interface='*'))
+    return CONFIG_DIR.glob(CONFIG_FILE_TEMPLATE.format(interface="*"))
 
 
 def load_wifi_config(file: Path) -> dict[str, str]:
@@ -102,7 +100,7 @@ def load_wifi_config(file: Path) -> dict[str, str]:
 
     config = {}
 
-    with file.open('r', encoding='utf-8') as file:
+    with file.open("r", encoding="utf-8") as file:
         for line in file:
             for key, regex in WPA_CONFIG_PARSER.items():
                 if regex_match := fullmatch(regex, line.strip()):
@@ -115,30 +113,26 @@ def load_wifi_config(file: Path) -> dict[str, str]:
 def wpa_passphrase(ssid: str, psk: str) -> str:
     """Invoke wpa_passphrase."""
 
-    return check_output(
-        ['/usr/bin/wpa_passphrase', ssid, psk],
-        stderr=PIPE,
-        text=True
-    )
+    return check_output(["/usr/bin/wpa_passphrase", ssid, psk], stderr=PIPE, text=True)
 
 
 def start_and_enable(service: str) -> None:
     """Start and enable wpa_supplicant for the respective interface."""
 
     try:
-        systemctl('is-enabled', service)
+        systemctl("is-enabled", service)
     except CalledProcessError:
-        systemctl('enable', service)
+        systemctl("enable", service)
 
     try:
-        systemctl('is-active', service)
+        systemctl("is-active", service)
     except CalledProcessError:
-        systemctl('start', service)
+        systemctl("start", service)
     else:
-        systemctl('restart', service)
+        systemctl("restart", service)
 
 
 def stop_and_disable(service: str) -> None:
     """Stop and disable wpa_supplicant for the respective interface."""
 
-    systemctl('disable', '--now', service)
+    systemctl("disable", "--now", service)
