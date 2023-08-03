@@ -8,6 +8,7 @@ from hidslcfg.api import Client
 from hidslcfg.common import HIDSL_DEBUG
 from hidslcfg.exceptions import APIError, ProgramError
 from hidslcfg.gui.api import GLib, Gtk, BuilderWindow, SetupParameters
+from hidslcfg.system import is_direct_url_system
 from hidslcfg.wireguard import MTU, create, patch
 
 
@@ -78,9 +79,21 @@ def setup(
 
     if system_id is None:
         return create(
-            client, mtu=MTU, os="Arch Linux", model=model, sn=serial_number, group=1
+            client,
+            mtu=MTU,
+            os="Arch Linux",
+            model=model,
+            sn=serial_number,
+            group=1,
+            direct_url=is_direct_url_system(),
         )
 
     return patch(
-        client, system_id, mtu=MTU, os="Arch Linux", model=model, sn=serial_number
+        client,
+        system_id,
+        mtu=MTU,
+        os="Arch Linux",
+        model=model,
+        sn=serial_number,
+        direct_url=is_direct_url_system(),
     )
