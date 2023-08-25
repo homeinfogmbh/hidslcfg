@@ -10,7 +10,7 @@ from hidslcfg.common import LOGGER
 from hidslcfg.configure import configure
 from hidslcfg.exceptions import ProgramError
 from hidslcfg.system import chown
-from hidslcfg.system import is_direct_url_system
+from hidslcfg.system import is_ddb_os_system
 from hidslcfg.system import SystemdUnit
 
 from hidslcfg.wireguard.common import DEVNAME
@@ -62,7 +62,7 @@ def setup(client: Client, args: Namespace) -> int:
             model=get_model(args),
             sn=args.serial_number,
             group=args.group,
-            direct_url=is_direct_url_system(),
+            ddb_os=is_ddb_os_system(),
         )
 
     if args.force:
@@ -73,7 +73,7 @@ def setup(client: Client, args: Namespace) -> int:
             os=args.operating_system,
             model=get_model(args),
             sn=args.serial_number,
-            direct_url=is_direct_url_system(),
+            ddb_os=is_ddb_os_system(),
         )
 
     raise ProgramError("Refusing to change existing system without --force.")

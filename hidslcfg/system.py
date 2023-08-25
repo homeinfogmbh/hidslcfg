@@ -24,7 +24,7 @@ __all__ = [
     "rmsubtree",
     "set_hostname",
     "get_system_id",
-    "is_direct_url_system",
+    "is_ddb_os_system",
     "CalledProcessErrorHandler",
     "ProgramErrorHandler",
     "SystemdUnit",
@@ -105,7 +105,7 @@ def get_system_id() -> int:
         return int(file.read().strip())
 
 
-def is_direct_url_system() -> bool:
+def is_ddb_os_system() -> bool:
     """Determines whether this is a system that uses
     a web browser to directly display URLS.
     """
