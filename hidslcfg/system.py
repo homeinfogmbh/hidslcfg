@@ -10,7 +10,7 @@ from subprocess import DEVNULL, CalledProcessError, CompletedProcess, check_call
 from sys import exit
 from typing import Any
 
-from hidslcfg.common import LOGGER
+from hidslcfg.common import DDB_OS_PKG_NAME, LOGGER
 from hidslcfg.exceptions import ProgramError
 
 
@@ -105,7 +105,7 @@ def get_system_id() -> int:
         return int(file.read().strip())
 
 
-def is_ddb_os_system(*, pkg_name: str = "ddb-os") -> bool:
+def is_ddb_os_system(*, pkg_name: str = DDB_OS_PKG_NAME) -> bool:
     """Determines whether this is a new "DDB OS" type system."""
 
     try:
