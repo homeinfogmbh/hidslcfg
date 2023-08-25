@@ -6,7 +6,7 @@ from logging import DEBUG
 from os import chown as _chown
 from pathlib import Path
 from pwd import getpwnam
-from subprocess import DEVNULL, CalledProcessError, CompletedProcess, run
+from subprocess import DEVNULL, CalledProcessError, CompletedProcess, check_call, run
 from sys import exit
 from typing import Any
 
@@ -105,13 +105,15 @@ def get_system_id() -> int:
         return int(file.read().strip())
 
 
-def is_ddb_os_system() -> bool:
-    """Determines whether this is a system that uses
-    a web browser to directly display URLS.
-    """
+def is_ddb_os_system(*, pkg_name: str = "ddb-os") -> bool:
+    """Determines whether this is a new "DDB OS" type system."""
 
-    # TODO: implement
-    return False
+    try:
+        check_call(["pacman", "-Q", pkg_name], stdout=DEVNULL, stderr=DEVNULL)
+    except CalledProcessError:
+        return False
+
+    return True
 
 
 class CalledProcessErrorHandler:
