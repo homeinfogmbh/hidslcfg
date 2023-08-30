@@ -84,6 +84,9 @@ def reboot() -> CompletedProcess:
 def rmsubtree(path: Path) -> None:
     """Removes all children within the specified directory."""
 
+    if not path.exists():
+        return
+
     for inode in path.iterdir():
         if inode.is_dir():
             rmsubtree(inode)
