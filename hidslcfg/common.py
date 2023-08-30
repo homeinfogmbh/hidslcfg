@@ -12,6 +12,7 @@ from hidslcfg.exceptions import ProgramError
 
 __all__ = [
     "APPLICATION_SERVICE",
+    "CHROMIUM_SERVICE",
     "DDB_OS_PKG_NAME",
     "DIGSIG_DATA_DIR",
     "HIDSL_DEBUG",
@@ -26,6 +27,7 @@ __all__ = [
 
 
 APPLICATION_SERVICE = "application.service"
+CHROMIUM_SERVICE = "chromium.service"
 DDB_OS_PKG_NAME = "ddb-os"
 DIGSIG_DATA_DIR = Path("/var/lib/digsig")
 HIDSL_DEBUG = getenv("HIDSL_DEBUG")

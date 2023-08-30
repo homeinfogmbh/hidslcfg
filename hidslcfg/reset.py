@@ -5,6 +5,7 @@ from subprocess import CalledProcessError
 from typing import Callable, NamedTuple
 
 from hidslcfg.common import APPLICATION_SERVICE
+from hidslcfg.common import CHROMIUM_SERVICE
 from hidslcfg.common import DIGSIG_DATA_DIR
 from hidslcfg.common import HTML5DS
 from hidslcfg.common import UNCONFIGURED_WARNING_SERVICE
@@ -46,6 +47,9 @@ RESET_OPERATIONS = (
     ResetOperation("remove WireGuard configuration", remove),
     ResetOperation(
         "disable application", partial(gracefully_disable_service, APPLICATION_SERVICE)
+    ),
+    ResetOperation(
+        "disable chromium", partial(gracefully_disable_service, CHROMIUM_SERVICE)
     ),
     ResetOperation("disable html5ds", partial(gracefully_disable_service, HTML5DS)),
     ResetOperation(
