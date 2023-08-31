@@ -12,6 +12,9 @@ __all__ = ["clean", "disable"]
 def clean() -> None:
     """Removes OpenVPN configuration."""
 
+    if not CLIENT_DIR.exists():
+        return
+
     for item in CLIENT_DIR.iterdir():
         if item.is_file():
             item.unlink()
