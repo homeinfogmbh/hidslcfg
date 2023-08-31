@@ -3,7 +3,11 @@
 from ipaddress import IPv4Address, IPv6Address
 from typing import Any, Iterable
 
-from hidslcfg.common import LOGGER, UNCONFIGURED_WARNING_SERVICE
+from hidslcfg.common import (
+    INSTALLATION_INSTRUCTIONS_SERVICE,
+    LOGGER,
+    UNCONFIGURED_WARNING_SERVICE,
+)
 from hidslcfg.exceptions import ProgramError
 from hidslcfg.hosts import set_ip
 from hidslcfg.pacman import set_server
@@ -83,3 +87,4 @@ def configure(system: int, server: IPv4Address | IPv6Address) -> None:
     set_server("homeinfo", server)
     LOGGER.debug("Disabling unconfigured warning.")
     systemctl("disable", UNCONFIGURED_WARNING_SERVICE)
+    systemctl("enable", INSTALLATION_INSTRUCTIONS_SERVICE)

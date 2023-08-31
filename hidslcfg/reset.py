@@ -8,6 +8,7 @@ from hidslcfg.common import APPLICATION_SERVICE
 from hidslcfg.common import CHROMIUM_SERVICE
 from hidslcfg.common import DIGSIG_DATA_DIR
 from hidslcfg.common import HTML5DS
+from hidslcfg.common import INSTALLATION_INSTRUCTIONS_SERVICE
 from hidslcfg.common import UNCONFIGURED_WARNING_SERVICE
 from hidslcfg.exceptions import ProgramError
 from hidslcfg.openvpn.common import DEFAULT_SERVICE
@@ -52,6 +53,10 @@ RESET_OPERATIONS = (
         "disable chromium", partial(gracefully_disable_service, CHROMIUM_SERVICE)
     ),
     ResetOperation("disable html5ds", partial(gracefully_disable_service, HTML5DS)),
+    ResetOperation(
+        "disable installation instructions",
+        partial(gracefully_disable_service, INSTALLATION_INSTRUCTIONS_SERVICE),
+    ),
     ResetOperation(
         "enable not-configured warning message",
         partial(systemctl, "enable", UNCONFIGURED_WARNING_SERVICE),

@@ -17,6 +17,7 @@ __all__ = [
     "DIGSIG_DATA_DIR",
     "HIDSL_DEBUG",
     "HTML5DS",
+    "INSTALLATION_INSTRUCTIONS_SERVICE",
     "LOGGER",
     "LOG_FORMAT",
     "SYSTEMD_NETWORKD",
@@ -32,6 +33,7 @@ DDB_OS_PKG_NAME = "ddb-os"
 DIGSIG_DATA_DIR = Path("/var/lib/digsig")
 HIDSL_DEBUG = getenv("HIDSL_DEBUG")
 HTML5DS = "html5ds.service"
+INSTALLATION_INSTRUCTIONS_SERVICE = "installation-instructions.service"
 LOG_FORMAT = "[%(levelname)s] %(name)s: %(message)s"
 LOGGER = getLogger(Path(argv[0]).name)
 SYSTEMD_NETWORKD = "systemd-networkd.service"
