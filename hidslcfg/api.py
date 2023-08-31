@@ -89,10 +89,6 @@ class Client:
         """Returns the terminal information."""
         return self.post_endpoint("info", system=system).json()
 
-    def openvpn(self, system: int) -> bytes:
-        """Returns the terminal's VPN keys and configuration as bytes."""
-        return self.post_endpoint("openvpn", system=system).content
-
     def finalize(self, **json) -> str:
         """Sets the respective serial number."""
         return self.post_endpoint("finalize", **json).text
