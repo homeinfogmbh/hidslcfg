@@ -19,14 +19,12 @@ setup(
         "hidslcfg.gui",
         "hidslcfg.gui.windows",
         "hidslcfg.gui.windows.main",
-        "hidslcfg.openvpn",
         "hidslcfg.wireguard",
     ],
     entry_points={
         "console_scripts": [
             "hidslcfg = hidslcfg.cli.hidslcfg:run",
             "hidslreset = hidslcfg.cli.hidslreset:run",
-            "wgmigrate = hidslcfg.cli.wgmigrate:run",
             "hidslcfg-gui = hidslcfg.gui.application:run",
         ],
     },
