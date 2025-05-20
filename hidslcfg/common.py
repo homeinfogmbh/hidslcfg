@@ -14,6 +14,8 @@ __all__ = [
     "APPLICATION_SERVICE",
     "CHROMIUM_SERVICE",
     "DDB_OS_PKG_NAME",
+    "DDBOSSTART",
+    "DDBOSSTART_TEMPLATE",
     "DIGSIG_DATA_DIR",
     "HIDSL_DEBUG",
     "HTML5DS",
@@ -39,7 +41,8 @@ LOGGER = getLogger(Path(argv[0]).name)
 SYSTEMD_NETWORKD = "systemd-networkd.service"
 SYSTEMD_NETWORK_DIR = Path("/etc/systemd/network")
 UNCONFIGURED_WARNING_SERVICE = "unconfigured-warning.service"
-
+DDBOSSTART_TEMPLATE = Path("/usr/share/hidslcfg/index.html.template")
+DDBOSSTART = Path("/srv/index.html")
 
 def init_root_script(args_getter: Callable) -> Namespace:
     """Initializes a script that shall be run as root."""
