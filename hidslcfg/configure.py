@@ -15,11 +15,11 @@ from hidslcfg.hosts import set_ip
 from hidslcfg.pacman import set_server
 from hidslcfg.system import set_hostname, systemctl
 from hidslcfg.termio import ask, Table
-from hidslcfg.system import  is_ddb_os_system
+from hidslcfg.system import is_ddb_os_system
 
 from pathlib import Path
 
-__all__ = ["confirm", "configure"]
+__all__ = ["confirm", "configure","create_ddbos_start"]
 
 
 APPCMD_HOSTNAME = "appcmd.homeinfo.intra"

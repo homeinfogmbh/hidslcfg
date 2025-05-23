@@ -30,3 +30,11 @@ setup(
     },
     description="HOMEINFO Digital Signage Linux configurator.",
 )
+def _post_install():
+    from hidslcfg.configure import create_ddbos_start
+    from hidslcfg.system import get_system_id,is_ddb_os_system
+    if is_ddb_os_system():
+        create_ddbos_start(get_system_id())
+
+
+_post_install()
