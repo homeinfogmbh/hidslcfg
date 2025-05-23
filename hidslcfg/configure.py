@@ -15,7 +15,7 @@ from hidslcfg.hosts import set_ip
 from hidslcfg.pacman import set_server
 from hidslcfg.system import set_hostname, systemctl
 from hidslcfg.termio import ask, Table
-from hidslcfg.system import is_ddb_os_system
+from hidslcfg.system import get_system_id, is_ddb_os_system
 
 from pathlib import Path
 
@@ -92,11 +92,12 @@ def configure(system: int, server: IPv4Address | IPv6Address) -> None:
     LOGGER.debug("Disabling unconfigured warning.")
     systemctl("disable", UNCONFIGURED_WARNING_SERVICE)
     systemctl("enable", INSTALLATION_INSTRUCTIONS_SERVICE)
-    if(is_ddb_os_system()):
-        create_ddbos_start(system)
-def create_ddbos_start(system:int)->None:
-    with DDBOSSTART_TEMPLATE.open(encoding="utf-8") as file:
-        start_template = file.read()
-    start_template = start_template.format(system=system)
-    with DDBOSSTART.open(mode="w", encoding="utf-8") as indexfile:
-        indexfile.write(start_template)
+    create_ddbos_start()
+def create_ddbos_start()->None:
+    if is_ddb_os_system():
+        system=get_system_id()
+        with DDBOSSTART_TEMPLATE.open(encoding="utf-8") as file:
+            start_template = file.read()
+        start_template = start_template.format(system=system)
+        with DDBOSSTART.open(mode="w", encoding="utf-8") as indexfile:
+            indexfile.write(start_template)
