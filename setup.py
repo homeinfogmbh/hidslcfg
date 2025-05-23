@@ -26,7 +26,7 @@ setup(
             "hidslcfg = hidslcfg.cli.hidslcfg:run",
             "hidslreset = hidslcfg.cli.hidslreset:run",
             "hidslcfg-gui = hidslcfg.gui.application:run",
-            "hidslcfg-create-index = hidslcfg.configure.create_ddbos_start",
+            "hidslcfg-create-index = hidslcfg.configure:create_ddbos_start",
         ],
     },
     description="HOMEINFO Digital Signage Linux configurator.",
