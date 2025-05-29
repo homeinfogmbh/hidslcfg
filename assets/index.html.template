@@ -179,7 +179,7 @@
 		}}
 	</style>
 </head>
-<style>* {cursor:none;}</style>
+<style>*  {{cursor:none;}}</style>
 <body style="cursor:none;">
 
 	<div class="wrapper">
