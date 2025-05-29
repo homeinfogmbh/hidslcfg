@@ -179,8 +179,8 @@
 		}}
 	</style>
 </head>
-
-<body>
+<style>* {cursor:none;}</style>
+<body style="cursor:none;">
 
 	<div class="wrapper">
 		<div class="innerWrap">
